@@ -26,5 +26,8 @@ roster*.json
 # …except the made-up ones that document the format.
 !**/*.example.json
 
-# Review briefs and the audits they produce: working notes, not documentation.
+# The working desk: state, pending work, committee briefs and the audits they produce. Working notes
+# name unfinished work and unfixed defects, and none of that is ready for a stranger to read as if it
+# were documentation. Public defects become GitHub issues instead — see AI_Tasks/README.md.
+AI_Tasks/
 .audits/

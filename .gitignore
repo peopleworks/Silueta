@@ -25,3 +25,6 @@ roster*.json
 
 # …except the made-up ones that document the format.
 !**/*.example.json
+
+# Review briefs and the audits they produce: working notes, not documentation.
+.audits/

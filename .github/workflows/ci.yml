@@ -1,0 +1,87 @@
+# Build and test on every push and pull request.
+#
+# Beyond the unit tests, this workflow guards the two things a reader actually trusts: that the demo
+# does not leak, and that the README is telling the truth about what the demo prints. A privacy tool
+# whose front page shows output it no longer produces has spent the only credibility it had.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build & test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build
+        run: dotnet build Silueta.slnx -c Release --nologo
+
+      - name: Test
+        run: dotnet test Silueta.slnx -c Release --no-build --nologo
+
+      # The canary. Every name and number below is in the demo's input; none may survive into its
+      # output. A refactor that silently disables a detector passes the unit tests far more easily
+      # than it passes this, because this reads the artefact a user sees.
+      - name: The demo does not leak
+        run: |
+          out=$(dotnet run --project src/Silueta.Cli -c Release --no-build -- demo)
+          deid=$(printf '%s\n' "$out" | sed -n '/--- de-identified ---/,/--- what was replaced ---/p')
+
+          fail=0
+          while IFS= read -r leak; do
+            [ -z "$leak" ] && continue
+            if printf '%s' "$deid" | grep -qF "$leak"; then
+              echo "::error::'$leak' survived into the de-identified text."
+              fail=1
+            fi
+          done <<'LEAKS'
+          Ellenor
+          Vasques
+          Jamileth
+          Sophia
+          602-555-0147
+          jamileth.v@example.com
+          94 years old
+          LEAKS
+
+          [ "$fail" -eq 0 ] || exit 1
+          echo "Nothing from the roster survived."
+
+      # The README's second code block is the de-identified output, pasted from a real run. If the
+      # surrogate list, the policy seed or a detector changes, the block becomes fiction — and the
+      # person most likely to notice is a stranger evaluating whether to trust the library.
+      - name: The README matches what the demo prints
+        run: |
+          out=$(dotnet run --project src/Silueta.Cli -c Release --no-build -- demo)
+          deid=$(printf '%s\n' "$out" | sed -n '/--- de-identified ---/,/--- what was replaced ---/p')
+          claimed=$(awk '/^```/{f++; next} f==3' README.md)
+
+          fail=0
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            if ! printf '%s' "$deid" | grep -qF "$line"; then
+              echo "::error::README claims a line the demo no longer prints: $line"
+              fail=1
+            fi
+          done <<< "$claimed"
+
+          [ "$fail" -eq 0 ] || exit 1
+          echo "The README and the demo still agree."

@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <!-- Detector packs are read via reflection from embedded resources; keep them addressable under
+         a trimmed WebAssembly build, which is how the browser demo runs with nothing uploaded. -->
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+
+    <PackageId>Silueta.Core</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Pedro Hernández (PeopleWorks)</Authors>
+    <Company>PeopleWorks</Company>
+    <Description>De-identification for conversation transcripts, built for text that came out of a speech recogniser: it matches the identifiers you already know through ASR spelling damage, replaces them under a HIPAA Safe Harbor policy, and measures its own leak rate. No external dependencies.</Description>
+    <PackageTags>deidentification;phi;hipaa;privacy;transcripts;asr;anonymization;nlp</PackageTags>
+    <PackageProjectUrl>https://github.com/peopleworks/Silueta</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- A wildcard, so adding a pattern pack is adding a file: extension points are JSON anyone can
+         send by pull request, never compiled code. WithCulture=false is essential — filenames like
+         patterns.core.json would otherwise be mistaken for culture-specific satellite resources and
+         dropped from the main assembly manifest. LogicalName pins the reflection lookup name. -->
+    <EmbeddedResource Include="Detectors\Packs\patterns.*.json" WithCulture="false">
+      <LogicalName>Silueta.Core.Detectors.Packs.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+
+</Project>

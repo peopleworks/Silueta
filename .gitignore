@@ -1,0 +1,27 @@
+# Build output
+bin/
+obj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+*.user
+*.suo
+.vs/
+.idea/
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# Data that must never reach a repository. Silueta exists to keep people out of corpora; the corpora
+# themselves, the rosters they were checked against and the vaults that can undo the work stay local.
+*.vault.json
+vault.json
+roster*.json
+*.deid.txt
+/data/
+/corpus/
+/samples/private/
+
+# …except the made-up ones that document the format.
+!**/*.example.json

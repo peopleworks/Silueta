@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Silueta.Cli</RootNamespace>
+    <AssemblyName>silueta</AssemblyName>
+
+    <!-- Shipped as a dotnet tool so an agency can run it without a build: dotnet tool install -g Silueta.Cli -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>silueta</ToolCommandName>
+    <PackageId>Silueta.Cli</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Pedro Hernández (PeopleWorks)</Authors>
+    <Company>PeopleWorks</Company>
+    <Description>Command line for Silueta: de-identify a transcript against a roster you already have, and write the manifest that says what was removed.</Description>
+    <PackageTags>deidentification;phi;hipaa;privacy;cli;dotnet-tool</PackageTags>
+    <PackageProjectUrl>https://github.com/peopleworks/Silueta</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Silueta.Core\Silueta.Core.csproj" />
+  </ItemGroup>
+
+</Project>

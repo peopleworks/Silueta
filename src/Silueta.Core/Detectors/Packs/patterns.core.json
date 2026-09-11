@@ -1,0 +1,62 @@
+[
+  {
+    "id": "email",
+    "kind": "Email",
+    "regex": "\\b[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,}\\b",
+    "confidence": 0.99
+  },
+  {
+    "id": "url",
+    "kind": "Url",
+    "regex": "\\bhttps?://[^\\s<>\"']+",
+    "confidence": 0.99
+  },
+  {
+    "id": "ipv4",
+    "kind": "IpAddress",
+    "regex": "\\b(?:\\d{1,3}\\.){3}\\d{1,3}\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "phone-us",
+    "kind": "Phone",
+    "regex": "(?<!\\d)(?:\\+?1[ .-]?)?(?:\\(\\d{3}\\)|\\d{3})[ .-]?\\d{3}[ .-]?\\d{4}(?!\\d)",
+    "confidence": 0.95
+  },
+  {
+    "id": "ssn-us",
+    "kind": "AccountNumber",
+    "regex": "(?<!\\d)\\d{3}-\\d{2}-\\d{4}(?!\\d)",
+    "confidence": 0.99
+  },
+  {
+    "id": "record-number",
+    "kind": "RecordNumber",
+    "regex": "\\b(?:mrn|medical record(?: number)?|chart number|expediente)\\s*[:#]?\\s*\\d{4,12}\\b",
+    "confidence": 0.95
+  },
+  {
+    "id": "date-numeric",
+    "kind": "Date",
+    "regex": "\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b",
+    "confidence": 0.95
+  },
+  {
+    "id": "date-month-en",
+    "kind": "Date",
+    "regex": "\\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "date-month-es",
+    "kind": "Date",
+    "regex": "\\b\\d{1,2}\\s+de\\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\\s+de\\s+\\d{4})?\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "age-over-89",
+    "kind": "AgeOver89",
+    "regex": "\\b(?:9\\d|1\\d{2})[ -]?(?:years?[ -]old|year[ -]old|años|anos)\\b",
+    "confidence": 0.9
+  }
+]

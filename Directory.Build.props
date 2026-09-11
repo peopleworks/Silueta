@@ -1,0 +1,29 @@
+<Project>
+
+  <!--
+    Repo-wide build settings, imported before every .csproj (so any project can still override a
+    value by re-declaring it). Same contract as SignsofAI: reproducible builds, Source Link, symbols.
+  -->
+
+  <PropertyGroup>
+    <!-- Reproducible builds. Deterministic is the SDK default; it is stated here because it is part
+         of the contract, not an accident of the toolchain. ContinuousIntegrationBuild normalizes
+         absolute paths into the PDB, which is what makes two CI builds of one commit byte-identical.
+         Deliberately OFF locally: normalized paths break step-through debugging in the IDE. -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+
+    <!-- Source Link ships in-box since the .NET 8 SDK, so this needs no PackageReference: setting
+         PublishRepositoryUrl is what turns it on. EmbedUntrackedSources covers generated files that
+         are not in git and would otherwise be unresolvable in a debugger. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>
+
+    <DebugType>portable</DebugType>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+</Project>

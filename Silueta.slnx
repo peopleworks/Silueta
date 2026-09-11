@@ -1,0 +1,12 @@
+<Solution>
+
+  <Folder Name="/src/">
+    <Project Path="src/Silueta.Core/Silueta.Core.csproj" />
+    <Project Path="src/Silueta.Cli/Silueta.Cli.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/Silueta.Core.Tests/Silueta.Core.Tests.csproj" />
+  </Folder>
+
+</Solution>

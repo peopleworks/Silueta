@@ -70,13 +70,14 @@ public sealed class KnownValueDetector : IDetector
 
                 int start = tokens[i].Start;
                 int end = tokens[i + words - 1].End;
+
+                // Read locally to decide how the match happened; it does not travel on the detection.
                 string matched = text[start..end];
 
                 results.Add(new Detection(
                     start,
                     end - start,
                     target.Known.Kind,
-                    matched,
                     Id,
                     score,
                     target.Known.SubjectId,

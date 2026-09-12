@@ -18,16 +18,43 @@ public sealed class PatternRule
 }
 
 /// <summary>
+/// A pattern pack could not be run over this text.
+/// <para>
+/// Its own type, and deliberately bare. The framework's <see cref="RegexMatchTimeoutException"/> carries
+/// the input that defeated the expression — in <c>Input</c> and inside <c>Message</c> — so a pack with
+/// exponential backtracking turns any log that catches it into a copy of the transcript. This exception
+/// names the rule and nothing else, and it is thrown without an inner exception on purpose: an inner one
+/// would put the input straight back into <c>ToString()</c>.
+/// </para>
+/// </summary>
+public sealed class PatternPackException : Exception
+{
+    public PatternPackException(string ruleId, string reason)
+        : base($"Pattern rule '{ruleId}' could not be run: {reason}. The input is withheld deliberately.")
+        => RuleId = ruleId;
+
+    /// <summary>Which rule failed. Enough to fix the pack, and it identifies nobody.</summary>
+    public string RuleId { get; }
+}
+
+/// <summary>
 /// The identifiers that have a shape rather than a name: phone numbers, e-mail, record numbers, dates,
 /// ages above 89. These need no roster and no model, and they are the part of Safe Harbor that can be
 /// argued to a reviewer line by line.
 /// </summary>
 public sealed class PatternDetector : IDetector
 {
+    /// <summary>Long enough for any honest rule on a shift-length transcript, short enough that a bad one
+    /// fails instead of hanging the run.</summary>
+    public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2);
+
     private readonly List<(PatternRule Rule, Regex Regex, IdentifierKind Kind)> _rules = new();
 
-    public PatternDetector(IEnumerable<PatternRule> rules)
+    /// <param name="timeout">Per-match ceiling. The text comes from outside, and so does the pack.</param>
+    public PatternDetector(IEnumerable<PatternRule> rules, TimeSpan? timeout = null)
     {
+        TimeSpan limit = timeout ?? DefaultTimeout;
+
         foreach (PatternRule rule in rules)
         {
             if (string.IsNullOrWhiteSpace(rule.Regex) || !Enum.TryParse(rule.Kind, ignoreCase: true, out IdentifierKind kind))
@@ -35,9 +62,7 @@ public sealed class PatternDetector : IDetector
                 continue;
             }
 
-            // A timeout, because the text comes from outside and a pack is a file anyone can send.
-            var regex = new Regex(rule.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(2));
-            _rules.Add((rule, regex, kind));
+            _rules.Add((rule, new Regex(rule.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, limit), kind));
         }
     }
 
@@ -64,20 +89,30 @@ public sealed class PatternDetector : IDetector
 
         foreach ((PatternRule rule, Regex regex, IdentifierKind kind) in _rules)
         {
-            foreach (Match match in regex.Matches(text))
+            // The timeout fires while the matches are being enumerated, not when Matches() is called,
+            // so the whole walk sits inside the guard.
+            try
             {
-                if (match.Length > 0)
+                foreach (Match match in regex.Matches(text))
                 {
-                    results.Add(new Detection(
-                        match.Index,
-                        match.Length,
-                        kind,
-                        match.Value,
-                        $"{Id}:{rule.Id}",
-                        rule.Confidence,
-                        SubjectId: null,
-                        MatchKind.Pattern));
+                    if (match.Length > 0)
+                    {
+                        results.Add(new Detection(
+                            match.Index,
+                            match.Length,
+                            kind,
+                            $"{Id}:{rule.Id}",
+                            rule.Confidence,
+                            SubjectId: null,
+                            MatchKind.Pattern));
+                    }
                 }
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // Caught and dropped on the floor: not rethrown, not wrapped, not logged. Everything
+                // about that object except the fact that it happened is a copy of the transcript.
+                throw new PatternPackException(rule.Id, "it exceeded its time limit on this input");
             }
         }
 

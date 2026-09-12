@@ -17,7 +17,20 @@ public sealed class DeidentificationContext
 {
     private readonly List<KnownIdentifier> _known = new();
 
-    public DeidentificationContext(string recordId) => RecordId = recordId;
+    /// <param name="recordId">An opaque id for this record. It is required, and it must be opaque: this
+    /// value travels in the manifest, which is the artefact that leaves with the corpus. A caller that
+    /// passes a file name, a patient name or an account number has published an identifier through the
+    /// one file whose whole purpose is to prove none were published.</param>
+    public DeidentificationContext(string recordId)
+    {
+        ArgumentNullException.ThrowIfNull(recordId);
+        if (string.IsNullOrWhiteSpace(recordId))
+        {
+            throw new ArgumentException("A record needs an opaque id of its own.", nameof(recordId));
+        }
+
+        RecordId = recordId;
+    }
 
     /// <summary>Opaque id of the record being processed. Appears in the manifest, never in the output.</summary>
     public string RecordId { get; }

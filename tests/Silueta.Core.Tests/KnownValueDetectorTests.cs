@@ -16,7 +16,7 @@ public class KnownValueDetectorTests
 
         List<Detection> found = new KnownValueDetector().Detect(text, Roster()).ToList();
 
-        Assert.Contains(found, d => d.Kind == IdentifierKind.PatientName && d.Text == "Ellenor Vasques");
+        Assert.Contains(found, d => d.Kind == IdentifierKind.PatientName && d.TextIn(text) == "Ellenor Vasques");
     }
 
     [Fact]
@@ -26,7 +26,7 @@ public class KnownValueDetectorTests
 
         List<Detection> found = new KnownValueDetector().Detect(text, Roster()).ToList();
 
-        Detection match = Assert.Single(found, d => d.Text == "Sophia");
+        Detection match = Assert.Single(found, d => d.TextIn(text) == "Sophia");
         Assert.Equal(IdentifierKind.StaffName, match.Kind);
         Assert.Equal("staff-1", match.SubjectId);
     }

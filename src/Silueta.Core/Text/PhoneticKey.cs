@@ -134,10 +134,6 @@ public static class PhoneticKey
                     sb.Append(sb.Length == 0 ? "s" : "ks");
                     break;
 
-                case 'e':
-                    sb.Append('e');
-                    break;
-
                 default:
                     sb.Append(c);
                     break;

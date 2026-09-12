@@ -13,12 +13,23 @@ public sealed class KnownIdentifierDto
     public string SubjectId { get; set; } = string.Empty;
 }
 
+/// <summary>What the vault holds about one subject: the code a structured field refers to, and the
+/// invented name the transcript says. Stored together because a pair that is not written down side by
+/// side cannot be undone or audited.</summary>
+public sealed class VaultEntry
+{
+    public string Pseudonym { get; set; } = string.Empty;
+
+    public string Surrogate { get; set; } = string.Empty;
+}
+
 /// <summary>The vault on disk. Deliberately its own file: it is the only artefact that can undo the work.</summary>
 public sealed class VaultFile
 {
-    public string Version { get; set; } = "1";
+    /// <summary>"1" stored a bare code per subject and no surrogate; "2" stores both.</summary>
+    public string Version { get; set; } = "2";
 
-    public Dictionary<string, string> Subjects { get; set; } = new();
+    public Dictionary<string, VaultEntry> Subjects { get; set; } = new();
 }
 
 /// <summary>

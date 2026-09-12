@@ -27,8 +27,18 @@ static int Redact(Dictionary<string, string> options)
         return 2;
     }
 
+    // No fall-back to the file name. It used to do that, and "Ana-Perez.txt" then wrote
+    // recordId=Ana-Perez into the manifest — the file that travels with the corpus to prove it holds
+    // no identifiers. An opaque id is three seconds of the caller's time and it has to be theirs.
+    if (!options.TryGetValue("record", out string? recordId) || string.IsNullOrWhiteSpace(recordId))
+    {
+        Console.Error.WriteLine(
+            "silueta redact needs --record <opaque-id>: an id of your own, not the file name and not the\n" +
+            "patient's. It goes in the manifest, and the manifest leaves with the corpus.");
+        return 2;
+    }
+
     string text = File.ReadAllText(inputPath);
-    string recordId = options.GetValueOrDefault("record", Path.GetFileNameWithoutExtension(inputPath));
     var context = new DeidentificationContext(recordId);
 
     if (options.TryGetValue("context", out string? contextPath))
@@ -42,14 +52,27 @@ static int Redact(Dictionary<string, string> options)
         KnownIdentifierDto[] known =
             JsonSerializer.Deserialize(File.ReadAllText(contextPath), SiluetaJsonContext.Default.KnownIdentifierDtoArray) ?? [];
 
-        foreach (KnownIdentifierDto dto in known)
+        for (int i = 0; i < known.Length; i++)
         {
+            KnownIdentifierDto dto = known[i];
+
+            // No falling back to the name. It used to, and that made the subject id — the key the vault
+            // is filed under — a copy of the very value being hidden. Anyone holding the vault then held
+            // the roster, and the invented name became a function of the real one.
+            if (string.IsNullOrWhiteSpace(dto.SubjectId))
+            {
+                Console.Error.WriteLine(
+                    $"Roster entry {i + 1} has no \"subjectId\". Give every person an opaque id of your\n" +
+                    "own (\"patient-1\", \"s-7f3\"): it is the key the vault is filed under, and it must not\n" +
+                    "be the name.");
+                return 2;
+            }
+
             IdentifierKind kind = Enum.TryParse(dto.Kind, ignoreCase: true, out IdentifierKind parsed)
                 ? parsed
                 : IdentifierKind.OtherName;
 
-            string subject = string.IsNullOrWhiteSpace(dto.SubjectId) ? dto.Value : dto.SubjectId;
-            context.AddPerson(subject, dto.Value, kind);
+            context.AddPerson(dto.SubjectId, dto.Value, kind);
         }
     }
     else
@@ -57,7 +80,13 @@ static int Redact(Dictionary<string, string> options)
         Console.Error.WriteLine("warning: no --context roster given; only pattern rules will fire.");
     }
 
-    SiluetaEngine engine = SiluetaEngine.CreateDefault();
+    // The vault is read before the run and written after it. It used to be created empty every time and
+    // then overwrite --vault, so the second transcript of a corpus silently discarded the first one's
+    // assignments — the same person became two people, and neither could be traced back.
+    options.TryGetValue("vault", out string? vaultPath);
+    PseudonymVault vault = vaultPath is null ? new PseudonymVault() : PseudonymVault.LoadOrCreate(vaultPath);
+
+    var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], vault);
     RedactionResult result = engine.Redact(text, context);
 
     if (options.TryGetValue("out", out string? outPath))
@@ -76,10 +105,17 @@ static int Redact(Dictionary<string, string> options)
         Console.WriteLine($"Wrote {manifestPath}.");
     }
 
-    if (options.TryGetValue("vault", out string? vaultPath))
+    if (vaultPath is not null)
     {
-        File.WriteAllText(vaultPath, engine.Vault.ToJson());
-        Console.WriteLine($"Wrote {vaultPath} — keep this inside the agency, it is the only way back.");
+        engine.Vault.SaveTo(vaultPath);
+        Console.WriteLine(
+            $"Wrote {vaultPath} — {engine.Vault.Count} subjects. Keep it inside the agency: it is the only way back.");
+    }
+    else if (result.Applied.Any(d => d.SubjectId is { Length: > 0 }))
+    {
+        Console.Error.WriteLine(
+            "warning: names were replaced but no --vault was given, so the invented names were minted and\n" +
+            "thrown away. Nothing in this output can be traced back, and the next run will invent others.");
     }
 
     return 0;
@@ -100,7 +136,17 @@ static int Demo()
         .AddPerson("family-1", "Yamilet Vasquez", IdentifierKind.FamilyName)
         .AddPerson("staff-1", "Sofía Reyes", IdentifierKind.StaffName);
 
-    RedactionResult result = SiluetaEngine.CreateDefault().Redact(transcript, context);
+    // Invented names are minted at random and remembered in the vault, so a real run cannot print the
+    // same thing twice — which is correct, and no use at all for a README a reader checks against. This
+    // vault comes pre-assigned, which is also what a second run in an agency looks like: the names were
+    // decided once and the file is what keeps them.
+    var vault = new PseudonymVault()
+        .Assign("patient-1", "Ale Espinal")
+        .Assign("family-1", "Chris Herrera")
+        .Assign("staff-1", "Yael Bravo");
+
+    var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], vault);
+    RedactionResult result = engine.Redact(transcript, context);
 
     Console.WriteLine("--- transcript as the recogniser wrote it ---");
     Console.WriteLine(transcript);
@@ -111,7 +157,10 @@ static int Demo()
     Console.WriteLine("--- what was replaced ---");
     foreach (Detection detection in result.Applied)
     {
-        Console.WriteLine($"  {detection.Kind,-12} {detection.Match,-8} {detection.Confidence:0.00}  \"{detection.Text}\"");
+        // The detection carries offsets, not text. Reading the value back out of the transcript is
+        // legitimate here and only here: this is the demo's own input, invented for the README.
+        Console.WriteLine(
+            $"  {detection.Kind,-12} {detection.Match,-8} {detection.Confidence:0.00}  \"{detection.TextIn(transcript)}\"");
     }
 
     return 0;

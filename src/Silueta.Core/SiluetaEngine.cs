@@ -15,6 +15,13 @@ public sealed class RedactionManifest
 
     public string PolicyVersion { get; set; } = string.Empty;
 
+    /// <summary>
+    /// A digest of the rules that actually ran. Two corpora can both say <c>safe-harbor/0.1</c> and have
+    /// been redacted under different actions or a different confidence floor; this is the field that
+    /// tells them apart, and the one to compare before merging two corpora or reproducing a result.
+    /// </summary>
+    public string PolicyFingerprint { get; set; } = string.Empty;
+
     public string EngineVersion { get; set; } = string.Empty;
 
     public DateTimeOffset RunUtc { get; set; }
@@ -71,6 +78,10 @@ public sealed partial class SiluetaEngine
 
         List<Detection> applied = Resolve(found, policy);
 
+        // Everything the caller says identifies someone in this record. No invented name may sound like
+        // any of it, or the next pass over this text finds the surrogate and replaces it again.
+        string[] roster = context.Known.Select(known => known.Value).ToArray();
+
         var sb = new StringBuilder(text.Length);
         var subjects = new HashSet<string>(StringComparer.Ordinal);
         int cursor = 0;
@@ -78,7 +89,7 @@ public sealed partial class SiluetaEngine
         foreach (Detection detection in applied)
         {
             sb.Append(text, cursor, detection.Start - cursor);
-            sb.Append(Replacement(detection, policy));
+            sb.Append(Replacement(detection, text, roster, policy));
             cursor = detection.End;
 
             if (detection.SubjectId is { Length: > 0 } subjectId && subjects.Add(subjectId))
@@ -96,6 +107,7 @@ public sealed partial class SiluetaEngine
             RecordId = context.RecordId,
             Policy = policy.Name,
             PolicyVersion = policy.Version,
+            PolicyFingerprint = policy.Fingerprint,
             EngineVersion = typeof(SiluetaEngine).Assembly.GetName().Version?.ToString() ?? "0.0.0",
             RunUtc = DateTimeOffset.UtcNow,
             TextLength = text.Length,
@@ -149,15 +161,22 @@ public sealed partial class SiluetaEngine
         return accepted;
     }
 
-    private string Replacement(Detection detection, SiluetaPolicy policy) => policy.ActionFor(detection.Kind) switch
+    /// <summary>The original text is read here, from the transcript the caller passed in, rather than
+    /// carried on the detection: see <see cref="Detection"/> for why that matters.</summary>
+    private string Replacement(Detection detection, string source, string[] roster, SiluetaPolicy policy)
     {
-        RedactionAction.Surrogate when detection.SubjectId is { Length: > 0 } subjectId =>
-            Surrogates.ForSubject(policy.SurrogateSeed, subjectId, Tokenizer.Tokenize(detection.Text).Count),
-        RedactionAction.YearOnly => YearOf(detection.Text),
-        RedactionAction.Generalize => Generalized(detection),
-        RedactionAction.Keep => detection.Text,
-        _ => LabelFor(detection.Kind),
-    };
+        string original = detection.TextIn(source);
+
+        return policy.ActionFor(detection.Kind) switch
+        {
+            RedactionAction.Surrogate when detection.SubjectId is { Length: > 0 } subjectId =>
+                Surrogates.Fit(Vault.SurrogateFor(subjectId, roster), Tokenizer.Tokenize(original).Count),
+            RedactionAction.YearOnly => YearOf(original),
+            RedactionAction.Generalize => Generalized(detection.Kind, original),
+            RedactionAction.Keep => original,
+            _ => LabelFor(detection.Kind),
+        };
+    }
 
     /// <summary>Safe Harbor keeps the year and nothing finer. A date with no year loses everything.</summary>
     private static string YearOf(string text)
@@ -166,11 +185,11 @@ public sealed partial class SiluetaEngine
         return match.Success ? match.Value : LabelFor(IdentifierKind.Date);
     }
 
-    private static string Generalized(Detection detection) => detection.Kind switch
+    private static string Generalized(IdentifierKind kind, string original) => kind switch
     {
         IdentifierKind.AgeOver89 => "90 or older",
-        IdentifierKind.PostalCode when detection.Text.Length >= 5 => detection.Text[..3] + "XX",
-        _ => LabelFor(detection.Kind),
+        IdentifierKind.PostalCode when original.Length >= 5 => original[..3] + "XX",
+        _ => LabelFor(kind),
     };
 
     private static string LabelFor(IdentifierKind kind) => kind switch

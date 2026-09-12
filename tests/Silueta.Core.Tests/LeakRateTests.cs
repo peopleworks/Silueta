@@ -2,54 +2,182 @@ using Silueta.Core;
 
 namespace Silueta.Core.Tests;
 
+/// <summary>
+/// The measurement the whole library is supposed to rest on. Every case here is one the old scorer got
+/// wrong: it counted any overlap as a cover, it counted spans instead of characters, and it never once
+/// looked at the text it was scoring — so it could report a clean transcript that still said the name.
+/// </summary>
 public class LeakRateTests
 {
     private static Detection Span(int start, int length) =>
-        new(start, length, IdentifierKind.PatientName, new string('x', length), "gold", 1.0);
+        new(start, length, IdentifierKind.PatientName, "gold", 1.0);
 
     [Fact]
-    public void A_covered_span_counts_as_found()
+    public void Half_a_name_covered_is_a_name_leaked()
     {
-        DeidScore score = LeakRate.Score([Span(10, 5)], [Span(8, 9)]);
+        // Codex's reproduction. Gold "Sofía Reyes" at [0,11); the redactor reached [0,6). The old scorer
+        // said Recall 1.0 and Leaked false, with "Reyes" still sitting in the output.
+        const string original = "Sofía Reyes was on shift.";
+        const string redacted = "Ale Reyes was on shift.";
 
-        Assert.Equal(1, score.Matched);
-        Assert.Equal(0, score.Missed);
-        Assert.False(score.Leaked);
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 11)], [Span(0, 6)]);
+
+        Assert.True(score.Leaked);
+        Assert.Equal(5, score.MissedCharacters); // "Reyes"
+        Assert.True(score.Recall < 1.0);
     }
 
     [Fact]
-    public void One_surviving_name_makes_the_transcript_a_leak()
+    public void A_surrogate_that_equals_the_original_is_a_leak()
     {
-        DeidScore score = LeakRate.Score([Span(10, 5), Span(40, 6)], [Span(10, 5)]);
+        // The span was found, replaced, and counted — and the replacement was the name itself. Nothing
+        // that looks only at offsets can see this; the scorer has to read the output.
+        const string original = "Ale Espinal rested well.";
+        const string redacted = "Ale Espinal rested well.";
 
-        Assert.Equal(1, score.Missed);
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 11)], [Span(0, 11)]);
+
         Assert.True(score.Leaked);
-        Assert.Equal(0.5, score.Recall);
+    }
+
+    [Fact]
+    public void A_name_that_survives_somewhere_else_is_still_a_leak()
+    {
+        // Annotated once, said twice. The annotated mention was removed; the transcript still names her.
+        const string original = "Eleanor rested. Later Eleanor called.";
+        const string redacted = "Ale rested. Later Eleanor called.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 7)], [Span(0, 7)]);
+
+        Assert.True(score.Leaked);
+    }
+
+    [Fact]
+    public void A_span_that_is_really_covered_and_really_replaced_is_clean()
+    {
+        const string original = "Eleanor Vasquez rested well.";
+        const string redacted = "Ale Espinal rested well.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 15)], [Span(0, 15)]);
+
+        Assert.False(score.Leaked);
+        Assert.Equal(0, score.MissedCharacters);
+        Assert.Equal(15, score.CoveredCharacters);
+        Assert.Equal(1.0, score.Recall);
+    }
+
+    [Fact]
+    public void Two_detectors_covering_one_name_between_them_cover_it()
+    {
+        const string original = "Eleanor Vasquez rested well.";
+        const string redacted = "[PATIENT][FAMILY] rested well.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 15)], [Span(0, 7), Span(7, 8)]);
+
+        Assert.False(score.Leaked);
+        Assert.Equal(15, score.CoveredCharacters);
+    }
+
+    [Fact]
+    public void Redacting_the_whole_document_is_not_a_perfect_score()
+    {
+        // The degenerate strategy: remove everything. The old scorer gave it Extra == 0 and Recall 1.0,
+        // because one giant span overlapped the only gold span.
+        const string original = "Eleanor Vasquez rested well and ate breakfast with her daughter.";
+        string redacted = "[PATIENT]";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 15)], [Span(0, original.Length)]);
+
+        Assert.False(score.Leaked);
+        Assert.Equal(original.Length - 15, score.OverRedactedCharacters);
+        Assert.True(score.Precision < 0.25, $"precision was {score.Precision:0.000}");
     }
 
     [Fact]
     public void Removing_what_nobody_marked_is_over_redaction()
     {
-        DeidScore score = LeakRate.Score([Span(10, 5)], [Span(10, 5), Span(90, 4)]);
+        const string original = "Eleanor rested well and ate breakfast.";
+        const string redacted = "[PATIENT] rested well and ate [REMOVED].";
 
-        Assert.Equal(1, score.Extra);
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 7)], [Span(0, 7), Span(28, 9)]);
+
+        Assert.Equal(9, score.OverRedactedCharacters);
         Assert.False(score.Leaked);
-        Assert.Equal(0.5, score.Precision);
+    }
+
+    [Fact]
+    public void Overlapping_detections_are_not_counted_twice()
+    {
+        const string original = "Eleanor Vasquez rested well.";
+        const string redacted = "[PATIENT] rested well.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 15)], [Span(0, 15), Span(0, 15), Span(3, 9)]);
+
+        Assert.Equal(15, score.CoveredCharacters);
+        Assert.Equal(0, score.OverRedactedCharacters);
+    }
+
+    [Fact]
+    public void One_surviving_name_makes_the_transcript_a_leak()
+    {
+        const string original = "Eleanor rested. Sofia called at noon.";
+        const string redacted = "Ale rested. Sofia called at noon.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 7), Span(16, 5)], [Span(0, 7)]);
+
+        Assert.True(score.Leaked);
+        Assert.Equal(5, score.MissedCharacters);
+        Assert.Equal(7.0 / 12.0, score.Recall, 3);
+    }
+
+    [Fact]
+    public void An_empty_corpus_has_no_leak_rate_rather_than_a_leak_rate_of_zero()
+    {
+        // The old signature returned 0.0 here, which reads as "measured, and perfect". Nothing was
+        // measured. A privacy library that reports a clean score for an empty run has said the one
+        // thing it must never say.
+        Assert.Null(LeakRate.OfTranscripts([]));
+        Assert.Null(LeakRate.PooledRecall([]));
     }
 
     [Fact]
     public void The_headline_number_is_transcripts_not_mentions()
     {
-        // Four transcripts, one leak between them: 97% of mentions removed, 25% of transcripts leaking.
+        const string clean = "Nothing identifying here at all.";
         DeidScore[] scores =
         [
-            new(30, 0, 0),
-            new(29, 1, 0),
-            new(35, 0, 0),
-            new(28, 0, 0),
+            LeakRate.Score(clean, clean, [], []),
+            LeakRate.Score("Eleanor rested.", "Eleanor rested.", [Span(0, 7)], []),
+            LeakRate.Score(clean, clean, [], []),
+            LeakRate.Score(clean, clean, [], []),
         ];
 
-        Assert.Equal(0.25, LeakRate.OfTranscripts(scores));
-        Assert.True(LeakRate.PooledRecall(scores) > 0.99);
+        LeakRateEstimate? estimate = LeakRate.OfTranscripts(scores);
+
+        Assert.NotNull(estimate);
+        Assert.Equal(0.25, estimate.Rate);
+        Assert.Equal(4, estimate.Transcripts);
+        Assert.Equal(1, estimate.Leaking);
+    }
+
+    [Fact]
+    public void A_leak_rate_always_carries_the_corpus_it_was_measured_on()
+    {
+        // A number without its denominator is the thing this project exists to stop publishing.
+        Assert.Throws<ArgumentOutOfRangeException>(() => new LeakRateEstimate(0, 0));
+
+        LeakRateEstimate estimate = new(40, 3);
+        Assert.Equal("7.5% of 40 transcripts", estimate.ToString());
+    }
+
+    [Fact]
+    public void A_transcript_with_nothing_to_find_cannot_leak()
+    {
+        const string text = "Blood pressure 138 over 82, pain 4 out of 10.";
+
+        DeidScore score = LeakRate.Score(text, text, [], []);
+
+        Assert.False(score.Leaked);
+        Assert.Equal(1.0, score.Recall);
     }
 }

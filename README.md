@@ -27,9 +27,18 @@ Not one of those names was spelled the way the agency spells it. `Sofía Reyes` 
 `Eleanor Vasquez` as `Ellenor Vasques`, `Yamilet` as `Jamileth`. A redactor that looks for names as they
 are written on the roster misses every one, and a missed name is a leak.
 
-Two things in that output are on purpose. `Rays` survived, and so did the nickname `Ellie` — nobody wrote
-either of them down anywhere. **That is what the leak rate is for**: this library measures how often it
-fails instead of promising that it doesn't.
+**And two names are still in that output, which is the more useful half of the example.**
+
+`Rays` survived, and `Reyes` is on the roster four lines above — this is not a name nobody knew, it is a
+name the matcher failed on. Their phonetic keys are `reyes` and `rais`: three edits apart, a similarity
+of 0.40 against a threshold of 0.84. `Ellie` survived for a different reason: it is a nickname, `eleanor`
+against `elie` scores 0.29, and nothing in the roster or the rules knows that Eleanors are called Ellie.
+One is a matcher that needs work; the other is a category the library does not handle yet. Both are
+counted as failures, neither is a design decision, and the difference between them is the kind of thing a
+leak rate is supposed to tell you.
+
+This library is built to measure how often it fails rather than to promise that it doesn't. **That number
+does not exist yet** — see [Status](#status) before you rely on anything here.
 
 ## Try it
 
@@ -38,7 +47,7 @@ dotnet run --project src/Silueta.Cli -- demo
 ```
 
 ```bash
-silueta redact --in shift-042.txt --context roster.json \
+silueta redact --in shift-042.txt --context roster.json --record r-042 \
                --out shift-042.deid.txt --manifest shift-042.manifest.json --vault vault.json
 ```
 
@@ -51,6 +60,12 @@ silueta redact --in shift-042.txt --context roster.json \
   { "value": "Sofía Reyes",     "kind": "StaffName",   "subjectId": "staff-1"  }
 ]
 ```
+
+Both ids are required and both must be opaque. `--record` goes into the manifest and `subjectId` is the
+key the vault is filed under, so a record named after its file (`Ana-Perez.txt`) or a subject keyed by
+the patient's name would publish the identifier through the very files that exist to show none were
+published. Pass `--vault` on every run of a corpus: it is where the invented names live, and without it
+each transcript invents new ones for the same people.
 
 ## How it works
 
@@ -66,14 +81,30 @@ silueta redact --in shift-042.txt --context roster.json \
    dates keep only their year, ages above 89 become "90 or older", ZIPs keep three digits.
 5. **Every run writes a manifest.** What was removed, by kind, by detector, under which policy version.
    An expert determination rests on the method being written down.
-6. **Re-identification codes are random.** The vault maps a subject to an opaque id that is not derived
-   from the person — 45 CFR § 164.514(c) — and it never travels with the data.
+6. **The vault decides the invented names, and remembers them.** One subject, one invented name, across
+   every transcript in the corpus — and a re-identification code that is random rather than derived from
+   the person, per 45 CFR § 164.514(c). No invented name is allowed to sound like anyone on the roster,
+   so running a redacted transcript through again changes nothing. The vault never travels with the data.
 7. **The leak rate is the headline number.** Not the share of identifiers removed, which always looks
    good: the share of *transcripts* with at least one identifier left. At 99% recall per mention, a
-   transcript with fifty mentions leaks about 40% of the time. That arithmetic is the reason this library
-   measures itself.
+   transcript with fifty mentions leaks about 40% of the time. It is counted in characters and against
+   the redacted text, so half a name covered is a name leaked, and a replacement that equals the original
+   is a leak rather than a success.
 
 Read [Docs/ALGORITHM.md](Docs/ALGORITHM.md) for the detail, including what each choice costs.
+
+## Status
+
+**Silueta has not yet measured its own leak rate.** The scorer is in the box and tested; the gold corpus
+it needs, the `evaluate` command that would run it, and the baselines that would make the result mean
+something are not written. Until they are, this library is a redactor with a plan, and the honest reading
+of the example above is that two of the names in it survived.
+
+What is in place: the roster matcher, the pattern pack, the Safe Harbor policy, the vault, the manifest,
+and the leak-rate scorer. What is next, in order: the corpus and `silueta evaluate`; then the matcher
+changes that corpus will judge; then the parts of Safe Harbor still missing — no rule emits a postal code
+or a street address today, and spoken numbers and dates ("five five five, oh one four seven",
+"September eleventh") are not normalised at all.
 
 ## What it is not
 
@@ -81,8 +112,30 @@ Read [Docs/ALGORITHM.md](Docs/ALGORITHM.md) for the detail, including what each 
   decision for a lawyer, and an expert determination is a person signing their name.
 - **Not a model.** Nothing is downloaded and nothing is uploaded. `Silueta.Core` has no dependencies, so
   it runs offline, inside the environment that is allowed to hold the identified text.
-- **Not finished.** Nicknames, relationship cues ("my daughter", "Dr. —"), spoken numbers and dates,
-  address parsing, and a pluggable model detector are all ahead. So is the browser demo.
+- **Not finished.** See [Status](#status).
+
+## What already exists, and what is actually left over
+
+Naming the alternatives is cheaper than being caught not knowing them.
+
+**Speech engines that redact PII inside the ASR** — Amazon Transcribe, Deepgram, AssemblyAI — are the
+closest competitor, and the strongest, because they never suffer the problem this library is built
+around: they redact from the audio and the lattice, before a name is ever misspelled into text. If your
+recogniser offers it, use it. What it does not give you is a roster of the people this record is actually
+about, a policy you can read, a vault you hold, or a number for how often it failed — and it ties your
+de-identification to one vendor's pipeline.
+
+**General PII redactors** — Microsoft Presidio, Azure AI Language PII (PHI domain), AWS Comprehend
+Medical, Philter, scrubadub — work on written text, where a name is spelled the way someone typed it.
+Point them at a transcript and they miss `Ellenor Vasques` and delete `Parkinson`.
+
+**Evaluation harnesses** — Presidio Research in particular — already do much of what Phase 1 below needs,
+and are worth borrowing from rather than reinventing.
+
+So what is genuinely Silueta's: matching a roster you already hold *through* ASR damage, a leak rate
+measured per transcript rather than per mention, and both in a dependency-free .NET library you can run
+where the identified text is allowed to be. That is a narrower claim than "PII redaction", and it is the
+one this repository can defend.
 
 ## Layout
 

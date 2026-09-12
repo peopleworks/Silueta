@@ -1,6 +1,17 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Docs/brand/silueta-dark.svg">
+    <img src="Docs/brand/silueta.svg" alt="Silueta" width="88" height="88">
+  </picture>
+</p>
+
 # Silueta
 
 **Put a transcript in front of an AI without handing it the people in it.**
+
+<!-- The mark is a sheet of canvas with the S cut out of it: a silhouette is what is left when the person
+     is taken away, so the letter is the hole rather than the drawing. Docs/brand/. -->
+
 
 [![License: MIT](https://img.shields.io/github/license/peopleworks/Silueta?color=blue)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)

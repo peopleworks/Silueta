@@ -49,6 +49,11 @@ calling a tool is not that person.
 - every path is confined to one directory — `SILUETA_ROOT`, defaulting to where the server was started;
 - a file that looks like a vault is refused outright, and a run whose vault is also its transcript or
   output is refused;
+- the lineage — the word lists, labels and pattern rules a run uses — is `SILUETA_LINEAGE`, an
+  environment variable and **not** a tool parameter. Which dictionaries a corpus is redacted with is a
+  decision by whoever set this server up: a model that can choose the word lists can choose a lineage
+  whose "labels" leave everything where it is, and the report would still say the run succeeded. The
+  lineage's name and fingerprint come back in every report, so the model can say which one ran;
 - the redacted text is **withheld**, with the reason in a `withheld` field, when no roster was given
   (no name could be found and every name survived), when nothing was replaced, or when the run left
   residue. `outputPath` still writes a clean result to disk without it entering the context.

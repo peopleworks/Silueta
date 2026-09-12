@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Silueta.Core;
 
@@ -25,6 +25,38 @@ public sealed class VaultEntry
     /// <summary>Invented names this subject used before. A corpus redacted earlier still says one of
     /// these, so they stay claimed forever and still lead back here.</summary>
     public List<string> Retired { get; set; } = new();
+}
+
+/// <summary>The word lists of a lineage as they sit in its file.</summary>
+public sealed class LineagePools
+{
+    public List<string> Given { get; set; } = new();
+
+    public List<string> Family { get; set; } = new();
+}
+
+/// <summary>
+/// A lineage on disk: what an organisation brings of its own. Both <see cref="Lineage"/> and
+/// <see cref="Version"/> are empty by default and both are required, so that no other JSON object in the
+/// world reads as a valid, empty lineage — the mistake the vault format made and paid for.
+/// </summary>
+public sealed class LineageFile
+{
+    public string Lineage { get; set; } = string.Empty;
+
+    public string Version { get; set; } = string.Empty;
+
+    /// <summary>Recorded and fingerprinted; it does not select phonetic rules. See SiluetaLineage.</summary>
+    public string Language { get; set; } = string.Empty;
+
+    public LineagePools? Pools { get; set; }
+
+    public Dictionary<string, string>? Labels { get; set; }
+
+    public Dictionary<string, string>? Generalizations { get; set; }
+
+    /// <summary>Present means these rules REPLACE the pack compiled into the build.</summary>
+    public List<PatternRule>? Patterns { get; set; }
 }
 
 /// <summary>The vault on disk. Deliberately its own file: it is the only artefact that can undo the work.</summary>
@@ -54,5 +86,6 @@ public sealed class VaultFile
 [JsonSerializable(typeof(KnownIdentifierDto[]))]
 [JsonSerializable(typeof(RedactionManifest))]
 [JsonSerializable(typeof(VaultFile))]
+[JsonSerializable(typeof(LineageFile))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
 public sealed partial class SiluetaJsonContext : JsonSerializerContext;

@@ -137,6 +137,51 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void A_lineage_of_your_own_decides_the_words_that_land_in_the_file()
+    {
+        string lineage = Write("lineage.json", """
+            {
+              "lineage": "clinica", "version": "2", "language": "es-MX",
+              "pools": { "given": ["Ale", "Noa"], "family": ["Bravo", "Toledo"] },
+              "labels": { "Phone": "[TELÉFONO]" }
+            }
+            """);
+        string input = Write("es.txt", "Llamó al 602-555-0147 esta mañana.");
+        string outPath = Path("es.redactado.txt");
+
+        Assert.Equal(0, Redact(
+            "--in", input, "--record", "r-es", "--lineage", lineage, "--out", outPath,
+            "--manifest", Path("es.manifest.json")));
+
+        Assert.Contains("[TELÉFONO]", File.ReadAllText(outPath), StringComparison.Ordinal);
+
+        RedactionManifest manifest = JsonSerializer.Deserialize(
+            File.ReadAllText(Path("es.manifest.json")), SiluetaJsonContext.Default.RedactionManifest)!;
+        Assert.Equal("clinica", manifest.Lineage);
+        Assert.Equal("es-MX", manifest.LineageLanguage);
+        Assert.NotEmpty(manifest.LineageFingerprint);
+
+        // And the run says which lineage it used, because an operator has to be able to see that without
+        // opening the manifest.
+        Assert.Contains("clinica/2", _output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_lineage_the_loader_refuses_stops_the_run_and_says_which_rule_broke()
+    {
+        string lineage = Write("bad.json", """
+            { "lineage": "x", "version": "1", "pools": { "given": ["Vasquez", "Vasques"], "family": ["Bravo"] } }
+            """);
+        string input = Write("any.txt", "Nothing here.");
+        string outPath = Path("any.redactado.txt");
+
+        Assert.Equal(2, Redact("--in", input, "--record", "r-1", "--lineage", lineage, "--out", outPath));
+
+        Assert.False(File.Exists(outPath));
+        Assert.Contains("sound alike", _error.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void A_record_id_is_required_and_is_not_the_file_name()
     {
         string input = Write("Ana-Perez.txt", "Nothing here.");

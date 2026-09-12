@@ -40,6 +40,72 @@ public sealed class McpBoundaryTests : IDisposable
         """);
 
     [Fact]
+    public void The_lineage_is_the_operators_decision_and_it_is_read_from_the_environment()
+    {
+        // Not a tool parameter: which dictionaries a corpus is redacted with is decided by whoever set
+        // the server up. A model that can choose the word lists can choose a lineage whose "labels"
+        // leave everything where it is, and the manifest would still say the run succeeded.
+        string lineage = Write("lineage.json", """
+            {
+              "lineage": "clinica", "version": "1", "language": "es-MX",
+              "pools": { "given": ["Ale", "Noa"], "family": ["Bravo", "Toledo"] },
+              "labels": { "Phone": "[TELÉFONO]" }
+            }
+            """);
+        Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, lineage);
+
+        try
+        {
+            RedactionReport report = RedactionTools.RedactText("Llamó al 602-555-0147.", "r-1");
+
+            Assert.Contains("[TELÉFONO]", report.RedactedText!, StringComparison.Ordinal);
+            Assert.StartsWith("clinica/1", report.Lineage, StringComparison.Ordinal);
+            Assert.NotEmpty(report.LineageFingerprint);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, null);
+        }
+    }
+
+    [Fact]
+    public void A_vault_pointed_at_by_the_lineage_variable_is_refused_like_any_other_vault()
+    {
+        var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");
+        string vaultPath = Write("vault.json", vault.ToJson());
+        Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, vaultPath);
+
+        try
+        {
+            Exception thrown = Assert.ThrowsAny<Exception>(() =>
+                RedactionTools.RedactText("Nothing here.", "r-1"));
+
+            Assert.Contains("vault", thrown.Message, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Ale Espinal", thrown.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, null);
+        }
+    }
+
+    [Fact]
+    public void A_lineage_outside_the_root_is_refused_like_any_other_path()
+    {
+        Environment.SetEnvironmentVariable(
+            RedactionTools.LineageVariable, System.IO.Path.Combine(System.IO.Path.GetTempPath(), "elsewhere.json"));
+
+        try
+        {
+            Assert.ThrowsAny<Exception>(() => RedactionTools.RedactText("Nothing here.", "r-1"));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, null);
+        }
+    }
+
+    [Fact]
     public void A_vault_can_never_be_read_back_through_the_redaction_tool()
     {
         var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");

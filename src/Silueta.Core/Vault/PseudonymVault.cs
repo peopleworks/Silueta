@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace Silueta.Core;
@@ -31,6 +31,14 @@ public sealed class PseudonymVault
     private readonly HashSet<string> _takenGiven = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, List<string>> _retired = new(StringComparer.Ordinal);
     private readonly Dictionary<string, string> _bySurrogate = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <param name="pools">The word lists this vault mints from. The vault keeps them because the vault
+    /// is what mints: asking anyone else what the head of a surrogate is means two answers to one
+    /// question the first time a lineage has a two-word entry in it.</param>
+    public PseudonymVault(SurrogatePools? pools = null) => Pools = pools ?? SiluetaLineage.Default.Pools;
+
+    /// <summary>The word lists this vault mints from.</summary>
+    public SurrogatePools Pools { get; }
 
     /// <summary>How many subjects this vault knows.</summary>
     public int Count => _codes.Count;
@@ -246,9 +254,9 @@ public sealed class PseudonymVault
         return JsonSerializer.Serialize(file, SiluetaJsonContext.Default.VaultFile);
     }
 
-    public static PseudonymVault FromJson(string json)
+    public static PseudonymVault FromJson(string json, SurrogatePools? pools = null)
     {
-        var vault = new PseudonymVault();
+        var vault = new PseudonymVault(pools);
         VaultFile? file = JsonSerializer.Deserialize(json, SiluetaJsonContext.Default.VaultFile);
         if (file is null)
         {
@@ -307,10 +315,12 @@ public sealed class PseudonymVault
     }
 
     /// <summary>Reads the vault at this path, or starts an empty one if there is nothing there yet.</summary>
-    public static PseudonymVault LoadOrCreate(string path)
+    /// <param name="pools">What to mint from when this vault has to invent a name. A vault read back
+    /// from disk still needs them: the names already in it are kept, and the next subject is new.</param>
+    public static PseudonymVault LoadOrCreate(string path, SurrogatePools? pools = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return File.Exists(path) ? FromJson(File.ReadAllText(path)) : new PseudonymVault();
+        return File.Exists(path) ? FromJson(File.ReadAllText(path), pools) : new PseudonymVault(pools);
     }
 
     /// <summary>Whether this text is a vault this build wrote. Asked before overwriting a file.</summary>
@@ -377,8 +387,8 @@ public sealed class PseudonymVault
     /// </summary>
     private string Mint(Func<string, bool> wouldBeFound)
     {
-        string[] given = Shuffled(Surrogates.Given);
-        string[] family = Shuffled(Surrogates.Family);
+        string[] given = Shuffled(Pools.Given);
+        string[] family = Shuffled(Pools.Family);
 
         // The given name is tested on its own as well as inside the pair, because a one-word mention is
         // replaced by the given name alone: a surrogate that is safe as "Remy Aguilar" is not safe if
@@ -427,8 +437,10 @@ public sealed class PseudonymVault
         _takenSurrogates.Add(surrogate);
         _bySurrogate[surrogate] = subjectId;
 
-        int space = surrogate.IndexOf(' ');
-        _takenGiven.Add(space < 0 ? surrogate : surrogate[..space]);
+        // The pools decide where the head ends, not the first space in the string. With one-word pool
+        // entries the two agree; with "María José De la Cruz" they do not, and the vault would then
+        // reserve "María" — a name it never minted and cannot look up.
+        _takenGiven.Add(Pools.HeadOf(surrogate));
     }
 
     /// <summary>Every word of every value the caller says must not come back, as the matcher hears it.</summary>
@@ -464,9 +476,9 @@ public sealed class PseudonymVault
     /// A random order, so the pool is not walked alphabetically and "Ale Aguilar" is not every corpus's
     /// first patient. Fisher-Yates over a copy; the source arrays are never touched.
     /// </summary>
-    private static string[] Shuffled(string[] source)
+    private static string[] Shuffled(IReadOnlyList<string> source)
     {
-        string[] copy = (string[])source.Clone();
+        string[] copy = [.. source];
         RandomNumberGenerator.Shuffle(copy.AsSpan());
         return copy;
     }

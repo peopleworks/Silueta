@@ -33,6 +33,12 @@
     <EmbeddedResource Include="Detectors\Packs\patterns.*.json" WithCulture="false">
       <LogicalName>Silueta.Core.Detectors.Packs.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
+
+    <!-- The default lineage: the word lists and the labels, as data. Same WithCulture trick, and for the
+         same reason — lineage.core.json parses as a culture-tagged satellite resource otherwise. -->
+    <EmbeddedResource Include="Lineage\Lineages\lineage.*.json" WithCulture="false">
+      <LogicalName>Silueta.Core.Lineage.Lineages.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>

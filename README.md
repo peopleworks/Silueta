@@ -69,9 +69,8 @@ deteriorating" are made of. The vault is what keeps that stable, and it is also 
 building: a stable pseudonym is exactly what links documents together, for you and for anyone else who
 gets hold of it.
 
-Today those invented names come from **pools compiled into the library** — given names and family names,
-one set, no way to supply your own. An organisation should be able to bring its own dictionaries, in its
-own language, for its own kinds of data; that work has not been done. See [Status](#status).
+Those invented names, and the labels around them, come from a **lineage** — see below. Nothing about the
+words is compiled in.
 
 ## Try it
 
@@ -99,6 +98,54 @@ key the vault is filed under, so a record named after its file (`Ana-Perez.txt`)
 the patient's name would publish the identifier through the very files that exist to show none were
 published. Pass `--vault` on every run of a corpus: it is where the invented names live, and without it
 each transcript invents new ones for the same people.
+
+## Bring your own dictionaries: the lineage
+
+A clinic, a call centre and a law firm do not redact the same things, do not speak the same language, and
+have no reason to share one vendor's word lists. A **lineage** is a file you write that says what Silueta
+replaces things with: the pools an invented name is drawn from, the text that stands in for each kind of
+identifier, and the pattern rules to run.
+
+```jsonc
+{
+  "lineage": "clinica-navi",         // identity; it goes in the manifest
+  "version": "2",
+  "language": "es-MX",               // recorded, NOT used to pick phonetic rules — see below
+  "pools": {
+    "given":  ["Ale", "Noa", "María José"],
+    "family": ["Bravo", "Toledo", "De la Cruz"]
+  },
+  "labels": { "Phone": "[TELÉFONO]", "Email": "[CORREO]" },
+  "generalizations": { "AgeOver89": "90 o más" },
+  "patterns": [ { "id": "expediente", "kind": "RecordNumber", "regex": "EXP-\\d{6}", "confidence": 0.95 } ]
+}
+```
+
+```bash
+silueta redact --in visita.txt --record r-042 --lineage clinica-navi.json ...
+```
+
+For the MCP server it is the environment variable `SILUETA_LINEAGE`, deliberately and not a tool
+parameter: which dictionaries a corpus is redacted with is a decision by whoever set the server up, and a
+model that can choose the word lists can choose a lineage whose "labels" leave everything where it is.
+
+The lineage's **fingerprint goes into every manifest**, digested from its content rather than its version
+number, so an edit to a word list that forgets to bump the version still produces a corpus you can tell
+apart from the one before it. Ship no lineage and you get the one embedded in the build — the same lists
+this library always had, which now live in [a JSON file](src/Silueta.Core/Lineage/Lineages/lineage.core.json)
+rather than in the source.
+
+Three things worth knowing before you write one:
+
+- **A pool is checked when it loads, not when a corpus goes wrong.** Entries with digits are refused (a
+  name with a number in it reads as a record number and gets found again by the pattern rules), so are
+  duplicates once accents and case are folded, and so are two entries that *sound alike to this matcher* —
+  two surrogates it cannot tell apart merge two people the next time the corpus is read.
+- **`language` is recorded, not acted on.** It goes in the fingerprint and the manifest. It does not
+  select phonetic rules: the matcher has one coarse Spanish-and-English key, compiled in, and a lineage
+  saying `de-DE` gets exactly the same matching as one saying `es-MX`.
+- **Patterns replace the built-in pack, they do not extend it.** Two sources for one rule is two rules
+  that will eventually disagree.
 
 ## Use it from an agent
 
@@ -208,13 +255,11 @@ which removes the identifier and destroys the shape that made the sentence worth
 run `Turbo Fresh`, written as two words, survived untouched: the matcher compares one word at a time and
 nothing yet builds a candidate out of adjacent ones.
 
-*There is no way to bring your own dictionaries.* The pattern rules are a JSON pack, but only the one
-compiled into the build is ever loaded, and the surrogate pools are arrays inside the source. A clinic, a
-call centre and a law firm do not redact the same things, do not speak the same language and should not
-share one vendor's word lists. The design direction is a **lineage**: an external, versioned file that
-says which kinds exist, which pools they draw from, in which language, and which patterns apply —
-authored by the organisation, fingerprinted into the manifest like the policy already is, so a corpus can
-say which lineage produced it. None of that exists yet.
+*The lineage exists, and it does not yet cover everything it should.* Pools, labels, generalisations and
+pattern rules are yours to bring. Three things are still the library's: `language` does not select
+phonetic rules, the kinds themselves are the fixed list above, and a generalisation is a literal string —
+there is no ladder that derives a wider value from the one it replaces, so `85001 → 850**` is not
+expressible. That last one waits on the same census table as the postal-code rule.
 
 ## What it is not
 

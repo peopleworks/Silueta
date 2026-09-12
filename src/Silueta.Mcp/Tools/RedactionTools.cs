@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Text.Json;
 using ModelContextProtocol;
 using ModelContextProtocol.Server;
@@ -68,11 +68,13 @@ public static class RedactionTools
                 "undo this work and there is no second copy of it.");
         }
 
-        PseudonymVault vault = resolvedVault is not null
-            ? PseudonymVault.LoadOrCreate(resolvedVault)
-            : new PseudonymVault();
+        SiluetaLineage lineage = Lineage(Resolve(transcriptPath, nameof(transcriptPath)), resolvedVault, resolvedOutput);
 
-        var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], vault);
+        PseudonymVault vault = resolvedVault is not null
+            ? PseudonymVault.LoadOrCreate(resolvedVault, lineage.Pools)
+            : new PseudonymVault(lineage.Pools);
+
+        SiluetaEngine engine = SiluetaEngine.FromLineage(lineage, vault);
         RedactionResult result = Run(engine, text, context);
 
         // The vault first, before any redacted artefact exists: it has no second copy, and a run that
@@ -133,7 +135,7 @@ public static class RedactionTools
             context.AddPerson(parts[2], parts[0], ParseKind(parts[1]));
         }
 
-        var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()]);
+        SiluetaEngine engine = SiluetaEngine.FromLineage(Lineage());
         RedactionResult result = Run(engine, text, context);
 
         return Report(result, context, vaultPath: null, outputPath: null, engine.Vault.Count);
@@ -144,6 +146,19 @@ public static class RedactionTools
     /// directory the server was started in.
     /// </summary>
     public const string RootVariable = "SILUETA_ROOT";
+
+    /// <summary>
+    /// Where this server's lineage lives: the word lists, the labels and the pattern rules an
+    /// organisation brought of its own.
+    /// <para>
+    /// An environment variable and not a tool parameter, deliberately. Which dictionaries a corpus is
+    /// redacted with is a decision by whoever set this server up, and the manifest of every transcript
+    /// carries its fingerprint; a parameter would put that decision in a string the model writes, and a
+    /// model that can choose the word lists can choose a lineage whose "labels" leave everything in
+    /// place.
+    /// </para>
+    /// </summary>
+    public const string LineageVariable = "SILUETA_LINEAGE";
 
     private static string Root =>
         Path.GetFullPath(Environment.GetEnvironmentVariable(RootVariable) is { Length: > 0 } configured
@@ -185,6 +200,57 @@ public static class RedactionTools
         }
 
         return full;
+    }
+
+    /// <summary>
+    /// The lineage this server runs with, or the one built into the library when none is configured.
+    /// Read on every call rather than cached: an operator who fixes a word list wants the next transcript
+    /// to use it, not the next restart.
+    /// </summary>
+    private static SiluetaLineage Lineage(string? mustDifferFrom = null, string? andFrom = null, string? andAlsoFrom = null)
+    {
+        string? configured = Environment.GetEnvironmentVariable(LineageVariable);
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            return SiluetaLineage.Default;
+        }
+
+        string full = Resolve(configured, LineageVariable);
+
+        if (!File.Exists(full))
+        {
+            throw new McpException($"{LineageVariable} points at a file that is not there.");
+        }
+
+        foreach (string? other in (string?[])[mustDifferFrom, andFrom, andAlsoFrom])
+        {
+            if (other is not null && string.Equals(full, other, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new McpException(
+                    $"{LineageVariable} is the same file as the transcript, the vault or the output of " +
+                    "this run. A lineage is configuration, and it is about to be overwritten or read as " +
+                    "something it is not.");
+            }
+        }
+
+        string text = File.ReadAllText(full);
+
+        // Same rule as the transcript reader, for the same reason: a vault is the one artefact that can
+        // undo a redaction, and this path is the fourth way into the filesystem this server has.
+        if (LooksLikeAVault(text))
+        {
+            throw new McpException($"{LineageVariable} points at a vault. This server will not read one.");
+        }
+
+        try
+        {
+            return SiluetaLineage.FromJson(text);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // The loader's messages name the rule that was broken and never any transcript content.
+            throw new McpException($"{LineageVariable} cannot be used: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -356,6 +422,8 @@ public static class RedactionTools
             RecordId: manifest.RecordId,
             Policy: $"{manifest.Policy}/{manifest.PolicyVersion}",
             PolicyFingerprint: manifest.PolicyFingerprint,
+            Lineage: $"{manifest.Lineage}/{manifest.LineageVersion} ({manifest.LineageLanguage})",
+            LineageFingerprint: manifest.LineageFingerprint,
             EngineVersion: manifest.EngineVersion,
             SpansReplaced: result.Applied.Count,
             ResidualSpans: result.Residue.Count,
@@ -429,6 +497,13 @@ public sealed record RedactionReport(
     string RecordId,
     string Policy,
     string PolicyFingerprint,
+
+    /// <summary>Whose word lists, labels and rules this run used, and a digest of their content. Two
+    /// corpora naming the same lineage and version can still have been redacted with different word
+    /// lists; the fingerprint is what tells them apart.</summary>
+    string Lineage,
+    string LineageFingerprint,
+
     string EngineVersion,
     int SpansReplaced,
 

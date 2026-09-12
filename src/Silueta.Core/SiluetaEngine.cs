@@ -1,4 +1,4 @@
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -22,6 +22,23 @@ public sealed class RedactionManifest
     /// tells them apart, and the one to compare before merging two corpora or reproducing a result.
     /// </summary>
     public string PolicyFingerprint { get; set; } = string.Empty;
+
+    /// <summary>Which lineage produced this corpus: whose word lists, whose labels, whose rules.</summary>
+    public string Lineage { get; set; } = string.Empty;
+
+    public string LineageVersion { get; set; } = string.Empty;
+
+    /// <summary>What language the lineage says it is for. Recorded, not acted on: the phonetic matcher
+    /// is one compiled-in Spanish-and-English key regardless of what this says.</summary>
+    public string LineageLanguage { get; set; } = string.Empty;
+
+    /// <summary>A digest of the lineage's content. Two corpora can name the same lineage and the same
+    /// version and have been redacted with different word lists; this is what tells them apart.</summary>
+    public string LineageFingerprint { get; set; } = string.Empty;
+
+    /// <summary>Keys in the lineage naming a kind this build does not know. Written down so that "no
+    /// such kind" and "nothing to replace" are not the same silence.</summary>
+    public List<string> LineageKeysSkipped { get; set; } = new();
 
     public string EngineVersion { get; set; } = string.Empty;
 
@@ -105,17 +122,35 @@ public sealed partial class SiluetaEngine
 {
     private readonly List<IDetector> _detectors;
 
-    public SiluetaEngine(IEnumerable<IDetector> detectors, PseudonymVault? vault = null)
+    /// <param name="lineage">The word lists and the replacement text this run uses. Defaults to the one
+    /// embedded in the build, which is what this library always did before an organisation could bring
+    /// its own.</param>
+    public SiluetaEngine(IEnumerable<IDetector> detectors, PseudonymVault? vault = null, SiluetaLineage? lineage = null)
     {
         _detectors = detectors.ToList();
-        Vault = vault ?? new PseudonymVault();
+        Lineage = lineage ?? SiluetaLineage.Default;
+        Vault = vault ?? new PseudonymVault(Lineage.Pools);
     }
 
     /// <summary>Known values plus the core pattern pack: everything deterministic, nothing to download.</summary>
     public static SiluetaEngine CreateDefault() =>
         new([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()]);
 
+    /// <summary>
+    /// The same pipeline, reading its word lists, its labels and its pattern rules from a lineage the
+    /// caller brought. A vault passed in keeps its own pools: the vault is what minted the names already
+    /// in the corpus, and a lineage swapped underneath it does not rename anybody.
+    /// </summary>
+    public static SiluetaEngine FromLineage(SiluetaLineage lineage, PseudonymVault? vault = null)
+    {
+        ArgumentNullException.ThrowIfNull(lineage);
+        return new SiluetaEngine([new KnownValueDetector(), lineage.CreatePatternDetector()], vault, lineage);
+    }
+
     public PseudonymVault Vault { get; }
+
+    /// <summary>What this engine replaces with, and what it draws invented names from.</summary>
+    public SiluetaLineage Lineage { get; }
 
     public RedactionResult Redact(string text, DeidentificationContext context, SiluetaPolicy? policy = null)
     {
@@ -181,6 +216,11 @@ public sealed partial class SiluetaEngine
             Policy = policy.Name,
             PolicyVersion = policy.Version,
             PolicyFingerprint = policy.Fingerprint,
+            Lineage = Lineage.Name,
+            LineageVersion = Lineage.Version,
+            LineageLanguage = Lineage.Language,
+            LineageFingerprint = Lineage.Fingerprint,
+            LineageKeysSkipped = [.. Lineage.Skipped],
             EngineVersion = typeof(SiluetaEngine).Assembly.GetName().Version?.ToString() ?? "0.0.0",
             RunUtc = DateTimeOffset.UtcNow,
             TextLength = text.Length,
@@ -260,7 +300,7 @@ public sealed partial class SiluetaEngine
         return policy.ActionFor(detection.Kind) switch
         {
             RedactionAction.Surrogate when detection.SubjectId is { Length: > 0 } subjectId =>
-                Surrogates.Fit(Vault.SurrogateFor(subjectId, wouldBeFound), Tokenizer.Tokenize(original).Count),
+                Vault.Pools.Fit(Vault.SurrogateFor(subjectId, wouldBeFound), Tokenizer.Tokenize(original).Count),
             RedactionAction.YearOnly => YearOf(original),
             RedactionAction.Generalize => Generalized(detection.Kind, original),
             RedactionAction.Keep => original,
@@ -269,7 +309,7 @@ public sealed partial class SiluetaEngine
     }
 
     /// <summary>Safe Harbor keeps the year and nothing finer. A date with no year loses everything.</summary>
-    private static string YearOf(string text)
+    private string YearOf(string text)
     {
         Match match = YearPattern().Match(text);
         return match.Success ? match.Value : LabelFor(IdentifierKind.Date);
@@ -284,31 +324,14 @@ public sealed partial class SiluetaEngine
     /// explicitly, inside a corpus whose manifest says safe-harbor. So the whole code goes until the
     /// table exists.
     /// </summary>
-    private static string Generalized(IdentifierKind kind, string original) => kind switch
-    {
-        IdentifierKind.AgeOver89 => "90 or older",
-        _ => LabelFor(kind),
-    };
+    private string Generalized(IdentifierKind kind, string original) => Lineage.GeneralizationFor(kind);
 
-    private static string LabelFor(IdentifierKind kind) => kind switch
-    {
-        IdentifierKind.PatientName => "[PATIENT]",
-        IdentifierKind.FamilyName => "[FAMILY]",
-        IdentifierKind.StaffName => "[STAFF]",
-        IdentifierKind.OtherName => "[NAME]",
-        IdentifierKind.Phone => "[PHONE]",
-        IdentifierKind.Email => "[EMAIL]",
-        IdentifierKind.Url => "[URL]",
-        IdentifierKind.IpAddress => "[IP]",
-        IdentifierKind.Address => "[ADDRESS]",
-        IdentifierKind.PostalCode => "[ZIP]",
-        IdentifierKind.Date => "[DATE]",
-        IdentifierKind.AgeOver89 => "[AGE 90+]",
-        IdentifierKind.RecordNumber => "[RECORD]",
-        IdentifierKind.AccountNumber => "[ACCOUNT]",
-        IdentifierKind.DeviceId => "[DEVICE]",
-        _ => "[REMOVED]",
-    };
+    /// <summary>
+    /// What a removed identifier is replaced by. It was a <c>switch</c> here, in English, compiled in —
+    /// which meant a Spanish-speaking agency's transcripts came back saying <c>[PHONE]</c> in the middle
+    /// of a Spanish sentence, and nothing short of a fork could change it. It is the lineage's now.
+    /// </summary>
+    private string LabelFor(IdentifierKind kind) => Lineage.LabelFor(kind);
 
     /// <summary>Throws when an id that travels turns out to name one of the people it is hiding.</summary>
     private static void RejectIfItNamesSomeone(string id, string what, Func<string, bool> wouldBeFound)

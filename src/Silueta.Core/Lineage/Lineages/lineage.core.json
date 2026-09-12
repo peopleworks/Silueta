@@ -1,0 +1,52 @@
+{
+  "lineage": "silueta-core",
+  "version": "1",
+  "language": "es-en",
+
+  "_pools": [
+    "Small on purpose: one page of names a reader can check. Every one reads as either gender, in",
+    "Spanish and in English, and that is deliberate — picking a replacement by gender would mean",
+    "inferring the gender of a real person from their name, and a wrong guess writes 'her son Marta'",
+    "into a clinical note. A lineage of your own is not checked for this: it is the author's call."
+  ],
+  "pools": {
+    "given": [
+      "Ale", "Alex", "Ariel", "Chris", "Cruz", "Dani", "Emery", "Guadalupe",
+      "Jordan", "Luca", "Mar", "Marley", "Noa", "Noel", "Quinn", "Remy",
+      "Rene", "Robin", "Sasha", "Sol", "Yael"
+    ],
+    "family": [
+      "Aguilar", "Bravo", "Castro", "Duarte", "Espinal", "Fuentes", "Gaitan", "Herrera",
+      "Ibarra", "Jimenez", "Lara", "Medina", "Nieves", "Ochoa", "Prado", "Quintero",
+      "Rivas", "Salazar", "Toledo", "Urena", "Vargas", "Zamora"
+    ]
+  },
+
+  "labels": {
+    "PatientName": "[PATIENT]",
+    "FamilyName": "[FAMILY]",
+    "StaffName": "[STAFF]",
+    "OtherName": "[NAME]",
+    "Phone": "[PHONE]",
+    "Email": "[EMAIL]",
+    "Url": "[URL]",
+    "IpAddress": "[IP]",
+    "Address": "[ADDRESS]",
+    "PostalCode": "[ZIP]",
+    "Date": "[DATE]",
+    "AgeOver89": "[AGE 90+]",
+    "RecordNumber": "[RECORD]",
+    "AccountNumber": "[ACCOUNT]",
+    "DeviceId": "[DEVICE]",
+    "Other": "[REMOVED]"
+  },
+
+  "_generalizations": [
+    "What a kind becomes when it is widened rather than removed. A postal code is NOT here: Safe",
+    "Harbor allows its first three digits only where that area holds more than 20,000 people, and the",
+    "census table that decides which is which is not in this package, so the whole code goes."
+  ],
+  "generalizations": {
+    "AgeOver89": "90 or older"
+  }
+}

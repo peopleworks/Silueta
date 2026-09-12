@@ -130,11 +130,22 @@ makes cohorts possible — one subject, one name, five hundred transcripts — i
 links documents to each other. That is the point of it and the risk in it, and it is the reason the vault
 does not travel with the corpus.
 
-**What is missing.** The pools are two arrays in `Surrogates.cs`: given names and family names, one set,
-compiled in. An organisation cannot bring its own — its own language, its own kinds, its own word lists —
-and the paragraph below explains why a bigger pool is needed anyway. Both wants are the same file that
-does not exist yet: a lineage, loaded the way a pattern pack is loaded and fingerprinted into the
-manifest the way the policy already is.
+**Where the words come from.** Not from the code. The pools, the labels and the generalisations are a
+**lineage**: a file the organisation writes, loaded the way a pattern pack is loaded and fingerprinted
+into the manifest the way the policy already is. The lists this library ships with are a lineage too —
+`Lineage/Lineages/lineage.core.json`, embedded in the build — because a default that lives in an array in
+the source is a default nobody can replace without forking.
+
+A pool is validated at load, and one of the rules is worth stating here: **no two entries may sound alike
+to this matcher**. Two surrogates whose phonetic keys collide are two people the next pass reads as one,
+and the vault cannot undo that, because it recorded two distinct names. The same check that keeps a
+surrogate away from the roster is turned on the pool itself.
+
+What the lineage still does not decide: the kinds (a closed enum — see the README's Status), the phonetic
+rules (`language` is recorded, not acted on), and any generalisation that has to *derive* a wider value
+from the original rather than state a literal one. That last is the hierarchy idea from ARX, and the only
+rung anyone actually wants — three-digit postal codes — is blocked on the census table in §7, not on the
+file format.
 
 **What it is not.** This used to add that a leak would no longer stand out among plausible invented
 names. That claim does not survive an adversary. The pool is forty-three words in a public MIT

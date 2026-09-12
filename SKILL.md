@@ -54,7 +54,10 @@ path:
 | What does a run catch without a roster? | `list_pattern_rules` | no |
 
 The server only touches one directory: set `SILUETA_ROOT` to the folder holding the corpus, or start it
-there. It refuses to read a vault, and it **withholds the redacted text** — returning a `withheld` reason
+there. The word lists and the labels it replaces with are the **lineage**, set by whoever started the
+server (`SILUETA_LINEAGE`) and never by you. Every report names it and carries its fingerprint: when you
+say what ran, say which lineage ran, because two corpora redacted under different word lists are not the
+same corpus. It refuses to read a vault, and it **withholds the redacted text** — returning a `withheld` reason
 instead — when no roster was given, when nothing was replaced, or when the run left residue. Read the
 reason out to the user; do not go looking for another route to the same text, because every other route
 puts it in your context.

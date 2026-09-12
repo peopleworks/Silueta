@@ -76,13 +76,45 @@ public static class Commands
             error.WriteLine("warning: no --context roster given; only pattern rules will fire.");
         }
 
+        // The lineage is read before the vault, because it says what the vault mints from.
+        SiluetaLineage lineage = SiluetaLineage.Default;
+        if (options.TryGetValue("lineage", out string? lineagePath))
+        {
+            if (!File.Exists(lineagePath))
+            {
+                error.WriteLine($"Lineage file not found: {lineagePath}");
+                return 2;
+            }
+
+            try
+            {
+                lineage = SiluetaLineage.Load(lineagePath);
+            }
+            catch (InvalidOperationException ex)
+            {
+                // The message names the rule that was broken and never the transcript, so it can be
+                // printed: "pools.given lists 'Álex' twice, ignoring accents and case."
+                error.WriteLine($"That lineage cannot be used: {ex.Message}");
+                return 2;
+            }
+
+            output.WriteLine(
+                $"Lineage {lineage.Name}/{lineage.Version} ({lineage.Language}), fingerprint {lineage.Fingerprint}.");
+            foreach (string skipped in lineage.Skipped)
+            {
+                error.WriteLine($"warning: the lineage names '{skipped}', which this build has no kind for.");
+            }
+        }
+
         // The vault is read before the run and written after it. It used to be created empty every time and
         // then overwrite --vault, so the second transcript of a corpus silently discarded the first one's
         // assignments — the same person became two people, and neither could be traced back.
         options.TryGetValue("vault", out string? vaultPath);
-        PseudonymVault vault = vaultPath is null ? new PseudonymVault() : PseudonymVault.LoadOrCreate(vaultPath);
+        PseudonymVault vault = vaultPath is null
+            ? new PseudonymVault(lineage.Pools)
+            : PseudonymVault.LoadOrCreate(vaultPath, lineage.Pools);
 
-        var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], vault);
+        var engine = SiluetaEngine.FromLineage(lineage, vault);
         RedactionResult result = engine.Redact(text, context);
 
         // The vault is written FIRST, before any redacted artefact exists. It is the only thing that can
@@ -223,12 +255,16 @@ public static class Commands
 
               silueta redact --in <transcript.txt> [--context <roster.json>]
                              [--out <file>] [--manifest <file>] [--vault <file>]
-                             [--record <id>]
+                             [--lineage <file>] [--record <id>]
 
                   --context  JSON array of { "value", "kind", "subjectId" }, the people this
                              record is about. Without it, only pattern rules fire.
                   --manifest What was removed, under which policy: keep it with the corpus.
                   --vault    Subject id to pseudonym. Never leaves the agency.
+                  --lineage  Your own word lists, labels and pattern rules, in your own
+                             language. Without it, the lists this library ships with. Its
+                             fingerprint goes in the manifest, so a corpus says which
+                             lineage produced it.
 
             Kinds: PatientName, FamilyName, StaffName, OtherName, Phone, Email, Url, IpAddress,
                    Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, DeviceId.

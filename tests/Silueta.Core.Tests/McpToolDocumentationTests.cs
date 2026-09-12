@@ -19,7 +19,9 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public partial class McpToolDocumentationTests
 {
-    private static readonly string RepoRoot = FindRepoRoot();
+    /// <summary>Internal rather than private: other guards read the same documents, and two copies of
+    /// "walk up until you see the solution file" is two things to get wrong.</summary>
+    internal static readonly string RepoRoot = FindRepoRoot();
 
     private static readonly IReadOnlyList<string> Tools = ReadToolNames();
 

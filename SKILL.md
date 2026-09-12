@@ -116,7 +116,13 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
 5. **No rule emits a postal code or a street address yet**, and numbers or dates spoken as words
    ("five five five, oh one four seven", "September eleventh") are not recognised at all. If the
    transcript has those, say they were not touched.
-6. **A clean-looking output is not evidence.** The honest close is what ran, what it replaced, and what
+6. **Company names, products and client accounts are not an identifier kind.** There is no
+   `Organization`, `Product` or `ClientName` in this library, and no pool of invented ones. Put a
+   company on the roster as `OtherName` and it is replaced — by a *person's* name, because that is the
+   only pool there is. Never tell a user their business identifiers were handled: say that the roster
+   entries were matched and that the replacement has the wrong shape, and that a transcript about
+   companies is not what this was built for yet.
+7. **A clean-looking output is not evidence.** The honest close is what ran, what it replaced, and what
    it is known not to catch.
 
 ## When a name survives and someone asks why

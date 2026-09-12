@@ -17,7 +17,7 @@
     <Version>0.1.0</Version>
     <Authors>Pedro Hernández (PeopleWorks)</Authors>
     <Company>PeopleWorks</Company>
-    <Description>Model Context Protocol (MCP) server for Silueta. De-identifies conversation transcripts by file path, so the identified text never has to pass through a model's context to be redacted; also explains why the phonetic matcher did or did not match two names, and lists the pattern rules. Runs entirely on the machine and never re-identifies.</Description>
+    <Description>Model Context Protocol (MCP) server for Silueta. De-identifies conversation transcripts by file path, so a transcript can be analysed without the identified text ever passing through a model's context; also explains why the phonetic matcher did or did not match two names, and lists the pattern rules. Runs entirely on the machine and never re-identifies.</Description>
     <!-- `mcpserver` is what puts the package in the MCP server galleries (VS Code, NuGet). -->
     <PackageTags>mcpserver;mcp;deidentification;phi;hipaa;privacy;transcripts;asr;claude;modelcontextprotocol</PackageTags>
     <PackageProjectUrl>https://github.com/peopleworks/Silueta</PackageProjectUrl>

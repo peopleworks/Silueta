@@ -9,10 +9,20 @@ that searches for a string misses all of it.
 
 ## 1. Two lanes
 
-The operational lane — the note the nurse signs — needs to know who the patient is. It stays identified,
-inside the environment allowed to hold it. Silueta works in the other lane: analysis, evaluation,
-training corpora, demos. Nothing here is a substitute for a BAA or for a lawyer's reading of where data
-may live.
+The operational lane — the note the nurse signs, the account record the sales team works from — needs to
+know who the subject is. It stays identified, inside the environment allowed to hold it.
+
+Silueta works in the other lane: analysis, evaluation, training corpora, demos. In practice that lane now
+ends at somebody else's model. An organisation that wants sentiment over a year of calls, patterns across
+a shift roster, a dashboard of what goes wrong and when, has to put the text in front of an AI it does not
+run — and the reason to hesitate is almost never the analysis. It is that the text says who. Take the who
+out and the question survives intact, because "Patient 1 has high cholesterol" and the same sentence with
+a name carry identical statistics and different exposure.
+
+Nothing here is a substitute for a BAA, for a data-processing agreement, or for a lawyer's reading of
+where data may live. And nothing here makes a corpus anonymous in the European sense: pseudonymised data
+is still personal data under GDPR Recital 26, because the vault exists. Under HIPAA Safe Harbor, a record
+with the eighteen identifiers gone stops being PHI. Two regimes, two answers, one pipeline.
 
 ## 2. Known values before open recognition
 
@@ -22,6 +32,14 @@ phone number on file. Detection starts there.
 **Why.** Open-ended entity recognition on clinical text fails in both directions at once: it misses names
 it has never seen, and it removes *Parkinson*, *Hodgkin* and *Mayo* because they look like people. A
 roster has neither failure. What it needs instead is tolerance for spelling, which is the next section.
+
+This generalises past the clinic, and it is the strongest argument for the whole approach: an
+organisation already holds the list. A home-care agency has its patients and its staff; a company has its
+client accounts and its catalogue; a firm has its matters. The thing a general-purpose redactor must
+guess is the thing its user could have simply handed over. What does not yet generalise is the other
+half — there is no identifier kind for an organisation, a product or an account, and no pool to draw a
+replacement from, so a company name on the roster today is replaced by a person's name. That gap is
+named in the README's Status and it is the next piece of work after the leak rate.
 
 **What it costs.** Names nobody wrote down — a neighbour, a nickname, the doctor mentioned once — are
 invisible to this detector. That residue is what a model-backed detector is for, and until one is plugged
@@ -97,7 +115,26 @@ framework's own timeout exception carries the input that defeated it.
 | `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; a postal code is removed whole |
 
 **Why surrogates rather than labels for names.** The text stays a sentence, so whatever reads it next —
-a person, a model, a metric — still works. That is the whole of the argument, and it is enough.
+a person, a model, a metric — still works. Concretely: a model reading `[NAME_1] told [NAME_2] that she
+was worried about her mother` has to rebuild a reference chain that the sentence no longer carries,
+and coreference is what sentiment, behaviour and timeline analysis are built on. A name carries no
+analytic signal of its own, so trading a real one for an invented one costs nothing and keeps everything
+else. Shapes are the opposite case — an invented phone number carries no signal either, and it is
+somebody's real number — which is why those get labels.
+
+**What it costs, beyond the paragraph below.** A surrogate reads as a fact. A reader who does not know
+the corpus is redacted will believe Ale Espinal was there, and a system that ingests the corpus will
+happily report on her; labels announce themselves and surrogates do not, which is why every run writes a
+manifest and why the MCP tools return counts rather than a clean bill of health. And the stability that
+makes cohorts possible — one subject, one name, five hundred transcripts — is the same property that
+links documents to each other. That is the point of it and the risk in it, and it is the reason the vault
+does not travel with the corpus.
+
+**What is missing.** The pools are two arrays in `Surrogates.cs`: given names and family names, one set,
+compiled in. An organisation cannot bring its own — its own language, its own kinds, its own word lists —
+and the paragraph below explains why a bigger pool is needed anyway. Both wants are the same file that
+does not exist yet: a lineage, loaded the way a pattern pack is loaded and fingerprinted into the
+manifest the way the policy already is.
 
 **What it is not.** This used to add that a leak would no longer stand out among plausible invented
 names. That claim does not survive an adversary. The pool is forty-three words in a public MIT

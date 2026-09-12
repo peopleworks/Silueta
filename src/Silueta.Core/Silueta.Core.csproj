@@ -13,7 +13,7 @@
     <Version>0.1.0</Version>
     <Authors>Pedro Hernández (PeopleWorks)</Authors>
     <Company>PeopleWorks</Company>
-    <Description>De-identification for conversation transcripts, built for text that came out of a speech recogniser: it matches the identifiers you already know through ASR spelling damage, replaces them under a HIPAA Safe Harbor policy, and measures its own leak rate. No external dependencies.</Description>
+    <Description>De-identification for conversation transcripts, so they can be analysed by an AI without carrying the people in them. Built for text that came out of a speech recogniser: it matches the identifiers you already know through ASR spelling damage, replaces names with consistent invented names under a HIPAA Safe Harbor policy, and measures its own leak rate. No external dependencies.</Description>
     <PackageTags>deidentification;phi;hipaa;privacy;transcripts;asr;anonymization;nlp</PackageTags>
     <PackageProjectUrl>https://github.com/peopleworks/Silueta</PackageProjectUrl>
     <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>

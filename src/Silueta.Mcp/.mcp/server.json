@@ -3,7 +3,7 @@
   "name": "io.github.peopleworks/silueta",
   "version": "0.1.0",
   "title": "Silueta — transcript de-identification",
-  "description": "De-identifies conversation transcripts by file path, so identified text never has to pass through a model's context. Runs on the machine; never re-identifies.",
+  "description": "De-identifies conversation transcripts by file path, so a transcript can be analysed without identified text passing through a model's context. Runs on the machine; never re-identifies.",
   "packages": [
     {
       "registryType": "nuget",

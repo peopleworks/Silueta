@@ -16,7 +16,7 @@
     <Version>0.1.0</Version>
     <Authors>Pedro Hernández (PeopleWorks)</Authors>
     <Company>PeopleWorks</Company>
-    <Description>Command line for Silueta: de-identify a transcript against a roster you already have, and write the manifest that says what was removed.</Description>
+    <Description>Command line for Silueta: de-identify a transcript against a roster you already have, so it can be analysed without the people in it, and write the manifest that says what was removed.</Description>
     <PackageTags>deidentification;phi;hipaa;privacy;cli;dotnet-tool</PackageTags>
     <PackageProjectUrl>https://github.com/peopleworks/Silueta</PackageProjectUrl>
     <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>

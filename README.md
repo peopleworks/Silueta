@@ -1,13 +1,18 @@
 # Silueta
 
-**De-identification for conversation transcripts — the text a speech recogniser produced, not the text
-someone typed.**
+**Put a transcript in front of an AI without handing it the people in it.**
 
 [![License: MIT](https://img.shields.io/github/license/peopleworks/Silueta?color=blue)](LICENSE)
 [![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 
-A silhouette keeps the shape and loses the face. That is the whole idea: the clinical content of a visit
-survives intact — symptoms, medications, vitals, what was escalated — and the people in it do not.
+A silhouette keeps the shape and loses the face. What was said, felt and decided survives; who said it
+does not. *Patient 1 has high cholesterol* carries exactly the statistical content of the same sentence
+with a real name in it, and none of the identity — so the sentiment analysis, the cohort, the dashboard
+and the summary all still work on text that no longer says whose life it describes.
+
+It is built for **the text a speech recogniser produced**, not the text someone typed, and it is built to
+**measure how often it fails** rather than to promise that it doesn't. Both are narrower claims than "PII
+redaction", and they are the two this repository can defend.
 
 ```
 Shift report. Sophia Rays was with Mrs. Ellenor Vasques this morning.
@@ -41,6 +46,32 @@ leak rate is supposed to tell you.
 
 This library is built to measure how often it fails rather than to promise that it doesn't. **That number
 does not exist yet** — see [Status](#status) before you rely on anything here.
+
+## Invented names, not blanks
+
+Look at the output above: the people became *other people*, while the phone number and the e-mail became
+`[PHONE]` and `[EMAIL]`. That split is deliberate, and it is the difference between a transcript an AI
+can analyse and one it can only count.
+
+**Names become invented names.** Replace them with markers and the text stops being text: the grammar
+breaks, and a model reading it loses track of who "she" and "her daughter" refer to — which is exactly
+what sentiment, behaviour and timeline analysis are built on. A realistic surrogate keeps the sentence
+readable and keeps the reference chain intact, and it costs nothing, because a name carries no analytic
+signal in the first place. The invented names are gender-neutral on purpose: guessing a real person's
+gender is an inference this library has no business making.
+
+**Shapes become masks.** A phone number, an e-mail or a record number carries no signal worth preserving
+either, and an invented one is somebody's real number. So those are removed rather than replaced.
+
+**And the vault is what makes a dashboard possible.** For statistics you need Patient 1 to be the same
+Patient 1 across five hundred transcripts — that is what cohorts, trends and "this patient is
+deteriorating" are made of. The vault is what keeps that stable, and it is also why it never leaves the
+building: a stable pseudonym is exactly what links documents together, for you and for anyone else who
+gets hold of it.
+
+Today those invented names come from **pools compiled into the library** — given names and family names,
+one set, no way to supply your own. An organisation should be able to bring its own dictionaries, in its
+own language, for its own kinds of data; that work has not been done. See [Status](#status).
 
 ## Try it
 
@@ -119,9 +150,11 @@ with `/plugin marketplace add peopleworks/Silueta`. More in [`skill/README.md`](
 
 ## How it works
 
-1. **What you already know comes first.** An agency knows its patients, their families and its own staff.
-   Matching values you hold beats guessing which capitalised word is a name, and it almost never deletes a
-   clinical term by mistake. A recogniser, when one is plugged in, only handles the residue.
+1. **What you already know comes first.** An organisation knows who its records are about: a home-care
+   agency knows its patients, their families and its own staff, and a company knows its clients and its
+   catalogue. Matching values you hold beats guessing which capitalised word is a name, and it almost
+   never deletes a clinical term by mistake. A recogniser, when one is plugged in, only handles the
+   residue.
 2. **Names are compared by sound.** A coarse phonetic key shared by Spanish and English collapses the
    confusions that actually happen — b/v, s/z/c, ph/f, y/j, silent h, doubled letters — and an edit
    distance on top absorbs the rest. `Na'vi`, `Navy` and `Navi` are one word here.
@@ -164,10 +197,37 @@ changes that corpus will judge; then the parts of Safe Harbor still missing — 
 or a street address today, and spoken numbers and dates ("five five five, oh one four seven",
 "September eleventh") are not normalised at all.
 
+**Two gaps follow from the paragraph at the top of this file, and both are about data that is not a
+person.** They are named here because the opening claim is wider than the code.
+
+*There is no identifier kind for an organisation, a product or a client account.* `IdentifierKind` has
+fifteen values and every one of them is a person, a contact detail or a clinical record number: there is
+no `Organization`, no `Product`, no `ClientName`. A company name put on the roster as `OtherName` is found
+and replaced — but by a person's name, because that is the only pool there is. Run it and you get `Acme Corporation` → `Ariel Bravo` and `TurboFresh` → `Sasha`,
+which removes the identifier and destroys the shape that made the sentence worth analysing. In the same
+run `Turbo Fresh`, written as two words, survived untouched: the matcher compares one word at a time and
+nothing yet builds a candidate out of adjacent ones.
+
+*There is no way to bring your own dictionaries.* The pattern rules are a JSON pack, but only the one
+compiled into the build is ever loaded, and the surrogate pools are arrays inside the source. A clinic, a
+call centre and a law firm do not redact the same things, do not speak the same language and should not
+share one vendor's word lists. The design direction is a **lineage**: an external, versioned file that
+says which kinds exist, which pools they draw from, in which language, and which patterns apply —
+authored by the organisation, fingerprinted into the manifest like the policy already is, so a corpus can
+say which lineage produced it. None of that exists yet.
+
 ## What it is not
 
 - **Not a compliance certificate.** It removes and it measures; whether a corpus may leave a building is a
   decision for a lawyer, and an expert determination is a person signing their name.
+- **Not anonymisation, and the distinction is legal, not pedantic.** Under HIPAA Safe Harbor, a record
+  with the eighteen identifiers removed stops being PHI and may be shared. Under the GDPR, pseudonymised
+  data is *still personal data* (Recital 26) precisely because a vault exists that reverses it. Silueta
+  reduces exposure; it does not put a corpus outside the reach of European data-protection law.
+- **Not proof that nobody can be recognised.** What identifies a person is not always their name. "The
+  94-year-old with this rare condition in this postal code" points at one person with every name in the
+  sentence invented, which is why age over 89 and postal codes are generalised — and why a measured leak
+  rate, not a promise, is the point of the project.
 - **Not a model.** Nothing is downloaded and nothing is uploaded. `Silueta.Core` has no dependencies, so
   it runs offline, inside the environment that is allowed to hold the identified text.
 - **Not finished.** See [Status](#status).

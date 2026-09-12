@@ -44,6 +44,72 @@ public class SurrogateTests
         }
     }
 
+    [Theory]
+    [InlineData("Aguiar", "Aguilar")]     // keys one edit apart: 0.857
+    [InlineData("Quinteros", "Quintero")] // 0.875
+    [InlineData("Fuente", "Fuentes")]     // 0.857
+    [InlineData("Espinar", "Espinal")]    // 0.857
+    [InlineData("Salazan", "Salazar")]    // 0.857
+    [InlineData("Gaitano", "Gaitan")]     // 0.857
+    public void No_surrogate_is_a_name_this_very_pipeline_would_detect(string real, string collides)
+    {
+        // Rejecting surrogates whose phonetic key *equals* a roster key is not enough, because the
+        // matcher does not require equality — it accepts a similarity of 0.84. Every name here is a
+        // real Hispanic surname one edit from a name in the surrogate pool.
+        //
+        // The pool is shuffled when a name is minted, so a test that merely put "Aguiar" on the roster
+        // would draw the colliding "Aguilar" about one time in twenty-two and pass by luck the rest.
+        // Every family name except the collider and one safe alternative is therefore blocked by exact
+        // phonetic match, leaving the vault a choice of exactly two: the trap and the way out.
+        const string safe = "Bravo";
+        var roster = new DeidentificationContext($"collision-{real}")
+            .AddPerson("patient-1", $"Ellenor {real}", IdentifierKind.PatientName);
+
+        int blocked = 0;
+        foreach (string name in PoolFamilyNames.Where(n => n != collides && n != safe))
+        {
+            roster.AddValue(name, IdentifierKind.OtherName, $"blocker-{blocked++}");
+        }
+
+        var engine = SiluetaEngine.CreateDefault();
+        RedactionResult first = engine.Redact($"Ellenor {real} rested well.", roster);
+        RedactionResult second = engine.Redact(first.Text, roster);
+
+        Assert.DoesNotContain(collides, first.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(safe, first.Text, StringComparison.Ordinal);
+        Assert.Equal(first.Text, second.Text);
+        Assert.Empty(second.Applied);
+    }
+
+    [Fact]
+    public void An_exhausted_pool_stops_rather_than_handing_out_a_name_it_knows_is_unsafe()
+    {
+        // When every candidate is one this record would detect, there is no safe answer. Refusing is
+        // the only correct behaviour: emitting the least-bad name would put a detectable surrogate in a
+        // corpus labelled de-identified, and nothing downstream would ever question it.
+        var roster = new DeidentificationContext("exhausted")
+            .AddPerson("patient-1", "Ellenor Aguiar", IdentifierKind.PatientName);
+
+        int blocked = 0;
+        foreach (string name in PoolFamilyNames.Where(n => n != "Aguilar"))
+        {
+            roster.AddValue(name, IdentifierKind.OtherName, $"blocker-{blocked++}");
+        }
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            SiluetaEngine.CreateDefault().Redact("Ellenor Aguiar rested well.", roster));
+
+        Assert.Contains("exhausted", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The family half of the surrogate pool, copied so the test fails loudly if the pool moves.</summary>
+    private static readonly string[] PoolFamilyNames =
+    [
+        "Aguilar", "Bravo", "Castro", "Duarte", "Espinal", "Fuentes", "Gaitan", "Herrera",
+        "Ibarra", "Jimenez", "Lara", "Medina", "Nieves", "Ochoa", "Prado", "Quintero",
+        "Rivas", "Salazar", "Toledo", "Urena", "Vargas", "Zamora",
+    ];
+
     [Fact]
     public void Two_hundred_subjects_get_two_hundred_different_surrogates()
     {

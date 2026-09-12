@@ -95,17 +95,23 @@ public static class LeakRate
         ArgumentNullException.ThrowIfNull(original);
         ArgumentNullException.ThrowIfNull(redacted);
 
-        List<(int Start, int End)> goldRanges = Union(gold, original.Length);
+        List<Detection> goldSpans = gold.ToList();
+        List<(int Start, int End)> goldRanges = Union(goldSpans, original.Length);
         List<(int Start, int End)> foundRanges = Union(found, original.Length);
 
         int sensitive = goldRanges.Sum(range => range.End - range.Start);
         int covered = IntersectionLength(goldRanges, foundRanges);
         int removed = foundRanges.Sum(range => range.End - range.Start);
 
+        // Survival is checked span by span, on the annotations as they were written — never on the
+        // union. Two annotators marking the same passage at different granularities is the normal case
+        // (Phase 1 requires two per document), and merging them first asks only whether the widest
+        // reading survived. Gold "Sofía Reyes" and gold "Reyes", output "Ale Reyes": the merged question
+        // is "is 'Sofía Reyes' still here", the answer is no, and "Reyes" goes unnoticed.
         int surviving = 0;
-        foreach ((int start, int end) in goldRanges)
+        foreach (Detection span in goldSpans)
         {
-            string value = original[start..end].Trim();
+            string value = span.TextIn(original).Trim();
 
             // Deliberately generous about what counts as surviving: any occurrence anywhere in the
             // output, ignoring case. A false alarm costs someone a second look. The other kind of

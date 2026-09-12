@@ -78,9 +78,11 @@ public sealed partial class SiluetaEngine
 
         List<Detection> applied = Resolve(found, policy);
 
-        // Everything the caller says identifies someone in this record. No invented name may sound like
-        // any of it, or the next pass over this text finds the surrogate and replaces it again.
-        string[] roster = context.Known.Select(known => known.Value).ToArray();
+        // No invented name may be one this very run would detect, or the next pass over the output finds
+        // the surrogate and replaces it again. The test is the detectors themselves rather than a second
+        // copy of their threshold, because two copies of a rule are two rules that will disagree.
+        bool WouldBeFound(string candidate) =>
+            _detectors.Any(detector => detector.Detect(candidate, context).Any());
 
         var sb = new StringBuilder(text.Length);
         var subjects = new HashSet<string>(StringComparer.Ordinal);
@@ -89,7 +91,7 @@ public sealed partial class SiluetaEngine
         foreach (Detection detection in applied)
         {
             sb.Append(text, cursor, detection.Start - cursor);
-            sb.Append(Replacement(detection, text, roster, policy));
+            sb.Append(Replacement(detection, text, WouldBeFound, policy));
             cursor = detection.End;
 
             if (detection.SubjectId is { Length: > 0 } subjectId && subjects.Add(subjectId))
@@ -163,14 +165,14 @@ public sealed partial class SiluetaEngine
 
     /// <summary>The original text is read here, from the transcript the caller passed in, rather than
     /// carried on the detection: see <see cref="Detection"/> for why that matters.</summary>
-    private string Replacement(Detection detection, string source, string[] roster, SiluetaPolicy policy)
+    private string Replacement(Detection detection, string source, Func<string, bool> wouldBeFound, SiluetaPolicy policy)
     {
         string original = detection.TextIn(source);
 
         return policy.ActionFor(detection.Kind) switch
         {
             RedactionAction.Surrogate when detection.SubjectId is { Length: > 0 } subjectId =>
-                Surrogates.Fit(Vault.SurrogateFor(subjectId, roster), Tokenizer.Tokenize(original).Count),
+                Surrogates.Fit(Vault.SurrogateFor(subjectId, wouldBeFound), Tokenizer.Tokenize(original).Count),
             RedactionAction.YearOnly => YearOf(original),
             RedactionAction.Generalize => Generalized(detection.Kind, original),
             RedactionAction.Keep => original,

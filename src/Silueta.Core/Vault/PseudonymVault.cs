@@ -63,22 +63,45 @@ public sealed class PseudonymVault
     /// </summary>
     /// <param name="avoid">Values that must not be echoed back: the roster of the record being redacted.
     /// A surrogate is rejected if any of its words <em>sounds like</em> any word of any of these, not
-    /// merely if it equals one. Equality would not be enough — the matcher that finds names is phonetic,
-    /// so a surrogate that merely sounds like a roster name is found and replaced again on the next pass,
-    /// and a corpus that changes every time it is reprocessed cannot be reproduced by anyone.</param>
+    /// merely if it equals one.
+    /// <para>
+    /// This is the cheap test, and on its own it is not enough — see the overload taking a predicate.
+    /// Sounding alike here means an identical phonetic key, while the matcher accepts a similarity of
+    /// 0.84, so real surnames one edit from the pool (<c>Aguiar</c>/<c>Aguilar</c>,
+    /// <c>Quinteros</c>/<c>Quintero</c>, <c>Fuente</c>/<c>Fuentes</c>) pass this check and are then
+    /// found by the very pipeline that wrote them.
+    /// </para></param>
     public string SurrogateFor(string subjectId, IEnumerable<string>? avoid = null)
     {
+        HashSet<string> forbidden = PhoneticKeysOf(avoid);
+        return SurrogateFor(subjectId, candidate => Tokenizer.Tokenize(candidate)
+            .Any(token => forbidden.Contains(PhoneticKey.Compute(token.Text))));
+    }
+
+    /// <summary>
+    /// Returns the invented name this subject is known by in redacted text, minting one the first time.
+    /// </summary>
+    /// <param name="wouldBeFound">Asked of every candidate: would this name be detected in this record?
+    /// <para>
+    /// The engine answers by running the detectors it is about to run anyway, which is the only test
+    /// that cannot drift. Comparing phonetic keys here instead would mean writing the matcher's
+    /// threshold down in a second place, and the two copies disagreeing is precisely the bug: a
+    /// surrogate that merely sounds like a roster name is found and replaced again on the next pass,
+    /// and a corpus that changes every time it is reprocessed cannot be reproduced by anyone.
+    /// </para></param>
+    public string SurrogateFor(string subjectId, Func<string, bool> wouldBeFound)
+    {
         ArgumentException.ThrowIfNullOrWhiteSpace(subjectId);
+        ArgumentNullException.ThrowIfNull(wouldBeFound);
 
         if (_surrogates.TryGetValue(subjectId, out string? existing))
         {
-            // Stability wins over the avoid list: a subject who already has a name keeps it. Changing it
-            // because a later record mentions someone similar would rewrite the corpus behind the caller.
+            // Stability wins: a subject who already has a name keeps it. Changing it because a later
+            // record mentions someone similar would rewrite the corpus behind the caller.
             return existing;
         }
 
-        HashSet<string> forbidden = PhoneticKeysOf(avoid);
-        string surrogate = Mint(forbidden);
+        string surrogate = Mint(wouldBeFound);
 
         _surrogates[subjectId] = surrogate;
         Remember(surrogate);
@@ -204,10 +227,15 @@ public sealed class PseudonymVault
     /// they do in life. That costs readability, never privacy.
     /// </para>
     /// </summary>
-    private string Mint(HashSet<string> forbidden)
+    private string Mint(Func<string, bool> wouldBeFound)
     {
         string[] given = Shuffled(Surrogates.Given);
         string[] family = Shuffled(Surrogates.Family);
+
+        // The given name is tested on its own as well as inside the pair, because a one-word mention is
+        // replaced by the given name alone: a surrogate that is safe as "Remy Aguilar" is not safe if
+        // "Remy" by itself would be found.
+        var rejectedGiven = new HashSet<string>(StringComparer.Ordinal);
 
         // Two sweeps: the first will not reuse a given name, the second is allowed to.
         for (int sweep = 0; sweep < 2; sweep++)
@@ -219,20 +247,21 @@ public sealed class PseudonymVault
                     continue;
                 }
 
-                if (forbidden.Contains(PhoneticKey.Compute(first)))
+                if (rejectedGiven.Contains(first))
                 {
+                    continue;
+                }
+
+                if (wouldBeFound(first))
+                {
+                    rejectedGiven.Add(first);
                     continue;
                 }
 
                 foreach (string last in family)
                 {
-                    if (forbidden.Contains(PhoneticKey.Compute(last)))
-                    {
-                        continue;
-                    }
-
                     string candidate = $"{first} {last}";
-                    if (!_takenSurrogates.Contains(candidate))
+                    if (!_takenSurrogates.Contains(candidate) && !wouldBeFound(candidate))
                     {
                         return candidate;
                     }
@@ -241,8 +270,8 @@ public sealed class PseudonymVault
         }
 
         throw new InvalidOperationException(
-            $"The surrogate pool is exhausted: {_takenSurrogates.Count} names are in use and the roster " +
-            "rules out the rest. Widen the name lists before redacting a corpus this large.");
+            $"The surrogate pool is exhausted: {_takenSurrogates.Count} names are in use and this record's " +
+            "roster rules out the rest. Widen the name lists before redacting a corpus this large.");
     }
 
     private void Remember(string surrogate)

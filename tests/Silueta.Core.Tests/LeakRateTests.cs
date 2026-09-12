@@ -171,6 +171,21 @@ public class LeakRateTests
     }
 
     [Fact]
+    public void A_name_inside_a_longer_annotated_span_is_checked_on_its_own()
+    {
+        // Two annotators marking the same passage at different granularities is the normal case, and
+        // Phase 1 requires two of them per document. Merging their spans before looking for survivors
+        // asks "is 'Sofía Reyes' still here" — it is not — and never asks about "Reyes", which is.
+        const string original = "Sofía Reyes rested well.";
+        const string redacted = "Ale Reyes rested well.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 11), Span(6, 5)], [Span(0, 11)]);
+
+        Assert.True(score.Leaked);
+        Assert.Equal(1, score.SurvivingSpans);
+    }
+
+    [Fact]
     public void A_transcript_with_nothing_to_find_cannot_leak()
     {
         const string text = "Blood pressure 138 over 82, pain 4 out of 10.";

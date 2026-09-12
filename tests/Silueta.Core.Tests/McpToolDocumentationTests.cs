@@ -111,11 +111,18 @@ public partial class McpToolDocumentationTests
 
     private static IReadOnlyList<string> ReadToolNames()
     {
-        string toolsDirectory = Path.Combine(RepoRoot, "src", "Silueta.Mcp", "Tools");
+        // The whole project, not just Tools/: a tool declared in a file somewhere else would be invisible
+        // to a guard that only looks where tools are supposed to live, which is the one case the guard
+        // exists for.
+        string project = Path.Combine(RepoRoot, "src", "Silueta.Mcp");
         var attribute = new Regex(@"\[McpServerTool\((?<args>[^\]]*)\)", RegexOptions.Compiled);
 
         var found = new List<string>();
-        foreach (string file in Directory.EnumerateFiles(toolsDirectory, "*.cs").OrderBy(f => f, StringComparer.Ordinal))
+        foreach (string file in Directory
+            .EnumerateFiles(project, "*.cs", SearchOption.AllDirectories)
+            .Where(f => !f.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+                     && !f.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+            .OrderBy(f => f, StringComparer.Ordinal))
         {
             foreach (Match match in attribute.Matches(File.ReadAllText(file)))
             {

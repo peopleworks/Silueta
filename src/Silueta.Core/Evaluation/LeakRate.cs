@@ -95,7 +95,11 @@ public static class LeakRate
         ArgumentNullException.ThrowIfNull(original);
         ArgumentNullException.ThrowIfNull(redacted);
 
-        List<Detection> goldSpans = gold.ToList();
+        // Annotators select sloppily: a span that swept up the sentence-final full stop, or a trailing
+        // space, would otherwise leave an uncovered "sensitive" character that identifies nobody. With
+        // thirty annotations per document that reports a leak in nearly every document, and a meter
+        // that cries wolf is as useless as one that stays quiet.
+        List<Detection> goldSpans = gold.Select(span => Tighten(span, original)).Where(span => span.Length > 0).ToList();
         List<(int Start, int End)> goldRanges = Union(goldSpans, original.Length);
         List<(int Start, int End)> foundRanges = Union(found, original.Length);
 
@@ -111,12 +115,12 @@ public static class LeakRate
         int surviving = 0;
         foreach (Detection span in goldSpans)
         {
-            string value = span.TextIn(original).Trim();
-
-            // Deliberately generous about what counts as surviving: any occurrence anywhere in the
-            // output, ignoring case. A false alarm costs someone a second look. The other kind of
-            // mistake costs a person.
-            if (value.Length > 0 && redacted.Contains(value, StringComparison.OrdinalIgnoreCase))
+            // Ignoring case AND accents, through the one place that decides what "the same letters"
+            // means. This used to compare ordinally, so "Sofía" surviving as "Sofia" read as a clean
+            // transcript while "SOFÍA" was caught — the meter's private copy of the equality rule was
+            // strict in the one direction that hides leaks, and the library's own detector could find
+            // every identifier in a text this scored at recall 1.00, precision 1.00, no leak.
+            if (Folding.Contains(redacted, span.TextIn(original)))
             {
                 surviving++;
             }
@@ -151,6 +155,28 @@ public static class LeakRate
         int sensitive = all.Sum(score => score.SensitiveCharacters);
         int covered = all.Sum(score => score.CoveredCharacters);
         return sensitive == 0 ? 1.0 : (double)covered / sensitive;
+    }
+
+    /// <summary>
+    /// Trims whitespace and edge punctuation off an annotation. An annotator's selection is a gesture at
+    /// a value; the value is what is inside it.
+    /// </summary>
+    private static Detection Tighten(Detection span, string original)
+    {
+        int start = Math.Max(0, span.Start);
+        int end = Math.Min(original.Length, span.End);
+
+        while (start < end && !char.IsLetterOrDigit(original[start]))
+        {
+            start++;
+        }
+
+        while (end > start && !char.IsLetterOrDigit(original[end - 1]))
+        {
+            end--;
+        }
+
+        return span with { Start = start, Length = end - start };
     }
 
     /// <summary>

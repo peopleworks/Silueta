@@ -89,6 +89,22 @@ static int Redact(Dictionary<string, string> options)
     var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], vault);
     RedactionResult result = engine.Redact(text, context);
 
+    // The vault is written FIRST, before any redacted artefact exists. It is the only thing that can
+    // undo the work and the only thing with no second copy: a run that wrote the redacted transcript and
+    // then failed to write the vault would leave a corpus nobody — not even the agency — can trace back.
+    if (vaultPath is not null)
+    {
+        engine.Vault.SaveTo(vaultPath);
+        Console.WriteLine(
+            $"Wrote {vaultPath} — {engine.Vault.Count} subjects. Keep it inside the agency: it is the only way back.");
+    }
+    else if (result.Applied.Any(d => d.SubjectId is { Length: > 0 }))
+    {
+        Console.Error.WriteLine(
+            "warning: names were replaced but no --vault was given, so the invented names were minted and\n" +
+            "thrown away. Nothing in this output can be traced back, and the next run will invent others.");
+    }
+
     if (options.TryGetValue("out", out string? outPath))
     {
         File.WriteAllText(outPath, result.Text);
@@ -105,17 +121,19 @@ static int Redact(Dictionary<string, string> options)
         Console.WriteLine($"Wrote {manifestPath}.");
     }
 
-    if (vaultPath is not null)
+    if (result.Residue.Count > 0)
     {
-        engine.Vault.SaveTo(vaultPath);
-        Console.WriteLine(
-            $"Wrote {vaultPath} — {engine.Vault.Count} subjects. Keep it inside the agency: it is the only way back.");
-    }
-    else if (result.Applied.Any(d => d.SubjectId is { Length: > 0 }))
-    {
+        // The engine read its own output back and still found identifiers in it. Exit code 3, not 0:
+        // whatever runs next must not treat this file as de-identified.
         Console.Error.WriteLine(
-            "warning: names were replaced but no --vault was given, so the invented names were minted and\n" +
-            "thrown away. Nothing in this output can be traced back, and the next run will invent others.");
+            $"ERROR: this pipeline still finds {result.Residue.Count} identifier(s) in its own output. " +
+            "Do not export this transcript.");
+        foreach (Detection residual in result.Residue)
+        {
+            Console.Error.WriteLine($"  {residual.Kind} at [{residual.Start},{residual.End}) via {residual.DetectorId}");
+        }
+
+        return 3;
     }
 
     return 0;

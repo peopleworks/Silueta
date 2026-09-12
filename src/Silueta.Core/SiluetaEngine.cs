@@ -40,10 +40,35 @@ public sealed class RedactionManifest
     /// <summary>Exact, phonetic, fuzzy, pattern. The phonetic and fuzzy counts are the ones that say
     /// how much ASR damage this corpus actually has.</summary>
     public Dictionary<string, int> ByMatch { get; set; } = new();
+
+    /// <summary>
+    /// How many identifiers this same pipeline can still find in its own output. Zero is the only
+    /// acceptable value, and anything else is a run that should not be exported. It is not a leak rate:
+    /// a name no detector can see is invisible here too.
+    /// </summary>
+    public int ResidualSpans { get; set; }
 }
 
 /// <summary>The de-identified text, what was replaced, and the manifest of the run.</summary>
-public sealed record RedactionResult(string Text, IReadOnlyList<Detection> Applied, RedactionManifest Manifest);
+/// <param name="Residue">What the same detectors still find in <paramref name="Text"/>.
+/// <para>
+/// Every safety rule in this library is enforced at the moment something is chosen: the surrogate the
+/// roster would not match, the span that was replaced. None of them looked at the finished text — which
+/// is the mistake the leak meter made, one level up, checking the decision instead of the result. A rule
+/// enforced at choosing time is not the same as a rule that holds at emitting time: a surrogate minted
+/// safely for one record is emitted unchanged into the next, whose roster it may well be on; and a
+/// one-word surrogate can join the word after it and spell someone real.
+/// </para>
+/// <para>
+/// So the engine reads its own output back. <b>A non-empty residue means this run should not be
+/// exported.</b> An empty one is not proof of anything: residue is what this pipeline can see, so a name
+/// it never knew about is missing from here too. It is a self-consistency check, not a leak rate.
+/// </para></param>
+public sealed record RedactionResult(
+    string Text,
+    IReadOnlyList<Detection> Applied,
+    RedactionManifest Manifest,
+    IReadOnlyList<Detection> Residue);
 
 /// <summary>
 /// The pipeline: detect, resolve overlaps, replace under policy, and write down what happened.
@@ -103,6 +128,13 @@ public sealed partial class SiluetaEngine
         }
 
         sb.Append(text, cursor, text.Length - cursor);
+        string redacted = sb.ToString();
+
+        // Read our own output back. Costs one more detection pass over a text of the same size, which is
+        // a fair price for the only check that asks whether the work actually held.
+        List<Detection> residue = Resolve(
+            _detectors.SelectMany(detector => detector.Detect(redacted, context)).ToList(),
+            policy);
 
         var manifest = new RedactionManifest
         {
@@ -114,6 +146,7 @@ public sealed partial class SiluetaEngine
             RunUtc = DateTimeOffset.UtcNow,
             TextLength = text.Length,
             Subjects = subjects.Count,
+            ResidualSpans = residue.Count,
         };
 
         foreach (Detection detection in applied)
@@ -123,7 +156,7 @@ public sealed partial class SiluetaEngine
             Increment(manifest.ByMatch, detection.Match.ToString());
         }
 
-        return new RedactionResult(sb.ToString(), applied, manifest);
+        return new RedactionResult(redacted, applied, manifest, residue);
     }
 
     /// <summary>
@@ -187,10 +220,18 @@ public sealed partial class SiluetaEngine
         return match.Success ? match.Value : LabelFor(IdentifierKind.Date);
     }
 
+    /// <summary>
+    /// Widening, where a wider value stops identifying. Postal codes are the awkward one: Safe Harbor
+    /// allows the first three digits <em>only</em> where that three-digit area holds more than 20,000
+    /// people, and requires the rest to become 000 — 45 CFR § 164.514(b)(2)(i)(B). Deciding which is
+    /// which needs a census table with a date and a source on it, and there is not one in this package
+    /// yet. Keeping three digits regardless would emit "036XX" for a Vermont prefix the rule names
+    /// explicitly, inside a corpus whose manifest says safe-harbor. So the whole code goes until the
+    /// table exists.
+    /// </summary>
     private static string Generalized(IdentifierKind kind, string original) => kind switch
     {
         IdentifierKind.AgeOver89 => "90 or older",
-        IdentifierKind.PostalCode when original.Length >= 5 => original[..3] + "XX",
         _ => LabelFor(kind),
     };
 

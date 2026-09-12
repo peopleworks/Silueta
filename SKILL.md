@@ -92,20 +92,25 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
 
 ## What you may and may not say about the result
 
-1. **Never call a transcript "de-identified" flatly.** Say what ran and what it found: "the roster
+1. **Check `residualSpans` before you say anything.** Every run reads its own output back with the same
+   detectors. If the result reports `safeToExport: false`, say so plainly, do not pass the text on, and
+   tell the user which record it was — an invented name collided with someone real in that record, or a
+   replacement joined the words around it to spell one. Zero residue is not proof of anything either:
+   it is what this pipeline can see, so a name it never knew is missing from it too.
+2. **Never call a transcript "de-identified" flatly.** Say what ran and what it found: "the roster
    matcher and the pattern pack ran; nine spans were replaced across three subjects." Whether a corpus
    may leave a building is a lawyer's decision, and an expert determination is a person signing a name.
-2. **Silueta has not yet measured its own leak rate.** The library is built around that number and the
+3. **Silueta has not yet measured its own leak rate.** The library is built around that number and the
    number does not exist. If you are asked how good it is, say that, and do not substitute an
    impression. Every tool result carries the same caveat in a `caveat` field — pass it on.
-3. **Name what survives, because it is predictable.** Nicknames (`Ellie` for Eleanor). Names nobody
+4. **Name what survives, because it is predictable.** Nicknames (`Ellie` for Eleanor). Names nobody
    wrote down — a neighbour, a doctor mentioned once. People referred to only by relationship ("my
    daughter"). Names the recogniser damaged past the matcher's threshold: `Reyes` heard as `Rays`
    scores 0.40 against a threshold of 0.84, and that is a matcher failure, not a design decision.
-4. **No rule emits a postal code or a street address yet**, and numbers or dates spoken as words
+5. **No rule emits a postal code or a street address yet**, and numbers or dates spoken as words
    ("five five five, oh one four seven", "September eleventh") are not recognised at all. If the
    transcript has those, say they were not touched.
-5. **A clean-looking output is not evidence.** The honest close is what ran, what it replaced, and what
+6. **A clean-looking output is not evidence.** The honest close is what ran, what it replaced, and what
    it is known not to catch.
 
 ## When a name survives and someone asks why

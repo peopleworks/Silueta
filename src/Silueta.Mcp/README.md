@@ -42,6 +42,14 @@ Everything runs on the machine. Nothing is downloaded and nothing is uploaded.
 can undo the work, every re-identification is meant to be logged by the person who did it, and a model
 calling a tool is not that person.
 
+## Every result says whether it held
+
+After redacting, the engine runs the same detectors over its own output. The report carries
+`residualSpans` and `safeToExport`, and anything but zero means the text must not be passed on: an
+invented name collided with someone real in that record, or a replacement joined the words around it to
+spell one. Zero is not proof — residue is what this pipeline can see, so a name it never knew about is
+missing from there too.
+
 ## What this does not promise
 
 Silueta has not yet measured its own leak rate, so nothing here is verified to be de-identified. Names

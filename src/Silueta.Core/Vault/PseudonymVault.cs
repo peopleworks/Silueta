@@ -112,14 +112,39 @@ public sealed class PseudonymVault
     /// <summary>
     /// Pins a subject to a surrogate the caller chose. For an agency that wants its own invented names,
     /// and for anything that has to be reproducible — a demo, a fixture, a published example.
+    /// <para>
+    /// It enforces what <c>Mint</c> enforces, because it is the second door into the same table and a
+    /// door with no lock on it is the shape of every defect in this file's history. Without the check
+    /// below, <c>Assign("patient-1", "Ale Espinal").Assign("family-1", "Ale Espinal")</c> was accepted in
+    /// silence: a mother and her daughter became one person in the corpus, and because the vault then
+    /// held two subjects pointing at one name, neither could be traced back. Assigning someone their own
+    /// name was equally accepted, and produced a transcript that was marked redacted and was not.
+    /// </para>
     /// </summary>
+    /// <exception cref="ArgumentException">The name is already in use by another subject.</exception>
     public PseudonymVault Assign(string subjectId, string surrogate)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(subjectId);
         ArgumentException.ThrowIfNullOrWhiteSpace(surrogate);
 
-        _surrogates[subjectId] = surrogate.Trim();
-        Remember(surrogate.Trim());
+        string chosen = surrogate.Trim();
+
+        if (_surrogates.TryGetValue(subjectId, out string? already) && !string.Equals(already, chosen, StringComparison.Ordinal))
+        {
+            throw new ArgumentException(
+                $"Subject '{subjectId}' is already known as something else in this vault. Changing it would " +
+                "rewrite every transcript already redacted under the old name.", nameof(subjectId));
+        }
+
+        if (_takenSurrogates.Contains(chosen) && !_surrogates.TryGetValue(subjectId, out _))
+        {
+            throw new ArgumentException(
+                "That invented name is already in use by another subject in this vault. Two people sharing " +
+                "one invented name merges them in the corpus, and neither can be traced back.", nameof(surrogate));
+        }
+
+        _surrogates[subjectId] = chosen;
+        Remember(chosen);
         PseudonymFor(subjectId);
         return this;
     }
@@ -172,8 +197,13 @@ public sealed class PseudonymVault
 
             if (!string.IsNullOrWhiteSpace(entry.Surrogate))
             {
-                vault._surrogates[subjectId] = entry.Surrogate;
-                vault.Remember(entry.Surrogate);
+                // Trimmed, exactly as Assign trims. A file written by hand or by another tool can hold
+                // " Cruz Medina"; stored raw, Remember's space-slice put "" into the taken-given set and
+                // a value into the taken-surrogates set that Mint's exact comparison could never match,
+                // so the vault would cheerfully hand the same name to a second subject.
+                string stored = entry.Surrogate.Trim();
+                vault._surrogates[subjectId] = stored;
+                vault.Remember(stored);
             }
         }
 

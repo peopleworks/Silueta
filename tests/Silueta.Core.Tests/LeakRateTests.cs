@@ -186,6 +186,46 @@ public class LeakRateTests
     }
 
     [Fact]
+    public void Dropping_the_accents_off_a_name_is_not_a_redaction()
+    {
+        // Detection.cs defines an exact match as "letter for letter (ignoring case and accents)", and
+        // PhoneticKey strips accents before it does anything else. The survival check was the one place
+        // that compared ordinally, so the library's own detector could find every identifier in a text
+        // this meter scored at recall 1.00, precision 1.00, no leak.
+        const string original = "José Martínez llamó a Sofía Reyes.";
+        const string redacted = "Jose Martinez llamo a Sofia Reyes.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(0, 14), Span(22, 11)], [Span(0, 14), Span(22, 11)]);
+
+        Assert.True(score.Leaked);
+        Assert.Equal(2, score.SurvivingSpans);
+    }
+
+    [Fact]
+    public void Case_is_folded_too_and_in_the_same_direction()
+    {
+        const string original = "Sofía Reyes rested.";
+
+        Assert.True(LeakRate.Score(original, "SOFIA REYES rested.", [Span(0, 11)], [Span(0, 11)]).Leaked);
+        Assert.True(LeakRate.Score(original, "sofia reyes rested.", [Span(0, 11)], [Span(0, 11)]).Leaked);
+    }
+
+    [Fact]
+    public void An_annotation_that_swept_up_a_full_stop_is_not_a_leak()
+    {
+        // Annotators select sloppily. If the punctuation at the edge of a span counts as an uncovered
+        // sensitive character, a corpus of thirty annotations per document reports a leak in nearly
+        // every document — and a meter that cries wolf is as useless as one that stays quiet.
+        const string original = "La paciente es Eleanor Vasquez.";
+        const string redacted = "La paciente es Dani Duarte.";
+
+        DeidScore score = LeakRate.Score(original, redacted, [Span(15, 16)], [Span(15, 15)]);
+
+        Assert.False(score.Leaked);
+        Assert.Equal(0, score.MissedCharacters);
+    }
+
+    [Fact]
     public void A_transcript_with_nothing_to_find_cannot_leak()
     {
         const string text = "Blood pressure 138 over 82, pain 4 out of 10.";

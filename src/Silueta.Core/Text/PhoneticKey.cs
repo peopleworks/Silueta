@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 
 namespace Silueta.Core;
@@ -30,7 +29,7 @@ public static class PhoneticKey
             return string.Empty;
         }
 
-        string flat = StripAccents(word).ToLowerInvariant();
+        string flat = Folding.StripAccents(word).ToLowerInvariant();
         var sb = new StringBuilder(flat.Length);
 
         for (int i = 0; i < flat.Length; i++)
@@ -180,18 +179,4 @@ public static class PhoneticKey
         return sb.ToString();
     }
 
-    private static string StripAccents(string s)
-    {
-        string decomposed = s.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(decomposed.Length);
-        foreach (char c in decomposed)
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-            {
-                sb.Append(c);
-            }
-        }
-
-        return sb.ToString().Normalize(NormalizationForm.FormC);
-    }
 }

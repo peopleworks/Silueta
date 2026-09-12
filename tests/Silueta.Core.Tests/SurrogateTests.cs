@@ -18,8 +18,13 @@ public class SurrogateTests
 
         RedactionResult result = SiluetaEngine.CreateDefault().Redact("Ale Espinal rested well.", roster);
 
-        Assert.DoesNotContain("Ale", result.Text, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("Espinal", result.Text, StringComparison.OrdinalIgnoreCase);
+        // Word by word, not by substring. "Alex" is a legitimate surrogate for someone called Ale and
+        // contains her name as a substring; asserting on substrings made this test fail about one run in
+        // twenty for a correct result, which is its own kind of lie.
+        string[] words = Tokenizer.Tokenize(result.Text).Select(t => t.Text).ToArray();
+        Assert.DoesNotContain("Ale", words, StringComparer.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Espinal", words, StringComparer.OrdinalIgnoreCase);
+        Assert.Empty(result.Residue);
     }
 
     [Fact]
@@ -175,6 +180,54 @@ public class SurrogateTests
 
         Assert.Equal(first.Text, second.Text);
         Assert.Empty(second.Applied);
+    }
+
+    [Fact]
+    public void Two_subjects_cannot_be_pinned_to_one_invented_name()
+    {
+        // Assign is the second door into the same table. Without the same lock Mint has, a mother and
+        // her daughter became one person in the corpus — and because the vault then held two subjects
+        // pointing at one name, neither could be traced back.
+        var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");
+
+        ArgumentException thrown = Assert.Throws<ArgumentException>(() => vault.Assign("family-1", "Ale Espinal"));
+        Assert.Contains("already in use", thrown.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void Pinning_the_same_subject_to_the_same_name_twice_is_allowed()
+    {
+        var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");
+
+        vault.Assign("patient-1", "Ale Espinal");
+
+        Assert.Equal("Ale Espinal", vault.SurrogateFor("patient-1"));
+        Assert.Equal(1, vault.Count);
+    }
+
+    [Fact]
+    public void A_subject_cannot_be_renamed_behind_a_corpus_that_already_used_the_old_name()
+    {
+        var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");
+
+        Assert.Throws<ArgumentException>(() => vault.Assign("patient-1", "Cruz Medina"));
+    }
+
+    [Fact]
+    public void A_padded_name_in_a_vault_file_still_counts_as_taken()
+    {
+        // A vault file that was merged, hand-edited or written by another tool can hold " Cruz Medina".
+        // Stored raw, the space slice put "" into the taken-given set and a value into taken-surrogates
+        // that Mint's exact comparison could never match, so the name was handed out a second time.
+        const string json = """
+            { "version": "2", "subjects": { "patient-a": { "pseudonym": "SIL-0001", "surrogate": " Cruz Medina" } } }
+            """;
+
+        var vault = PseudonymVault.FromJson(json);
+
+        Assert.Equal("Cruz Medina", vault.SurrogateFor("patient-a"));
+        Assert.Throws<InvalidOperationException>(() =>
+            vault.SurrogateFor("patient-b", candidate => candidate != "Cruz Medina" && candidate != "Cruz"));
     }
 
     [Fact]

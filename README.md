@@ -115,14 +115,22 @@ with `/plugin marketplace add peopleworks/Silueta`. More in [`skill/README.md`](
 3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89: a JSON
    pattern pack, which is a file anyone can extend by pull request, never compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
-   dates keep only their year, ages above 89 become "90 or older", ZIPs keep three digits.
+   dates keep only their year, ages above 89 become "90 or older". Postal codes are removed whole rather
+   than kept to three digits — the rule allows three digits only where that area holds more than 20,000
+   people, and the census table that decides which is which is not in this package yet.
 5. **Every run writes a manifest.** What was removed, by kind, by detector, under which policy version.
    An expert determination rests on the method being written down.
 6. **The vault decides the invented names, and remembers them.** One subject, one invented name, across
    every transcript in the corpus — and a re-identification code that is random rather than derived from
    the person, per 45 CFR § 164.514(c). No invented name is allowed to sound like anyone on the roster,
    so running a redacted transcript through again changes nothing. The vault never travels with the data.
-7. **The leak rate is the headline number.** Not the share of identifiers removed, which always looks
+7. **Every run reads its own output back.** After replacing, the same detectors run over the result. If
+   they still find anything, the run is reported as unsafe to export and the CLI exits non-zero. Every
+   other rule here is enforced when something is *chosen* — the surrogate the roster would not match —
+   and a rule enforced at choosing time is not the same as one that holds at emitting time: a surrogate
+   minted safely for one transcript is reused in the next, whose roster it may well be on. An empty
+   residue proves nothing on its own, since a name no detector knows is missing from it too.
+8. **The leak rate is the headline number.** Not the share of identifiers removed, which always looks
    good: the share of *transcripts* with at least one identifier left. At 99% recall per mention, a
    transcript with fifty mentions leaks about 40% of the time. It is counted in characters and against
    the redacted text, so half a name covered is a name leaked, and a replacement that equals the original

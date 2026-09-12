@@ -94,7 +94,7 @@ framework's own timeout exception carries the input that defeated it.
 | `Surrogate` | names | a consistent invented name per subject |
 | `Label` | phone, e-mail, URL, IP, address, record and account numbers | `[PHONE]`, `[EMAIL]`, … |
 | `YearOnly` | dates | `3/14/2026` → `2026` |
-| `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`, `85018` → `850XX` |
+| `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; a postal code is removed whole |
 
 **Why surrogates rather than labels for names.** The text stays a sentence, so whatever reads it next —
 a person, a model, a metric — still works. And a name that slipped past the redactor no longer stands out
@@ -122,6 +122,26 @@ Three constraints on what it may mint:
 - **The invented names read as either gender on purpose.** Choosing by gender would mean inferring the
   gender of a real person from their name, which is a guess the library has no business making, and a
   wrong guess writes *her son Marta* into a clinical note.
+
+## 6b. Reading the output back
+
+After replacing, the same detectors run over the finished text. What they find is the run's **residue**,
+it goes in the manifest, and anything but zero means the transcript must not be exported — the CLI exits
+non-zero and the MCP tools say so in their own result.
+
+This exists because every other rule in this library is enforced at the moment something is *chosen*, and
+a rule enforced at choosing time is not the same as a rule that holds at emitting time:
+
+- A surrogate is checked against the roster of the record it was minted for. The vault then keeps it, on
+  purpose — stability wins, because re-minting would rewrite a corpus behind the caller — and hands the
+  same name to every later record. `Urena` is in the surrogate pool and is also an ordinary surname; the
+  record where a real Urena appears is not the record the name was cleared against.
+- The check runs on the candidate alone, while the matcher scores windows of consecutive words in the
+  finished transcript. A one-word surrogate can join the word after it and spell someone real.
+
+It is the same correction the leak meter needed, one level up: check the result, not the decision. And it
+has the same honest limit — residue is what *this* pipeline can see, so a name it never knew about is
+missing from here too. It is a self-consistency check, not a leak rate.
 
 ## 7. The vault
 
@@ -166,8 +186,8 @@ Not the share of mentions removed. A transcript with one surviving name is an id
 per-mention recall hides that: at 99% per mention, a transcript with fifty mentions leaks about 40% of the
 time — 1 − 0.99⁵⁰ ≈ 0.40.
 
-**Counted in characters, and against the redacted text.** Both halves of that matter, and the scorer got
-both wrong until recently:
+**Counted in characters, and against the redacted text, folding case and accents.** All of that matters,
+and the scorer got every part of it wrong until recently:
 
 - **Characters, not spans.** A detection that clipped half a name used to count as a cover — gold
   `Sofía Reyes`, redactor reached `Sofía`, recall 1.0, `Reyes` still in the file. And one detection
@@ -177,6 +197,17 @@ both wrong until recently:
   which is not the question; the question is whether the words are gone. A span can be detected,
   replaced, counted — and still be there, because the surrogate equalled the original, or because the
   same name was said again somewhere nobody annotated. So the scorer takes both texts and looks.
+- **Span by span, not on the union of the annotations.** Two annotators marking one passage at different
+  granularities is the normal case. Merging them first asks only whether the widest reading survived:
+  gold `Sofía Reyes` merged with gold `Reyes`, output `Ale Reyes`, and the surname goes unnoticed.
+- **Folding case and accents, through the same rule the rest of the library uses.** The survival check
+  compared ordinally while `MatchKind.Exact` is defined as "letter for letter, ignoring case and
+  accents". So `Sofía` surviving as `Sofia` read as a clean transcript and `SOFÍA` did not — the meter's
+  private copy of the equality rule was strict in the one direction that hides leaks.
+- **With the punctuation trimmed off an annotation.** Annotators select sloppily, and a span that swept
+  up the sentence-final full stop would otherwise leave one uncovered "sensitive" character that
+  identifies nobody. At thirty annotations a document that reports a leak in nearly every document, and
+  a meter that cries wolf is as useless as one that stays quiet.
 
 An empty corpus has **no** leak rate, rather than a leak rate of zero. The old signature returned 0.0,
 which any report would print as a perfect score for a run that measured nothing. A rate now travels with

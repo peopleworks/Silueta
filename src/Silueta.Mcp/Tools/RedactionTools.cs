@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Silueta.Core;
 
@@ -95,15 +96,20 @@ public static class RedactionTools
         ArgumentNullException.ThrowIfNull(text);
 
         var context = new DeidentificationContext(RequireOpaque(recordId, nameof(recordId)));
-        foreach (string entry in roster ?? [])
+        string[] entries = roster ?? [];
+        for (int i = 0; i < entries.Length; i++)
         {
-            string[] parts = entry.Split('|', StringSplitOptions.TrimEntries);
+            string[] parts = entries[i].Split('|', StringSplitOptions.TrimEntries);
             if (parts.Length < 3 || parts[0].Length == 0 || parts[2].Length == 0)
             {
-                throw new ArgumentException(
-                    $"Roster entry {Quantity(roster)} is not \"Value|Kind|SubjectId\". Every person needs an " +
-                    "opaque subject id of your own; it is the key the vault is filed under and it must not be " +
-                    "the name.");
+                // The position, never the value: an error message is one of the ways identified text
+                // escapes a process that was supposed to be removing it. But naming neither leaves the
+                // caller nothing to act on, which is what this used to do — it reported the roster's
+                // size into the slot that wanted the entry's index.
+                throw new McpException(
+                    $"Roster entry {i + 1} of {entries.Length} is not \"Value|Kind|SubjectId\". Every person " +
+                    "needs an opaque subject id of your own; it is the key the vault is filed under and it " +
+                    "must not be the name.");
             }
 
             context.AddPerson(parts[2], parts[0], ParseKind(parts[1]));
@@ -121,7 +127,7 @@ public static class RedactionTools
         {
             // Deliberately does not echo the path's contents or guess at a nearby file: a wrong path is
             // a caller error, not an invitation to go looking through the filesystem.
-            throw new FileNotFoundException($"No transcript at '{path}'.");
+            throw new McpException($"No transcript at '{path}'.");
         }
 
         return File.ReadAllText(path);
@@ -137,7 +143,7 @@ public static class RedactionTools
 
         if (!File.Exists(rosterPath))
         {
-            throw new FileNotFoundException($"No roster at '{rosterPath}'.");
+            throw new McpException($"No roster at '{rosterPath}'.");
         }
 
         KnownIdentifierDto[] roster =
@@ -150,7 +156,7 @@ public static class RedactionTools
             {
                 // The message names the position, never the value: an error message is one of the ways
                 // identified text escapes a process that was supposed to be removing it.
-                throw new ArgumentException(
+                throw new McpException(
                     $"Roster entry {i + 1} has no \"subjectId\". Give every person an opaque id of your own " +
                     "(\"patient-1\", \"s-7f3\"): it is the key the vault is filed under, and it must not be the name.");
             }
@@ -165,9 +171,14 @@ public static class RedactionTools
     {
         if (string.IsNullOrWhiteSpace(recordId))
         {
-            throw new ArgumentException(
+            // McpException rather than ArgumentException: the SDK replaces an ordinary exception's
+            // message with a generic one before it reaches the client, which is the right default for a
+            // tool that handles transcripts — but these particular messages are written to carry no
+            // value from the text, only the caller's own mistake, and they are useless unheard.
+            _ = parameterName;
+            throw new McpException(
                 "A record needs an opaque id of its own. It goes in the manifest, and the manifest leaves " +
-                "with the corpus.", parameterName);
+                "with the corpus.");
         }
 
         return recordId.Trim();
@@ -175,8 +186,6 @@ public static class RedactionTools
 
     private static IdentifierKind ParseKind(string kind) =>
         Enum.TryParse(kind, ignoreCase: true, out IdentifierKind parsed) ? parsed : IdentifierKind.OtherName;
-
-    private static string Quantity(string[]? roster) => roster is null ? "(none)" : $"of {roster.Length}";
 
     /// <summary>Builds the response. Nothing here is read out of the original text.</summary>
     private static RedactionReport Report(
@@ -196,6 +205,8 @@ public static class RedactionTools
             PolicyFingerprint: manifest.PolicyFingerprint,
             EngineVersion: manifest.EngineVersion,
             SpansReplaced: result.Applied.Count,
+            ResidualSpans: result.Residue.Count,
+            SafeToExport: result.Residue.Count == 0,
             SubjectsInThisRecord: manifest.Subjects,
             SubjectsInVault: vaultSubjects,
             VaultPath: vaultPath,
@@ -212,12 +223,23 @@ public static class RedactionTools
     /// </summary>
     private static string Caveat(DeidentificationContext context, RedactionResult result)
     {
-        var notes = new List<string>
+        var notes = new List<string>();
+
+        if (result.Residue.Count > 0)
+        {
+            notes.Add(
+                $"DO NOT EXPORT THIS TEXT. After redacting, Silueta read its own output back and still " +
+                $"found {result.Residue.Count} identifier(s) in it — an invented name collided with " +
+                "someone real in this record, or a replacement joined the words around it to spell one. " +
+                "Report this to the user rather than passing the text on.");
+        }
+
+        notes.AddRange(new[]
         {
             "Silueta has not yet measured its own leak rate, so this output is not verified to be " +
             "de-identified. Names nobody wrote down — nicknames, a relative mentioned only by " +
             "relationship, a doctor named once — are invisible to the roster matcher and survive.",
-        };
+        });
 
         if (context.Known.Count == 0)
         {
@@ -251,6 +273,14 @@ public sealed record RedactionReport(
     string PolicyFingerprint,
     string EngineVersion,
     int SpansReplaced,
+
+    /// <summary>How many identifiers this same pipeline can still find in its own output. Anything other
+    /// than zero means the run did not hold and the text must not be treated as de-identified.</summary>
+    int ResidualSpans,
+
+    /// <summary>False when ResidualSpans is not zero. Not a guarantee when true: see Caveat.</summary>
+    bool SafeToExport,
+
     int SubjectsInThisRecord,
     int SubjectsInVault,
     string? VaultPath,

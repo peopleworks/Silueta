@@ -21,13 +21,23 @@ public sealed class VaultEntry
     public string Pseudonym { get; set; } = string.Empty;
 
     public string Surrogate { get; set; } = string.Empty;
+
+    /// <summary>Invented names this subject used before. A corpus redacted earlier still says one of
+    /// these, so they stay claimed forever and still lead back here.</summary>
+    public List<string> Retired { get; set; } = new();
 }
 
 /// <summary>The vault on disk. Deliberately its own file: it is the only artefact that can undo the work.</summary>
 public sealed class VaultFile
 {
-    /// <summary>"1" stored a bare code per subject and no surrogate; "2" stores both.</summary>
-    public string Version { get; set; } = "2";
+    /// <summary>"1" stored a bare code per subject and no surrogate; "2" stores both.
+    /// <para>
+    /// Empty by default on purpose. It used to default to "2", so any JSON object at all — <c>{}</c>, a
+    /// roster, somebody's config — passed the version check and produced a valid, empty vault. Paired
+    /// with an atomic writer that then replaced the file, one mistyped path re-minted every surrogate
+    /// and destroyed whatever the file actually was.
+    /// </para></summary>
+    public string Version { get; set; } = string.Empty;
 
     public Dictionary<string, VaultEntry> Subjects { get; set; } = new();
 }
@@ -44,4 +54,5 @@ public sealed class VaultFile
 [JsonSerializable(typeof(KnownIdentifierDto[]))]
 [JsonSerializable(typeof(RedactionManifest))]
 [JsonSerializable(typeof(VaultFile))]
+[JsonSerializable(typeof(Dictionary<string, List<string>>))]
 public sealed partial class SiluetaJsonContext : JsonSerializerContext;

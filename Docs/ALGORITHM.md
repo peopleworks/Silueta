@@ -171,7 +171,22 @@ identify them. There is no second copy by design.
 ## 8. The manifest
 
 Record id, policy name, version and **fingerprint**, engine version, counts by kind, by detector and by
-match type.
+match type — plus the four things that bind it to something:
+
+- **`inputSha256` and `outputSha256`.** Without them the manifest is bound to nothing at all, and a
+  reviewer holding a corpus and a manifest cannot say the two belong together. `textLength` was the
+  closest thing and is a coincidence away from matching.
+- **A fingerprint per detector.** The policy was fingerprinted and the rules that do the *finding* were
+  not, so two corpora could carry one policy name and have been searched with different patterns.
+- **The rules a build could not load, by id.** A pack naming a kind this version does not know is
+  skipped rather than crashing a run — in silence, that made "that rule found nothing" and "that rule
+  never ran" the same absent key.
+- **`keptKinds`.** A corpus redacted with `StaffName = Keep` produces counts identical to a transcript
+  with no staff in it.
+
+What is still missing, and worth saying: **a run cannot be reproduced from the manifest.** Invented names
+are minted at random, so the only way to reproduce one is to hold the vault — which must not travel. The
+fingerprint tells two runs apart; it does not let a third party repeat one.
 
 The fingerprint is a digest of everything that changes what a run did: the action for each kind, the
 confidence floor, the policy's own name and version. Two corpora can both be labelled `safe-harbor/0.1`

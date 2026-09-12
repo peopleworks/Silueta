@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -47,6 +48,33 @@ public sealed class RedactionManifest
     /// a name no detector can see is invisible here too.
     /// </summary>
     public int ResidualSpans { get; set; }
+
+    /// <summary>
+    /// SHA-256 of the transcript that went in, and of the one that came out.
+    /// <para>
+    /// Without these the manifest is bound to nothing: a reviewer holding a corpus and a manifest could
+    /// not say the two belong together, and <c>TextLength</c> is a coincidence away from matching.
+    /// </para>
+    /// </summary>
+    public string InputSha256 { get; set; } = string.Empty;
+
+    public string OutputSha256 { get; set; } = string.Empty;
+
+    /// <summary>A digest per detector of the rules it was carrying. The policy was fingerprinted and the
+    /// rules that do the finding were not, so two corpora could claim one policy and be searched
+    /// differently.</summary>
+    public Dictionary<string, string> DetectorFingerprints { get; set; } = new();
+
+    /// <summary>How many rules each detector loaded.</summary>
+    public Dictionary<string, int> DetectorRulesLoaded { get; set; } = new();
+
+    /// <summary>Rules this build could not load, by detector. Ids only. A rule skipped in silence makes
+    /// "found nothing" and "never ran" the same entry.</summary>
+    public Dictionary<string, List<string>> DetectorRulesSkipped { get; set; } = new();
+
+    /// <summary>Kinds the policy was told to leave alone. A corpus redacted with StaffName kept produces
+    /// counts identical to a transcript with no staff in it; this is the difference.</summary>
+    public List<string> KeptKinds { get; set; } = new();
 }
 
 /// <summary>The de-identified text, what was replaced, and the manifest of the run.</summary>
@@ -158,7 +186,23 @@ public sealed partial class SiluetaEngine
             TextLength = text.Length,
             Subjects = subjects.Count,
             ResidualSpans = residue.Count,
+            InputSha256 = Digest(text),
+            OutputSha256 = Digest(redacted),
+            KeptKinds = [.. Enum.GetValues<IdentifierKind>()
+                .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
+                .Select(kind => kind.ToString())
+                .Order(StringComparer.Ordinal)],
         };
+
+        foreach (IDetector detector in _detectors)
+        {
+            if (detector is IDetectorProvenance provenance)
+            {
+                manifest.DetectorFingerprints[detector.Id] = provenance.Fingerprint;
+                manifest.DetectorRulesLoaded[detector.Id] = provenance.RulesLoaded;
+                manifest.DetectorRulesSkipped[detector.Id] = [.. provenance.RulesSkipped];
+            }
+        }
 
         foreach (Detection detection in applied)
         {
@@ -281,6 +325,9 @@ public sealed partial class SiluetaEngine
 
     /// <summary>Shows the shape of an id without repeating it: the error must not echo what it rejected.</summary>
     private static string Redacted(string id) => id.Length <= 2 ? "…" : $"{id[0]}…{id[^1]}";
+
+    private static string Digest(string text) =>
+        Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
 
     private static void Increment(Dictionary<string, int> counter, string key) =>
         counter[key] = counter.TryGetValue(key, out int n) ? n + 1 : 1;

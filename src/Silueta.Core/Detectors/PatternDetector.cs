@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -42,13 +45,14 @@ public sealed class PatternPackException : Exception
 /// ages above 89. These need no roster and no model, and they are the part of Safe Harbor that can be
 /// argued to a reviewer line by line.
 /// </summary>
-public sealed class PatternDetector : IDetector
+public sealed class PatternDetector : IDetector, IDetectorProvenance
 {
     /// <summary>Long enough for any honest rule on a shift-length transcript, short enough that a bad one
     /// fails instead of hanging the run.</summary>
     public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(2);
 
     private readonly List<(PatternRule Rule, Regex Regex, IdentifierKind Kind)> _rules = new();
+    private readonly List<string> _skipped = new();
 
     /// <param name="timeout">Per-match ceiling. The text comes from outside, and so does the pack.</param>
     public PatternDetector(IEnumerable<PatternRule> rules, TimeSpan? timeout = null)
@@ -59,6 +63,10 @@ public sealed class PatternDetector : IDetector
         {
             if (string.IsNullOrWhiteSpace(rule.Regex) || !Enum.TryParse(rule.Kind, ignoreCase: true, out IdentifierKind kind))
             {
+                // A pack naming a kind we do not know is a pack written against a newer version, so the
+                // rule is skipped rather than crashing the run — but it is written down, because silence
+                // makes "found nothing" and "never ran" the same thing in the manifest.
+                _skipped.Add(string.IsNullOrWhiteSpace(rule.Id) ? "(unnamed rule)" : rule.Id);
                 continue;
             }
 
@@ -67,6 +75,33 @@ public sealed class PatternDetector : IDetector
     }
 
     public string Id => "pattern";
+
+    public int RulesLoaded => _rules.Count;
+
+    public IReadOnlyList<string> RulesSkipped => _skipped;
+
+    /// <summary>
+    /// A digest of the loaded rules: id, kind, pattern and confidence, sorted. Over the patterns
+    /// themselves rather than the pack's file name, because a pack is a file anyone can edit.
+    /// </summary>
+    public string Fingerprint
+    {
+        get
+        {
+            var canonical = new StringBuilder("silueta-pack/1\n");
+            foreach ((PatternRule rule, _, IdentifierKind kind) in _rules.OrderBy(r => r.Rule.Id, StringComparer.Ordinal))
+            {
+                canonical.Append(rule.Id).Append('\t')
+                    .Append(kind).Append('\t')
+                    .Append(rule.Regex).Append('\t')
+                    .Append(rule.Confidence.ToString("R", CultureInfo.InvariantCulture))
+                    .Append('\n');
+            }
+
+            byte[] digest = SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString()));
+            return Convert.ToHexStringLower(digest.AsSpan(0, 8));
+        }
+    }
 
     /// <summary>Loads a pack embedded in this assembly. "core" is the one that ships.</summary>
     public static PatternDetector FromEmbeddedPack(string pack = "core")

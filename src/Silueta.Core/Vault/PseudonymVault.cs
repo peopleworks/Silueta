@@ -29,6 +29,8 @@ public sealed class PseudonymVault
     private readonly Dictionary<string, string> _surrogates = new(StringComparer.Ordinal);
     private readonly HashSet<string> _takenSurrogates = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _takenGiven = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, List<string>> _retired = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, string> _bySurrogate = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>How many subjects this vault knows.</summary>
     public int Count => _codes.Count;
@@ -104,7 +106,7 @@ public sealed class PseudonymVault
         string surrogate = Mint(wouldBeFound);
 
         _surrogates[subjectId] = surrogate;
-        Remember(surrogate);
+        Remember(surrogate, subjectId);
         PseudonymFor(subjectId); // a subject in the text is a subject in the vault, both halves of it
         return surrogate;
     }
@@ -144,9 +146,71 @@ public sealed class PseudonymVault
         }
 
         _surrogates[subjectId] = chosen;
-        Remember(chosen);
+        Remember(chosen, subjectId);
         PseudonymFor(subjectId);
         return this;
+    }
+
+    /// <summary>
+    /// This subject's invented name, without minting one. The <c>SurrogateFor</c> overloads mint on a
+    /// miss, which makes them useless as a question: asking mutated the vault.
+    /// </summary>
+    public bool TryGetSurrogate(string subjectId, out string surrogate) =>
+        _surrogates.TryGetValue(subjectId, out surrogate!);
+
+    /// <summary>
+    /// The subject behind an invented name, including one that has been retired.
+    /// <para>
+    /// This is the way in that the holder of a redacted corpus actually has. A redacted transcript
+    /// contains invented names and never a <c>SIL-</c> code, so <see cref="TryReidentify"/> — which takes
+    /// the code — could only be entered from the one side nobody holds.
+    /// </para>
+    /// </summary>
+    public bool TryFindSubjectBySurrogate(string surrogate, out string subjectId)
+    {
+        subjectId = null!;
+        return !string.IsNullOrWhiteSpace(surrogate) && _bySurrogate.TryGetValue(surrogate.Trim(), out subjectId!);
+    }
+
+    /// <summary>Invented names this subject used before, oldest first. Empty for almost every subject.</summary>
+    public IReadOnlyList<string> RetiredSurrogatesFor(string subjectId) =>
+        _retired.TryGetValue(subjectId, out List<string>? names) ? names : [];
+
+    /// <summary>
+    /// Gives a subject a new invented name, keeping the old one claimed and still traceable.
+    /// <para>
+    /// This is the escape from a record that can never be exported. A surrogate is cleared against the
+    /// roster of the record it was minted for; the vault then keeps it, deliberately, so a later record
+    /// whose roster holds that same name leaves residue no rerun can clear. Without this the only way out
+    /// was to hand-edit the vault, which every document in this repository forbids.
+    /// </para>
+    /// <para>
+    /// The retired name is never handed to anyone else and still leads back to this subject, because a
+    /// corpus redacted before the remint still says it. Orphaning those documents would be a worse
+    /// failure than the one being fixed.
+    /// </para>
+    /// </summary>
+    public string Remint(string subjectId, Func<string, bool> wouldBeFound)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(subjectId);
+        ArgumentNullException.ThrowIfNull(wouldBeFound);
+
+        if (!_surrogates.TryGetValue(subjectId, out string? old))
+        {
+            return SurrogateFor(subjectId, wouldBeFound);
+        }
+
+        string replacement = Mint(wouldBeFound);
+
+        if (!_retired.TryGetValue(subjectId, out List<string>? history))
+        {
+            _retired[subjectId] = history = [];
+        }
+
+        history.Add(old);
+        _surrogates[subjectId] = replacement;
+        Remember(replacement, subjectId);
+        return replacement;
     }
 
     /// <summary>Goes back to the real subject. Only meaningful inside the trusted environment, and the
@@ -162,6 +226,7 @@ public sealed class PseudonymVault
             {
                 Pseudonym = code,
                 Surrogate = _surrogates.GetValueOrDefault(subjectId, string.Empty),
+                Retired = _retired.TryGetValue(subjectId, out List<string>? history) ? [.. history] : [],
             };
         }
 
@@ -179,10 +244,16 @@ public sealed class PseudonymVault
 
         if (file.Version != FileVersion)
         {
+            // An absent version used to default to "2", so any JSON object — {}, a roster, somebody's
+            // config — became a valid, empty vault. Paired with an atomic writer that then replaced the
+            // file, one mistyped path re-minted every surrogate and destroyed whatever the file was.
             throw new InvalidOperationException(
-                $"This vault is version '{file.Version}'; this build reads version {FileVersion}. Version 1 " +
-                "stored only the re-identification code, not the invented name, so the two cannot be " +
-                "reconciled automatically — redact the corpus again with a new vault.");
+                file.Version.Length == 0
+                    ? "This is not a vault: it carries no version. Refusing, rather than reading it as an " +
+                      "empty one, because the next thing that happens is a vault being written over it."
+                    : $"This vault is version '{file.Version}'; this build reads version {FileVersion}. " +
+                      "Version 1 stored only the re-identification code, not the invented name, so the two " +
+                      "cannot be reconciled automatically — redact the corpus again with a new vault.");
         }
 
         foreach ((string subjectId, VaultEntry entry) in file.Subjects)
@@ -203,7 +274,19 @@ public sealed class PseudonymVault
                 // so the vault would cheerfully hand the same name to a second subject.
                 string stored = entry.Surrogate.Trim();
                 vault._surrogates[subjectId] = stored;
-                vault.Remember(stored);
+                vault.Remember(stored, subjectId);
+            }
+
+            foreach (string retired in entry.Retired.Where(name => !string.IsNullOrWhiteSpace(name)))
+            {
+                string stored = retired.Trim();
+                if (!vault._retired.TryGetValue(subjectId, out List<string>? history))
+                {
+                    vault._retired[subjectId] = history = [];
+                }
+
+                history.Add(stored);
+                vault.Remember(stored, subjectId);
             }
         }
 
@@ -215,6 +298,19 @@ public sealed class PseudonymVault
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         return File.Exists(path) ? FromJson(File.ReadAllText(path)) : new PseudonymVault();
+    }
+
+    /// <summary>Whether this text is a vault this build wrote. Asked before overwriting a file.</summary>
+    private static bool IsAVault(string text)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize(text, SiluetaJsonContext.Default.VaultFile)?.Version == FileVersion;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     /// <summary>
@@ -229,6 +325,15 @@ public sealed class PseudonymVault
     public void SaveTo(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
+
+        // Refuse to replace something that is not a vault. The atomic write below is careful about
+        // interruption and says nothing about aim: pointed at the wrong file, it destroyed it perfectly.
+        if (File.Exists(path) && !IsAVault(File.ReadAllText(path)))
+        {
+            throw new InvalidOperationException(
+                $"'{path}' exists and is not a vault this build wrote. Refusing to replace it — a vault has " +
+                "no second copy, and neither, probably, does that file.");
+        }
 
         string directory = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
         Directory.CreateDirectory(directory);
@@ -304,9 +409,10 @@ public sealed class PseudonymVault
             "roster rules out the rest. Widen the name lists before redacting a corpus this large.");
     }
 
-    private void Remember(string surrogate)
+    private void Remember(string surrogate, string subjectId)
     {
         _takenSurrogates.Add(surrogate);
+        _bySurrogate[surrogate] = subjectId;
 
         int space = surrogate.IndexOf(' ');
         _takenGiven.Add(space < 0 ? surrogate : surrogate[..space]);

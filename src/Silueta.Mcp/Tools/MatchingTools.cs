@@ -1,0 +1,174 @@
+using System.ComponentModel;
+using ModelContextProtocol.Server;
+using Silueta.Core;
+
+namespace Silueta.Mcp.Tools;
+
+/// <summary>
+/// Why the matcher did or did not match two names, and which pattern rules exist. Both are reference
+/// tools: they touch no transcript, no roster and no vault, and they answer the question a reader
+/// actually has when a name survives a redaction.
+/// </summary>
+[McpServerToolType]
+public static class MatchingTools
+{
+    [McpServerTool(Name = "explain_name_match", ReadOnly = true),
+     Description("""
+        Explains whether Silueta would treat two spellings as the same name, and why — the phonetic key
+        of each, the edit distance between the keys, the similarity ratio, and the threshold it was
+        compared against.
+
+        Use it when a name survived a redaction and you need to say what happened, or when adding
+        someone to a roster and you want to know which recogniser mangles it will catch. Pass NAMES, not
+        transcripts: two words, nothing identifying beyond what you already typed.
+
+        Worked example: "Reyes" and "Rays" are the same surname, one as the agency writes it and one as
+        the recogniser heard it. Their keys are "reyes" and "rais" — three edits apart, ratio 0.40,
+        threshold 0.84. Silueta misses it, and that is a matcher failure rather than a design decision.
+        """)]
+    public static MatchExplanation ExplainNameMatch(
+        [Description("One spelling, e.g. the name as the roster has it: \"Sofía Reyes\".")] string a,
+        [Description("The other, e.g. as the recogniser wrote it: \"Sophia Rays\".")] string b,
+        [Description("Similarity threshold per word. Silueta's default is 0.84.")] double threshold = 0.84,
+        [Description("Below this key length only an exact key match counts. Default 4.")] int minFuzzyLength = 4)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+
+        List<Token> left = Tokenizer.Tokenize(a);
+        List<Token> right = Tokenizer.Tokenize(b);
+
+        var words = new List<WordComparison>();
+        for (int i = 0; i < Math.Max(left.Count, right.Count); i++)
+        {
+            string wordA = i < left.Count ? left[i].Text : string.Empty;
+            string wordB = i < right.Count ? right[i].Text : string.Empty;
+            string keyA = PhoneticKey.Compute(wordA);
+            string keyB = PhoneticKey.Compute(wordB);
+
+            string verdict;
+            if (keyA.Length == 0 || keyB.Length == 0)
+            {
+                verdict = "no key — one side has no letters, or the names have a different number of words";
+            }
+            else if (string.Equals(keyA, keyB, StringComparison.Ordinal))
+            {
+                verdict = "same key: heard as the same word";
+            }
+            else if (keyA.Length < minFuzzyLength || keyB.Length < minFuzzyLength)
+            {
+                verdict = $"key shorter than {minFuzzyLength}: only an exact key match counts, so this is a miss";
+            }
+            else
+            {
+                double ratio = Similarity.Ratio(keyA, keyB);
+                verdict = ratio >= threshold
+                    ? $"close enough: {ratio:0.000} >= {threshold:0.00}"
+                    : $"too far: {ratio:0.000} < {threshold:0.00}";
+            }
+
+            words.Add(new WordComparison(
+                wordA,
+                wordB,
+                keyA,
+                keyB,
+                keyA.Length == 0 || keyB.Length == 0 ? 0 : Similarity.Distance(keyA, keyB),
+                keyA.Length == 0 || keyB.Length == 0 ? 0 : Math.Round(Similarity.Ratio(keyA, keyB), 3),
+                verdict));
+        }
+
+        bool wouldMatch = left.Count > 0
+            && left.Count == right.Count
+            && words.All(w => w.KeyA.Length > 0
+                && w.KeyB.Length > 0
+                && (w.KeyA == w.KeyB
+                    || (w.KeyA.Length >= minFuzzyLength && w.KeyB.Length >= minFuzzyLength && w.Ratio >= threshold)));
+
+        return new MatchExplanation(
+            a,
+            b,
+            wouldMatch,
+            Math.Round(words.Count == 0 ? 0 : words.Min(w => w.Ratio), 3),
+            threshold,
+            words,
+            "A name is matched word by word and scored by its weakest word: every part has to be " +
+            "recognisable. The key is deliberately coarser than a principled phonetic algorithm, " +
+            "because ASR damage is not phonetically principled — it substitutes whole words.");
+    }
+
+    [McpServerTool(Name = "list_pattern_rules", ReadOnly = true),
+     Description("""
+        Lists the pattern rules that find identifiers by shape rather than by name — phone numbers,
+        e-mail, URLs, IP addresses, record numbers, dates in English and Spanish, ages over 89 — with
+        each rule's regular expression, the kind of identifier it emits and its confidence.
+
+        Read it to see what a run will catch without a roster, and, more usefully, what it will not.
+        HIPAA Safe Harbor names eighteen identifiers; this pack does not yet emit a postal code or a
+        street address, and it recognises no number or date spoken as words.
+        """)]
+    public static PatternCatalog ListPatternRules(
+        [Description("Filter by identifier kind, e.g. \"Date\" or \"Phone\". Empty = all.")] string kind = "")
+    {
+        List<PatternRuleInfo> rules = PatternPack.Rules
+            .Where(rule => kind.Length == 0 || rule.Kind.Equals(kind.Trim(), StringComparison.OrdinalIgnoreCase))
+            .Select(rule => new PatternRuleInfo(rule.Id, rule.Kind, rule.Regex, rule.Confidence))
+            .ToList();
+
+        string[] emitted = PatternPack.Rules.Select(rule => rule.Kind).Distinct().ToArray();
+        string[] missing = Enum.GetNames<IdentifierKind>()
+            .Where(name => !emitted.Contains(name, StringComparer.OrdinalIgnoreCase))
+            .Where(name => name is not ("PatientName" or "FamilyName" or "StaffName" or "OtherName" or "Other"))
+            .ToArray();
+
+        return new PatternCatalog(
+            rules.Count,
+            rules,
+            missing,
+            "Kinds listed under notCoveredByAnyRule have a policy action but no rule that emits them, so " +
+            "nothing will ever be found for them. Names are not in that list because names come from the " +
+            "roster, not from a pattern.");
+    }
+}
+
+/// <summary>The core pack, read once. Reading it through the detector's own loader keeps this in step
+/// with what actually runs rather than with a copy of the file.</summary>
+internal static class PatternPack
+{
+    internal static readonly IReadOnlyList<PatternRule> Rules = Load();
+
+    private static PatternRule[] Load()
+    {
+        using Stream? stream = typeof(PatternDetector).Assembly
+            .GetManifestResourceStream("Silueta.Core.Detectors.Packs.patterns.core.json");
+
+        return stream is null
+            ? []
+            : System.Text.Json.JsonSerializer.Deserialize(stream, SiluetaJsonContext.Default.PatternRuleArray) ?? [];
+    }
+}
+
+public sealed record WordComparison(
+    string WordA,
+    string WordB,
+    string KeyA,
+    string KeyB,
+    int EditDistance,
+    double Ratio,
+    string Verdict);
+
+public sealed record MatchExplanation(
+    string A,
+    string B,
+    bool WouldMatch,
+    double WeakestWordRatio,
+    double Threshold,
+    IReadOnlyList<WordComparison> Words,
+    string HowItWorks);
+
+public sealed record PatternRuleInfo(string Id, string Kind, string Regex, double Confidence);
+
+public sealed record PatternCatalog(
+    int Count,
+    IReadOnlyList<PatternRuleInfo> Rules,
+    IReadOnlyList<string> NotCoveredByAnyRule,
+    string Note);

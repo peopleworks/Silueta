@@ -1,0 +1,25 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.peopleworks/silueta",
+  "version": "0.1.0",
+  "title": "Silueta — transcript de-identification",
+  "description": "De-identifies conversation transcripts by file path, so identified text never has to pass through a model's context. Runs on the machine; never re-identifies.",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "registryBaseUrl": "https://api.nuget.org/v3/index.json",
+      "identifier": "Silueta.Mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "runtimeHint": "dnx",
+      "packageArguments": [],
+      "environmentVariables": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/peopleworks/Silueta",
+    "source": "github"
+  }
+}

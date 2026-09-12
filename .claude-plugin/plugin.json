@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "silueta",
+  "version": "0.1.0",
+  "description": "De-identification for conversation transcripts — the text a speech recogniser produced. Redacts by file path so the identified version never enters the conversation, matches a roster you already hold through ASR spelling damage, and says plainly what it is known not to catch.",
+  "author": {
+    "name": "Pedro Hernández — PeopleWorks",
+    "url": "https://github.com/peopleworks"
+  },
+  "homepage": "https://github.com/peopleworks/Silueta",
+  "repository": "https://github.com/peopleworks/Silueta",
+  "license": "MIT",
+  "keywords": ["deidentification", "phi", "hipaa", "privacy", "transcripts", "asr", "offline"]
+}

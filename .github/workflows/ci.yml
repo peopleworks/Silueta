@@ -65,14 +65,24 @@ jobs:
           [ "$fail" -eq 0 ] || exit 1
           echo "Nothing from the roster survived."
 
-      # The README's second code block is the de-identified output, pasted from a real run. If the
-      # surrogate list, the policy seed or a detector changes, the block becomes fiction — and the
-      # person most likely to notice is a stranger evaluating whether to trust the library.
+      # The README shows the de-identified output, pasted from a real run. If the surrogate pool, the
+      # demo's vault or a detector changes, the block becomes fiction — and the person most likely to
+      # notice is a stranger evaluating whether to trust the library.
+      #
+      # Anchored to an HTML comment rather than counted from the top of the file. It used to be
+      # `awk '.../{f++} f==3'`, which silently followed whichever block happened to be third: adding a
+      # section above it would have made this step check the wrong text and pass anyway.
       - name: The README matches what the demo prints
         run: |
           out=$(dotnet run --project src/Silueta.Cli -c Release --no-build -- demo)
           deid=$(printf '%s\n' "$out" | sed -n '/--- de-identified ---/,/--- what was replaced ---/p')
-          claimed=$(awk '/^```/{f++; next} f==3' README.md)
+          claimed=$(sed -n '/demo-output:start/,/demo-output:end/p' README.md | sed '/^```/d;/demo-output:/d')
+
+          if [ -z "$(printf '%s' "$claimed" | tr -d '[:space:]')" ]; then
+            echo "::error::Found no demo output between the demo-output markers in README.md."
+            echo "Either the markers were removed or the block is empty; this cannot pass vacuously."
+            exit 1
+          fi
 
           fail=0
           while IFS= read -r line; do
@@ -85,3 +95,55 @@ jobs:
 
           [ "$fail" -eq 0 ] || exit 1
           echo "The README and the demo still agree."
+
+      # The MCP server is how an agent reaches Silueta, and a server that fails to start is a server
+      # whose tools silently do not exist in the client. This speaks the protocol to it over stdio and
+      # requires the four tools by name — the prose guard in the tests checks the documentation lists
+      # them; this checks the server actually has them.
+      - name: The MCP server starts and declares its tools
+        run: |
+          python3 - <<'PROBE'
+          import json, subprocess, sys, threading, time
+
+          proc = subprocess.Popen(
+              ["dotnet", "run", "--project", "src/Silueta.Mcp", "-c", "Release", "--no-build"],
+              stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+              text=True, encoding="utf-8", bufsize=1)
+
+          out = []
+          threading.Thread(target=lambda: [out.append(line) for line in proc.stdout], daemon=True).start()
+
+          def send(message):
+              proc.stdin.write(json.dumps(message) + "\n")
+              proc.stdin.flush()
+
+          send({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+              "protocolVersion": "2025-06-18", "capabilities": {},
+              "clientInfo": {"name": "ci", "version": "1"}}})
+          time.sleep(5)
+          send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+          send({"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}})
+          time.sleep(5)
+          proc.stdin.close()
+          try:
+              proc.wait(timeout=15)
+          except Exception:
+              proc.kill()
+
+          tools = []
+          for line in out:
+              line = line.strip()
+              if not line:
+                  continue
+              message = json.loads(line)
+              if message.get("id") == 2 and "result" in message:
+                  tools = [tool["name"] for tool in message["result"]["tools"]]
+
+          expected = {"redact_transcript", "redact_text", "explain_name_match", "list_pattern_rules"}
+          missing = expected - set(tools)
+          if missing:
+              print(f"::error::The MCP server did not declare: {', '.join(sorted(missing))}. It answered with: {tools}")
+              sys.exit(1)
+
+          print(f"The MCP server declared all {len(tools)} tools.")
+          PROBE

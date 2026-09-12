@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace-manifest.json",
+  "name": "silueta",
+  "owner": {
+    "name": "Pedro Hernández — PeopleWorks",
+    "url": "https://github.com/peopleworks"
+  },
+  "description": "Install Silueta as a Claude Code plugin.",
+  "plugins": [
+    {
+      "name": "silueta",
+      "source": "./",
+      "homepage": "https://github.com/peopleworks/Silueta",
+      "description": "De-identify conversation transcripts by path, so the identified text never reaches the conversation — and say honestly what survived.",
+      "license": "MIT",
+      "keywords": ["deidentification", "phi", "hipaa", "privacy", "transcripts", "asr", "offline"]
+    }
+  ]
+}

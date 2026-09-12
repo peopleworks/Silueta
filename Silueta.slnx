@@ -3,6 +3,7 @@
   <Folder Name="/src/">
     <Project Path="src/Silueta.Core/Silueta.Core.csproj" />
     <Project Path="src/Silueta.Cli/Silueta.Cli.csproj" />
+    <Project Path="src/Silueta.Mcp/Silueta.Mcp.csproj" />
   </Folder>
 
   <Folder Name="/tests/">

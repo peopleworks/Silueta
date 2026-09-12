@@ -31,3 +31,6 @@ roster*.json
 # were documentation. Public defects become GitHub issues instead — see AI_Tasks/README.md.
 AI_Tasks/
 .audits/
+
+# Local pack output
+out/

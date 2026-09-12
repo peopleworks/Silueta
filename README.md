@@ -16,12 +16,14 @@ and Ellie said she would email jamileth.v@example.com. The patient is 94 years o
 Blood pressure 138 over 82, pain 4 out of 10, and she took the warfarin with breakfast.
 ```
 
+<!-- demo-output:start — CI checks this block against `silueta demo`; see .github/workflows/ci.yml -->
 ```
 Shift report. Yael Rays was with Mrs. Ale Espinal this morning.
 Her daughter Chris called at [PHONE] about the 2026 appointment,
 and Ellie said she would email [EMAIL]. The patient is 90 or older.
 Blood pressure 138 over 82, pain 4 out of 10, and she took the warfarin with breakfast.
 ```
+<!-- demo-output:end -->
 
 Not one of those names was spelled the way the agency spells it. `Sofía Reyes` arrived as `Sophia Rays`,
 `Eleanor Vasquez` as `Ellenor Vasques`, `Yamilet` as `Jamileth`. A redactor that looks for names as they
@@ -66,6 +68,41 @@ key the vault is filed under, so a record named after its file (`Ana-Perez.txt`)
 the patient's name would publish the identifier through the very files that exist to show none were
 published. Pass `--vault` on every run of a corpus: it is where the invented names live, and without it
 each transcript invents new ones for the same people.
+
+## Use it from an agent
+
+Silueta ships as an **MCP server** and as an **agent skill**, and the two exist for one reason worth
+stating plainly.
+
+**The arguments of a tool call are written by the model.** A tool shaped `redact(text)` requires the
+model to have read the transcript in order to pass it — so by the time the redactor runs, the identified
+text is already in the context window, in the conversation history, and in whatever the provider logs.
+The tool can return clean text. It cannot un-expose its own input.
+
+So the main tool takes a **path the model never opens**. The server reads the file, redacts it, and
+returns the redacted text with a manifest of counts. The values that were removed do not come back, and
+neither does the vault's mapping from a person to their invented name.
+
+```jsonc
+// claude_desktop_config.json — or any MCP client
+{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--yes"] } } }
+```
+
+| Tool | What it does | Identified text in the model's context |
+| --- | --- | --- |
+| `redact_transcript` | De-identifies a file on disk against a roster; returns the redacted text and a manifest | **no** — use this one |
+| `redact_text` | The same for text passed inline — already exposed by being passed | yes, unavoidably |
+| `explain_name_match` | Why the matcher does or does not treat two spellings as one name: keys, edit distance, ratio, threshold | no |
+| `list_pattern_rules` | The pattern rules, and which Safe Harbor identifiers no rule emits | no |
+
+**There is no re-identification tool, and there will not be one.** The vault is the only artefact that
+can undo the work, every use of it is meant to be logged by the person who did it, and a model calling
+a tool is not that person.
+
+The skill ([`SKILL.md`](SKILL.md)) is the judgment that goes with those tools: never read a transcript
+into the conversation, never quote its content back, never claim a corpus is de-identified, and say what
+is known to survive. Install it with `npx skills add peopleworks/Silueta -g`, or as a Claude Code plugin
+with `/plugin marketplace add peopleworks/Silueta`. More in [`skill/README.md`](skill/README.md).
 
 ## How it works
 
@@ -143,6 +180,8 @@ one this repository can defend.
 | --- | --- |
 | `src/Silueta.Core` | The engine: detectors, policy, vault, manifest, leak rate. No dependencies. |
 | `src/Silueta.Cli` | `silueta demo` and `silueta redact`, shipped as a dotnet tool. |
+| `src/Silueta.Mcp` | The MCP server: four tools, the main one taking a path. |
+| `SKILL.md` · `skill/` | The agent skill and how to install it. |
 | `tests/Silueta.Core.Tests` | Every case in them is real speech-recognition damage, not invented. |
 
 ## License

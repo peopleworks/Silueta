@@ -39,17 +39,41 @@ jobs:
         run: |
           dotnet pack src/Silueta.Core -c Release -o out
           dotnet pack src/Silueta.Cli  -c Release -o out
+          dotnet pack src/Silueta.Mcp  -c Release -o out
           ls -1 out/
 
       # Guards the classic footgun: tagging v0.2.0 while the csproj files still say 0.1.0.
       # --skip-duplicate would swallow that silently and report success.
+      #
+      # EVERY package must match, not merely one. The previous version asked only whether some file
+      # named *.$want.nupkg existed and then pushed the whole directory — so bumping two of the three
+      # csproj files and forgetting the third published the stale one, under a release that claims a
+      # version it does not contain. Published versions cannot be deleted.
       - name: Check the release tag matches what we built
         if: github.event_name == 'release'
         run: |
           want="${GITHUB_REF_NAME#v}"
-          if ! ls out/*."$want".nupkg >/dev/null 2>&1; then
-            echo "::error::Release is tagged $GITHUB_REF_NAME, but nothing packed as version $want."
-            echo "Bump <Version> in the csproj files to $want, or retag the release."
+          fail=0
+
+          for pkg in out/*.nupkg; do
+            case "$pkg" in
+              *".$want.nupkg") ;;
+              *)
+                echo "::error::$(basename "$pkg") is not version $want, but the release is tagged $GITHUB_REF_NAME."
+                fail=1
+                ;;
+            esac
+          done
+
+          if [ ! -e out/Silueta.Core."$want".nupkg ] || \
+             [ ! -e out/Silueta.Cli."$want".nupkg ] || \
+             [ ! -e out/Silueta.Mcp."$want".nupkg ]; then
+            echo "::error::Release $GITHUB_REF_NAME did not produce all three packages at version $want."
+            fail=1
+          fi
+
+          if [ "$fail" -ne 0 ]; then
+            echo "Bump <Version> in every csproj to $want, or retag the release."
             ls -1 out/
             exit 1
           fi

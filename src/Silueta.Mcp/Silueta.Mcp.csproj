@@ -1,0 +1,48 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>Silueta.Mcp</RootNamespace>
+    <AssemblyName>silueta-mcp</AssemblyName>
+
+    <!-- Distributable as a global .NET tool: `dotnet tool install -g Silueta.Mcp` gives the
+         `silueta-mcp` command, which Claude Desktop (or any MCP client) launches over stdio. -->
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>silueta-mcp</ToolCommandName>
+    <PackageId>Silueta.Mcp</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Pedro Hernández (PeopleWorks)</Authors>
+    <Company>PeopleWorks</Company>
+    <Description>Model Context Protocol (MCP) server for Silueta. De-identifies conversation transcripts by file path, so the identified text never has to pass through a model's context to be redacted; also explains why the phonetic matcher did or did not match two names, and lists the pattern rules. Runs entirely on the machine and never re-identifies.</Description>
+    <!-- `mcpserver` is what puts the package in the MCP server galleries (VS Code, NuGet). -->
+    <PackageTags>mcpserver;mcp;deidentification;phi;hipaa;privacy;transcripts;asr;claude;modelcontextprotocol</PackageTags>
+    <PackageProjectUrl>https://github.com/peopleworks/Silueta</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- PackAsTool already contributes DotnetTool (so `dnx Silueta.Mcp` works);
+         McpServer is what the MCP galleries and the official registry look for. -->
+    <PackageType>McpServer</PackageType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <!-- MCP manifest: clients and registries read this to learn how to launch the server. -->
+    <None Include=".mcp/server.json" Pack="true" PackagePath="/.mcp/" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" Version="1.4.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Silueta.Core\Silueta.Core.csproj" />
+  </ItemGroup>
+
+</Project>

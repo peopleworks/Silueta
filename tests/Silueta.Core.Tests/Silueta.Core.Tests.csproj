@@ -20,6 +20,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Silueta.Core\Silueta.Core.csproj" />
+    <!-- The MCP server is a privacy boundary, not a wrapper: its tools decide what reaches a model. -->
+    <ProjectReference Include="..\..\src\Silueta.Mcp\Silueta.Mcp.csproj" />
   </ItemGroup>
 
 </Project>

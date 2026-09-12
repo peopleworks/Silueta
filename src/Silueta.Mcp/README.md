@@ -42,6 +42,20 @@ Everything runs on the machine. Nothing is downloaded and nothing is uploaded.
 can undo the work, every re-identification is meant to be logged by the person who did it, and a model
 calling a tool is not that person.
 
+## What the server refuses
+
+`redact_transcript` takes a path the model wrote, which is the whole attack surface. So:
+
+- every path is confined to one directory — `SILUETA_ROOT`, defaulting to where the server was started;
+- a file that looks like a vault is refused outright, and a run whose vault is also its transcript or
+  output is refused;
+- the redacted text is **withheld**, with the reason in a `withheld` field, when no roster was given
+  (no name could be found and every name survived), when nothing was replaced, or when the run left
+  residue. `outputPath` still writes a clean result to disk without it entering the context.
+
+Without these, this tool is a general-purpose file reader with a reassuring name — and it was: pointing
+it at the vault with no roster returned the whole subject-to-invented-name table, marked safe to export.
+
 ## Every result says whether it held
 
 After redacting, the engine runs the same detectors over its own output. The report carries

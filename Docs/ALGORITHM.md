@@ -97,9 +97,17 @@ framework's own timeout exception carries the input that defeated it.
 | `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; a postal code is removed whole |
 
 **Why surrogates rather than labels for names.** The text stays a sentence, so whatever reads it next —
-a person, a model, a metric — still works. And a name that slipped past the redactor no longer stands out
-among the brackets: with everything else replaced by plausible names, a leak is not advertised to whoever
-is skimming.
+a person, a model, a metric — still works. That is the whole of the argument, and it is enough.
+
+**What it is not.** This used to add that a leak would no longer stand out among plausible invented
+names. That claim does not survive an adversary. The pool is forty-three words in a public MIT
+repository and embedded in the shipped assembly, so subtracting it from the capitalised tokens of a
+redacted transcript leaves the leaks. On this repository's own README example the subtraction returns
+`Rays` and `Ellie` — precisely the two leaks the README names in prose, found without reading the prose.
+At corpus scale the pool is not even needed: twenty-one given names across hundreds of subjects makes
+surrogates the *repeated* names and leaks the *singletons*, and a frequency sort separates them. If that
+property is ever wanted, it needs a pool of thousands loaded like a pattern pack; until then, surrogates
+buy readability and nothing else.
 
 **The vault chooses the surrogate, and writes it down.** It used to be computed — a hash of the subject
 id and a policy seed — and a computed surrogate fails three ways at once. It can return the person's own

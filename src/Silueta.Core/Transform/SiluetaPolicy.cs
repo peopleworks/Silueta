@@ -13,17 +13,26 @@ public enum RedactionAction
 
     /// <summary>Replace with a consistent invented name.
     /// <para>
-    /// Surrogates beat labels for two reasons. The text stays natural, so whatever reads it next — a
-    /// person, a model, a metric — still sees a sentence. And a name that slips through the redactor no
-    /// longer stands out among the labels: with everything else replaced by plausible names, a leak is
-    /// not advertised to whoever is skimming.
+    /// Surrogates beat labels because the text stays natural: whatever reads it next — a person, a model,
+    /// a metric — still sees a sentence, which labels in quantity do not give you.
+    /// </para>
+    /// <para>
+    /// <b>They do not hide a leak, and this used to claim they did.</b> The argument was that a name that
+    /// slipped past the redactor would not stand out among plausible invented ones. It does not survive
+    /// contact with an adversary: the pool is forty-three words in a public MIT repository, so subtracting
+    /// it from the capitalised tokens leaves exactly the leaks. Run on this library's own README example,
+    /// that subtraction returns "Rays" and "Ellie" — the two leaks the README names in prose. At corpus
+    /// scale the pool is not even needed: twenty-one given names across hundreds of subjects makes
+    /// surrogates the repeated names and leaks the singletons, and a frequency sort finds them.
     /// </para></summary>
     Surrogate,
 
     /// <summary>Keep the year, drop the rest. Safe Harbor allows the year and nothing finer.</summary>
     YearOnly,
 
-    /// <summary>Widen until it stops identifying: 94 becomes "90 or older", a ZIP keeps three digits.</summary>
+    /// <summary>Widen until it stops identifying: 94 becomes "90 or older". A postal code is removed
+    /// whole — Safe Harbor allows its first three digits only where that area holds more than 20,000
+    /// people, and the census table that says which is which is not in this package yet.</summary>
     Generalize,
 
     /// <summary>Leave it. Only ever for kinds a caller has decided are not identifiers in their setting.</summary>

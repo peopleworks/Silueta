@@ -99,6 +99,19 @@ neither does the vault's mapping from a person to their invented name.
 can undo the work, every use of it is meant to be logged by the person who did it, and a model calling
 a tool is not that person.
 
+Keeping that promise takes more than not declaring such a tool, because the capability can hide inside
+another one. `redact_transcript` reads whatever path the model writes, and a file that matches no roster
+comes back unchanged — so pointing it at the vault returned the whole subject-to-invented-name table,
+reported as safe to export. The server therefore:
+
+- **confines every path to one directory** — set `SILUETA_ROOT`, or it uses the directory the server was
+  started in;
+- **refuses to read anything that looks like a vault**, and refuses a run where the vault is also the
+  transcript or the output;
+- **withholds the redacted text** rather than returning it when no roster was given, when nothing was
+  replaced, or when the run left residue. The reason comes back in a `withheld` field; `outputPath`
+  still writes a clean result to disk.
+
 The skill ([`SKILL.md`](SKILL.md)) is the judgment that goes with those tools: never read a transcript
 into the conversation, never quote its content back, never claim a corpus is de-identified, and say what
 is known to survive. Install it with `npx skills add peopleworks/Silueta -g`, or as a Claude Code plugin

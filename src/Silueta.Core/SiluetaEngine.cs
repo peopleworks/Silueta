@@ -109,6 +109,17 @@ public sealed partial class SiluetaEngine
         bool WouldBeFound(string candidate) =>
             _detectors.Any(detector => detector.Detect(candidate, context).Any());
 
+        // The record id and every subject id travel: one in the manifest that ships with the corpus, the
+        // others as the keys of the vault. Both are documented as needing to be opaque, and that rule
+        // lived only in a doc comment — so a caller could pass the patient's name, watch it removed from
+        // the text, and publish it in the same run through the very file meant to prove it was not.
+        // Checked with the detectors, which is the one test that cannot drift from the matcher.
+        RejectIfItNamesSomeone(context.RecordId, "record id", WouldBeFound);
+        foreach (string subjectId in context.Known.Select(known => known.SubjectId).Distinct(StringComparer.Ordinal))
+        {
+            RejectIfItNamesSomeone(subjectId, $"subject id '{Redacted(subjectId)}'", WouldBeFound);
+        }
+
         var sb = new StringBuilder(text.Length);
         var subjects = new HashSet<string>(StringComparer.Ordinal);
         int cursor = 0;
@@ -254,6 +265,22 @@ public sealed partial class SiluetaEngine
         IdentifierKind.DeviceId => "[DEVICE]",
         _ => "[REMOVED]",
     };
+
+    /// <summary>Throws when an id that travels turns out to name one of the people it is hiding.</summary>
+    private static void RejectIfItNamesSomeone(string id, string what, Func<string, bool> wouldBeFound)
+    {
+        if (wouldBeFound(id))
+        {
+            throw new ArgumentException(
+                $"The {what} matches something on this record's roster, so it is not opaque. It travels — " +
+                "the record id in the manifest, the subject id as the vault's key — and an id that names " +
+                "the person publishes the identifier through the files meant to prove none were published. " +
+                "Use an id of your own: \"r-042\", \"patient-1\", \"s-7f3\".");
+        }
+    }
+
+    /// <summary>Shows the shape of an id without repeating it: the error must not echo what it rejected.</summary>
+    private static string Redacted(string id) => id.Length <= 2 ? "…" : $"{id[0]}…{id[^1]}";
 
     private static void Increment(Dictionary<string, int> counter, string key) =>
         counter[key] = counter.TryGetValue(key, out int n) ? n + 1 : 1;

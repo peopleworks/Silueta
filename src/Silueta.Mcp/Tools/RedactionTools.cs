@@ -54,24 +54,42 @@ public static class RedactionTools
         string text = ReadTranscript(transcriptPath);
         var context = BuildContext(recordId, rosterPath);
 
-        PseudonymVault vault = vaultPath is { Length: > 0 }
-            ? PseudonymVault.LoadOrCreate(vaultPath)
+        string? resolvedVault = vaultPath is { Length: > 0 } ? Resolve(vaultPath, nameof(vaultPath)) : null;
+        string? resolvedOutput = outputPath is { Length: > 0 } ? Resolve(outputPath, nameof(outputPath)) : null;
+
+        // A run that wrote the transcript over its own vault would destroy the only thing that can undo
+        // the work, and it is one typo away when the model writes both paths.
+        if (resolvedVault is not null &&
+            (string.Equals(resolvedVault, Resolve(transcriptPath, nameof(transcriptPath)), StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(resolvedVault, resolvedOutput, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new McpException(
+                "The vault cannot also be the transcript or the output. It is the only artefact that can " +
+                "undo this work and there is no second copy of it.");
+        }
+
+        PseudonymVault vault = resolvedVault is not null
+            ? PseudonymVault.LoadOrCreate(resolvedVault)
             : new PseudonymVault();
 
         var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], vault);
-        RedactionResult result = engine.Redact(text, context);
+        RedactionResult result = Run(engine, text, context);
 
-        if (vaultPath is { Length: > 0 })
+        // The vault first, before any redacted artefact exists: it has no second copy, and a run that
+        // wrote the transcript and then failed to write the vault leaves a corpus nobody can trace back.
+        if (resolvedVault is not null)
         {
-            vault.SaveTo(vaultPath);
+            vault.SaveTo(resolvedVault);
         }
 
-        if (outputPath is { Length: > 0 })
+        // Nothing is written when the run did not hold. On disk with a warning beside it is a file
+        // someone will eventually treat as de-identified.
+        if (resolvedOutput is not null && result.Residue.Count == 0)
         {
-            File.WriteAllText(outputPath, result.Text);
+            File.WriteAllText(resolvedOutput, result.Text);
         }
 
-        return Report(result, context, vaultPath, outputPath, vault.Count);
+        return Report(result, context, vaultPath, resolvedOutput is null || result.Residue.Count > 0 ? null : outputPath, vault.Count, echoesTheFile: true);
     }
 
     [McpServerTool(Name = "redact_text", ReadOnly = true),
@@ -116,21 +134,119 @@ public static class RedactionTools
         }
 
         var engine = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()]);
-        RedactionResult result = engine.Redact(text, context);
+        RedactionResult result = Run(engine, text, context);
 
         return Report(result, context, vaultPath: null, outputPath: null, engine.Vault.Count);
     }
 
+    /// <summary>
+    /// The environment variable that confines every path this server will touch. Defaults to the
+    /// directory the server was started in.
+    /// </summary>
+    public const string RootVariable = "SILUETA_ROOT";
+
+    private static string Root =>
+        Path.GetFullPath(Environment.GetEnvironmentVariable(RootVariable) is { Length: > 0 } configured
+            ? configured
+            : Directory.GetCurrentDirectory());
+
+    /// <summary>
+    /// Resolves a path the model wrote, and refuses anything outside the configured root.
+    /// <para>
+    /// Model-written paths are the whole attack surface of this server. Without this, the tool below is
+    /// a general-purpose file reader wearing a reassuring name.
+    /// </para>
+    /// </summary>
+    private static string Resolve(string path, string parameterName)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new McpException($"{parameterName} is required.");
+        }
+
+        string full = Path.GetFullPath(path);
+
+        // The trailing separator matters: without it, a sibling directory whose name merely starts with
+        // the root's name ("C:\corpus-old" against a root of "C:\corpus") would pass a prefix test.
+        string root = Path.TrimEndingDirectorySeparator(Root) + Path.DirectorySeparatorChar;
+
+        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new McpException(
+                $"'{parameterName}' is outside the directory this server is allowed to touch. Set " +
+                $"{RootVariable} to the folder holding the corpus, or start the server there.");
+        }
+
+        return full;
+    }
+
+    /// <summary>
+    /// Runs the engine and lets its own refusals reach the caller.
+    /// <para>
+    /// The SDK replaces an ordinary exception's message with a generic one before it reaches the client,
+    /// which is the right default for a server that handles transcripts. But the engine's argument
+    /// failures are the caller's own mistakes — a record id that names the patient, a roster entry with
+    /// no subject id — and they are written to carry no value from the text, by the same rule that keeps
+    /// values off <see cref="Detection"/>. Unheard, they leave the model guessing at a tool that simply
+    /// stopped working.
+    /// </para>
+    /// </summary>
+    private static RedactionResult Run(SiluetaEngine engine, string text, DeidentificationContext context)
+    {
+        try
+        {
+            return engine.Redact(text, context);
+        }
+        catch (ArgumentException ex)
+        {
+            throw new McpException(ex.Message);
+        }
+    }
+
     private static string ReadTranscript(string path)
     {
-        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        string full = Resolve(path, nameof(path));
+
+        if (!File.Exists(full))
         {
             // Deliberately does not echo the path's contents or guess at a nearby file: a wrong path is
             // a caller error, not an invitation to go looking through the filesystem.
             throw new McpException($"No transcript at '{path}'.");
         }
 
-        return File.ReadAllText(path);
+        string text = File.ReadAllText(full);
+
+        // The vault maps every subject to the invented name that stands for them in the corpus. Fed to
+        // the tool below with no roster, nothing matched and the whole table came back to the model,
+        // reported as safe to export. Three documents promise this server will never re-identify anyone;
+        // that promise was kept by not DECLARING such a tool, while the capability sat in this read.
+        if (LooksLikeAVault(text))
+        {
+            throw new McpException(
+                "That file is a vault, and a vault is the one artefact that can undo a redaction. This " +
+                "server will not read one back out — not as a transcript, not for any reason.");
+        }
+
+        return text;
+    }
+
+    /// <summary>Cheap and deliberately over-eager: a false positive costs a renamed file.</summary>
+    private static bool LooksLikeAVault(string text)
+    {
+        if (text.Contains("\"pseudonym\"", StringComparison.OrdinalIgnoreCase) ||
+            text.Contains("SIL-", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize(text, SiluetaJsonContext.Default.VaultFile) is { Subjects.Count: > 0 };
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static DeidentificationContext BuildContext(string recordId, string? rosterPath)
@@ -193,12 +309,35 @@ public static class RedactionTools
         DeidentificationContext context,
         string? vaultPath,
         string? outputPath,
-        int vaultSubjects)
+        int vaultSubjects,
+        bool echoesTheFile = false)
     {
         RedactionManifest manifest = result.Manifest;
 
+        // Whether the redacted text may go back to the model at all. This is the decision the tool
+        // exists to make, and it used to be made on one condition (did the caller ask for a file?)
+        // while three others mattered just as much.
+        string? withheld =
+            result.Residue.Count > 0
+                ? $"The text is withheld: after redacting, this pipeline still finds {result.Residue.Count} " +
+                  "identifier(s) in its own output, so returning it would put them in your context — where " +
+                  "nothing can take them back. Tell the user; do not ask for it another way."
+            : echoesTheFile && context.Known.Count == 0
+                ? "The text is withheld: no roster was given, so no name could be found and every name in " +
+                  "this transcript survived. Returning it would hand you the file you deliberately did " +
+                  "not open. Pass rosterPath naming who this record is about, or use outputPath to write " +
+                  "the pattern-only result to disk without it entering your context."
+            : echoesTheFile && result.Applied.Count == 0
+                ? "The text is withheld: nothing was replaced, so the \"redacted\" text would be the file " +
+                  "itself. Returning it would make this tool a file reader. Check the roster describes the " +
+                  "people in this record."
+            : outputPath is { Length: > 0 }
+                ? $"The text was written to {outputPath} rather than returned."
+                : null;
+
         return new RedactionReport(
-            RedactedText: outputPath is { Length: > 0 } ? null : result.Text,
+            RedactedText: withheld is null ? result.Text : null,
+            Withheld: withheld,
             WrittenTo: outputPath,
             RecordId: manifest.RecordId,
             Policy: $"{manifest.Policy}/{manifest.PolicyVersion}",
@@ -267,6 +406,11 @@ public static class RedactionTools
 /// </summary>
 public sealed record RedactionReport(
     string? RedactedText,
+
+    /// <summary>Why the redacted text is not in this response, or null when it is. Read it out to the
+    /// user rather than reaching for another route to the same text.</summary>
+    string? Withheld,
+
     string? WrittenTo,
     string RecordId,
     string Policy,

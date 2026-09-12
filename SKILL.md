@@ -53,6 +53,12 @@ path:
 | Why did this name survive? | `explain_name_match` | no |
 | What does a run catch without a roster? | `list_pattern_rules` | no |
 
+The server only touches one directory: set `SILUETA_ROOT` to the folder holding the corpus, or start it
+there. It refuses to read a vault, and it **withholds the redacted text** — returning a `withheld` reason
+instead — when no roster was given, when nothing was replaced, or when the run left residue. Read the
+reason out to the user; do not go looking for another route to the same text, because every other route
+puts it in your context.
+
 Without an MCP client, the command line does the same work and is just as safe, because the path is
 still the argument:
 

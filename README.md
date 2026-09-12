@@ -250,6 +250,16 @@ Point them at a transcript and they miss `Ellenor Vasques` and delete `Parkinson
 **Evaluation harnesses** — Presidio Research in particular — already do much of what Phase 1 below needs,
 and are worth borrowing from rather than reinventing.
 
+**[ARX](https://github.com/arx-deidentifier/arx) is not an alternative; it is the stage after this one,**
+and it is worth knowing before anyone claims a corpus is safe. ARX anonymises *tables*, and its subject is
+the risk this library does not address: once the eighteen identifiers are gone, does a combination of the
+remaining attributes still single someone out? It answers with k-anonymity, ℓ-diversity, t-closeness,
+δ-presence and differential privacy, and it measures the utility its own transformations destroyed.
+Silueta produces the de-identified text and the structured fields that come out of it — age band, region,
+date, condition — which is exactly the table ARX evaluates. Where it has already been borrowed from:
+generalisation *hierarchies as data* rather than compiled-in rules (`94 → 90 or older → older adult`),
+which is how the lineage will express how far to climb.
+
 So what is genuinely Silueta's: matching a roster you already hold *through* ASR damage, a leak rate
 measured per transcript rather than per mention, and both in a dependency-free .NET library you can run
 where the identified text is allowed to be. That is a narrower claim than "PII redaction", and it is the

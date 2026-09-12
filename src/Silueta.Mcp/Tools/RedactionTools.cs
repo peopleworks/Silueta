@@ -170,7 +170,14 @@ public static class RedactionTools
         // the root's name ("C:\corpus-old" against a root of "C:\corpus") would pass a prefix test.
         string root = Path.TrimEndingDirectorySeparator(Root) + Path.DirectorySeparatorChar;
 
-        if (!full.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        // Case folding is the file system's rule, not ours. On Linux — where the CI runs, and where
+        // anyone cloning this will run it — "/data/Corpus/x" and "/data/corpus/" are two directories,
+        // so an ignore-case prefix test lets a path out of the root it was supposed to be confined to.
+        StringComparison comparison = OperatingSystem.IsWindows()
+            ? StringComparison.OrdinalIgnoreCase
+            : StringComparison.Ordinal;
+
+        if (!full.StartsWith(root, comparison))
         {
             throw new McpException(
                 $"'{parameterName}' is outside the directory this server is allowed to touch. Set " +
@@ -318,10 +325,17 @@ public static class RedactionTools
         // exists to make, and it used to be made on one condition (did the caller ask for a file?)
         // while three others mattered just as much.
         string? withheld =
-            result.Residue.Count > 0
+            result.Residue.Count > 0 && echoesTheFile
                 ? $"The text is withheld: after redacting, this pipeline still finds {result.Residue.Count} " +
                   "identifier(s) in its own output, so returning it would put them in your context — where " +
                   "nothing can take them back. Tell the user; do not ask for it another way."
+            : result.Residue.Count > 0
+                // Nothing to protect here: the caller pasted this text, so it is already in the context.
+                // Saying otherwise would be theatre, and the reason to withhold stands without it — a
+                // text this pipeline still finds names in must not be passed on as de-identified.
+                ? $"The text is withheld: after redacting, this pipeline still finds {result.Residue.Count} " +
+                  "identifier(s) in its own output. It is not de-identified and must not be saved, quoted " +
+                  "or passed on as if it were. Tell the user."
             : echoesTheFile && context.Known.Count == 0
                 ? "The text is withheld: no roster was given, so no name could be found and every name in " +
                   "this transcript survived. Returning it would hand you the file you deliberately did " +

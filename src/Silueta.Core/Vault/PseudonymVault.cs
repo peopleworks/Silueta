@@ -62,18 +62,25 @@ public sealed class PseudonymVault
 
     /// <summary>
     /// Returns the invented name this subject is known by in redacted text, minting one the first time.
-    /// </summary>
-    /// <param name="avoid">Values that must not be echoed back: the roster of the record being redacted.
-    /// A surrogate is rejected if any of its words <em>sounds like</em> any word of any of these, not
-    /// merely if it equals one.
     /// <para>
-    /// This is the cheap test, and on its own it is not enough — see the overload taking a predicate.
-    /// Sounding alike here means an identical phonetic key, while the matcher accepts a similarity of
-    /// 0.84, so real surnames one edit from the pool (<c>Aguiar</c>/<c>Aguilar</c>,
-    /// <c>Quinteros</c>/<c>Quintero</c>, <c>Fuente</c>/<c>Fuentes</c>) pass this check and are then
-    /// found by the very pipeline that wrote them.
-    /// </para></param>
-    public string SurrogateFor(string subjectId, IEnumerable<string>? avoid = null)
+    /// With no record in hand there is nothing to check the name against, so this only avoids names the
+    /// vault itself has already given out. A caller that is about to redact a record has a record: use
+    /// the overload taking a predicate, which is what the engine does.
+    /// </para>
+    /// </summary>
+    public string SurrogateFor(string subjectId) => SurrogateFor(subjectId, static _ => false);
+
+    /// <summary>
+    /// Returns the invented name this subject is known by in redacted text, minting one the first time,
+    /// rejecting any whose words sound like a word of <paramref name="avoid"/>.
+    /// </summary>
+    /// <param name="avoid">Values that must not be echoed back: the roster of the record being redacted.</param>
+    [Obsolete(
+        "This is the cheap test and it is not enough: sounding alike here means an identical phonetic " +
+        "key, while the matcher accepts a similarity of 0.84. Real surnames one edit from the pool " +
+        "(Aguiar/Aguilar, Quinteros/Quintero, Fuente/Fuentes) pass this check and are then found by the " +
+        "very pipeline that wrote them. Pass the detectors themselves: SurrogateFor(id, wouldBeFound).")]
+    public string SurrogateFor(string subjectId, IEnumerable<string>? avoid)
     {
         HashSet<string> forbidden = PhoneticKeysOf(avoid);
         return SurrogateFor(subjectId, candidate => Tokenizer.Tokenize(candidate)
@@ -115,12 +122,18 @@ public sealed class PseudonymVault
     /// Pins a subject to a surrogate the caller chose. For an agency that wants its own invented names,
     /// and for anything that has to be reproducible — a demo, a fixture, a published example.
     /// <para>
-    /// It enforces what <c>Mint</c> enforces, because it is the second door into the same table and a
-    /// door with no lock on it is the shape of every defect in this file's history. Without the check
-    /// below, <c>Assign("patient-1", "Ale Espinal").Assign("family-1", "Ale Espinal")</c> was accepted in
-    /// silence: a mother and her daughter became one person in the corpus, and because the vault then
-    /// held two subjects pointing at one name, neither could be traced back. Assigning someone their own
-    /// name was equally accepted, and produced a transcript that was marked redacted and was not.
+    /// It enforces the half of <c>Mint</c>'s invariants that do not need a record: one subject per name,
+    /// one name per subject, and never a name already retired. It is the second door into the same table
+    /// and a door with no lock at all is the shape of every defect in this file's history — without the
+    /// check below, <c>Assign("patient-1", "Ale Espinal").Assign("family-1", "Ale Espinal")</c> was
+    /// accepted in silence: a mother and her daughter became one person in the corpus, and because the
+    /// vault then held two subjects pointing at one name, neither could be traced back.
+    /// </para>
+    /// <para>
+    /// What it cannot enforce is <c>Mint</c>'s other half: that no detector would find this name in the
+    /// record. The caller chose the name and the caller holds the roster, so the check the engine makes
+    /// is not available here. A name assigned by hand is checked when it is used — the engine reads its
+    /// own output back and reports it as residue — and not before.
     /// </para>
     /// </summary>
     /// <exception cref="ArgumentException">The name is already in use by another subject.</exception>

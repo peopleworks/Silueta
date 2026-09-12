@@ -35,7 +35,11 @@ public class SurrogateTests
         var vault = new PseudonymVault();
         string[] roster = ["Sofía Reyes", "Eleanor Vasquez", "Yamilet Vasquez", "Cruz Salazar"];
 
+        // The obsolete overload on purpose: this test is what that door does, and why it is not enough
+        // on its own — identical keys only, while the matcher accepts 0.84.
+#pragma warning disable CS0618
         string surrogate = vault.SurrogateFor("patient-1", roster);
+#pragma warning restore CS0618
 
         foreach (string name in roster)
         {
@@ -151,7 +155,10 @@ public class SurrogateTests
         string first = vault.SurrogateFor("patient-1");
 
         Assert.Equal(first, vault.SurrogateFor("patient-1"));
-        Assert.Equal(first, vault.SurrogateFor("patient-1", ["Eleanor Vasquez"]));
+
+        // Even asked with a test that rejects every candidate: a subject who has a name keeps it, and
+        // the way out of a name that no longer works is Remint, which records what it replaced.
+        Assert.Equal(first, vault.SurrogateFor("patient-1", _ => true));
     }
 
     [Fact]

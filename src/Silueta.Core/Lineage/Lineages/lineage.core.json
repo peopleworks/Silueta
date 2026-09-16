@@ -38,7 +38,10 @@
     "RecordNumber": "[RECORD]",
     "AccountNumber": "[ACCOUNT]",
     "DeviceId": "[DEVICE]",
-    "Other": "[REMOVED]"
+    "Other": "[REMOVED]",
+    "Organization": "[ORGANIZATION]",
+    "Product": "[PRODUCT]",
+    "ClientName": "[CLIENT]"
   },
 
   "_generalizations": [

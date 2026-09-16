@@ -123,8 +123,10 @@ identifier, and the pattern rules to run.
   "version": "2",
   "language": "es-MX",               // recorded, NOT used to pick phonetic rules — see below
   "pools": {
-    "given":  ["Ale", "Noa", "María José"],
-    "family": ["Bravo", "Toledo", "De la Cruz"]
+    "given":   ["Ale", "Noa", "María José"],
+    "family":  ["Bravo", "Toledo", "De la Cruz"],
+    "company": ["Aurora Servicios", "Meridiano Logística"],   // optional; see below
+    "product": ["Nimbo", "Serie 7"]                             // optional; digits allowed here
   },
   "labels": { "Phone": "[TELÉFONO]", "Email": "[CORREO]" },
   "generalizations": { "AgeOver89": "90 o más" },
@@ -146,12 +148,20 @@ apart from the one before it. Ship no lineage and you get the one embedded in th
 this library always had, which now live in [a JSON file](src/Silueta.Core/Lineage/Lineages/lineage.core.json)
 rather than in the source.
 
-Three things worth knowing before you write one:
+What is worth knowing before you write one:
 
 - **A pool is checked when it loads, not when a corpus goes wrong.** Entries with digits are refused (a
-  name with a number in it reads as a record number and gets found again by the pattern rules), so are
-  duplicates once accents and case are folded, and so are two entries that *sound alike to this matcher* —
-  two surrogates it cannot tell apart merge two people the next time the corpus is read.
+  name with a number in it reads as a record number and gets found again by the pattern rules) — except in
+  `product` pools, where "Serie 7" is a real shape and the vault still never emits a name the rules would
+  find. So are duplicates once accents and case are folded, and so are two entries that *sound alike to
+  this matcher*: two surrogates it cannot tell apart merge two people the next time the corpus is read.
+- **Company and product pools are yours to bring, and nobody else's.** The built-in lineage has none, on
+  purpose: an invented company name is very likely a real company. Without a pool, `Organization` and
+  `Product` are labelled. With one, you choose names you know are safe in your market. A pool may hold
+  whole names (`"Aurora Servicios"`) or heads with a `companySuffix` / `productSuffix` pool to combine
+  with. The loader refuses a company name that the people's pools could also produce — `"Cruz Medina"`
+  beside a given name `Cruz` and a family name `Medina` — because it would change where an already
+  invented person's name ends, and corrupt a vault that was fine the day before.
 - **`language` is recorded, not acted on.** It goes in the fingerprint and the manifest. It does not
   select phonetic rules: the matcher has one coarse Spanish-and-English key, compiled in, and a lineage
   saying `de-DE` gets exactly the same matching as one saying `es-MX`.
@@ -255,20 +265,30 @@ changes that corpus will judge; then the parts of Safe Harbor still missing — 
 or a street address today, and spoken numbers and dates ("five five five, oh one four seven",
 "September eleventh") are not normalised at all.
 
-**Two gaps follow from the paragraph at the top of this file, and both are about data that is not a
-person.** They are named here because the opening claim is wider than the code.
+**What the claim at the top of this file costs for data that is not a person.** Named here because the
+opening is wider than the code.
 
-*There is no identifier kind for an organisation, a product or a client account.* `IdentifierKind` has
-fifteen values and every one of them is a person, a contact detail or a clinical record number: there is
-no `Organization`, no `Product`, no `ClientName`. A company name put on the roster as `OtherName` is found
-and replaced — but by a person's name, because that is the only pool there is. Run it and you get `Acme Corporation` → `Ariel Bravo` and `TurboFresh` → `Sasha`,
-which removes the identifier and destroys the shape that made the sentence worth analysing. In the same
-run `Turbo Fresh`, written as two words, survived untouched: the matcher compares one word at a time and
-nothing yet builds a candidate out of adjacent ones.
+*Companies and products are identifier kinds, and the library invents no names for them.* `Organization`
+and `Product` exist, and so does `ClientName` — which is a **person**, deliberately: in home care the
+client is the patient, and a client that is a company is an `Organization`. A company on the roster comes
+back as `[ORGANIZATION]` and a product as `[PRODUCT]`, and the manifest lists both under
+`surrogatesUnavailable`, because the policy asked for an invented name and did not get one. That is on
+purpose. An invented company name is very likely a *real* company, and putting an uninvolved one inside a
+client's call is a different harm from an invented person's name, so this library does not pick those
+names for you. Bring a `company` pool in a [lineage](#bring-your-own-dictionaries-the-lineage) and you get
+company names back, from a list you know is safe in your market.
+
+*A company is matched in exactly the words the roster gave it.* It is registered whole, never word by
+word, so `Acme Corporation` does not turn every "corporation" in the transcript into an identifier. The
+price is that `Acme` said alone is not found, and neither is `Acme Corp`: "Corp" against "Corporation"
+scores 0.36 against a floor of 0.84, because abbreviation cuts a word short and is not a sound the
+recogniser confused. Put each form on the roster as its own entry under the same `subjectId`. And
+`TurboFresh` on the roster still does not find `Turbo Fresh` in the text — one word against two — which
+is the next piece of matcher work, not this one.
 
 *The lineage exists, and it does not yet cover everything it should.* Pools, labels, generalisations and
 pattern rules are yours to bring. Three things are still the library's: `language` does not select
-phonetic rules, the kinds themselves are the fixed list above, and a generalisation is a literal string —
+phonetic rules, the kinds themselves are a fixed list, and a generalisation is a literal string —
 there is no ladder that derives a wider value from the one it replaces, so `85001 → 850**` is not
 expressible. That last one waits on the same census table as the postal-code rule.
 

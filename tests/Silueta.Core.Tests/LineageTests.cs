@@ -171,6 +171,91 @@ public class LineageTests
     }
 
     [Fact]
+    public void Pool_names_are_read_regardless_of_case_as_they_always_were()
+    {
+        // The pools moved from two fixed properties to a map, and a map's keys are case-sensitive even
+        // when the serializer's property names are not. "Given" loads today; it has to keep loading.
+        SiluetaLineage lineage = SiluetaLineage.FromJson("""
+            { "lineage": "t", "version": "1", "pools": { "Given": ["Ale"], "FAMILY": ["Bravo"], "Company": ["Aurora Servicios"] } }
+            """);
+
+        Assert.Equal(["Ale"], lineage.Pools.Given);
+        Assert.True(lineage.Pools.Has(IdentifierKind.Organization));
+    }
+
+    [Fact]
+    public void A_comment_inside_the_pools_is_a_comment_and_not_a_broken_file()
+    {
+        // The built-in file teaches "_"-prefixed keys as comments. An author who copies that habit into
+        // the pools block must not have the whole lineage refused as "not a lineage file".
+        SiluetaLineage lineage = SiluetaLineage.FromJson("""
+            { "lineage": "t", "version": "1",
+              "pools": { "_why": "neutral names only", "given": ["Ale"], "family": ["Bravo"] } }
+            """);
+
+        Assert.Empty(lineage.Skipped);
+    }
+
+    [Fact]
+    public void A_pool_this_build_does_not_know_is_recorded_rather_than_ignored()
+    {
+        SiluetaLineage lineage = SiluetaLineage.FromJson("""
+            { "lineage": "t", "version": "1",
+              "pools": { "given": ["Ale"], "family": ["Bravo"], "matter": ["Expediente Norte"] } }
+            """);
+
+        Assert.Contains("pools.matter", lineage.Skipped);
+    }
+
+    [Fact]
+    public void Changing_only_the_company_names_changes_the_fingerprint()
+    {
+        // The fingerprint used to walk given and family by name. A lineage that differed only in its
+        // company names would have produced the same digest, and two corpora redacted with different
+        // company names would have been indistinguishable in their manifests.
+        const string template = """
+            { "lineage": "t", "version": "1",
+              "pools": { "given": ["Ale"], "family": ["Bravo"], "company": [COMPANY] } }
+            """;
+
+        Assert.NotEqual(
+            SiluetaLineage.FromJson(template.Replace("COMPANY", "\"Aurora Servicios\"")).Fingerprint,
+            SiluetaLineage.FromJson(template.Replace("COMPANY", "\"Meridiano Logística\"")).Fingerprint);
+    }
+
+    [Fact]
+    public void A_company_name_that_could_also_be_minted_as_a_person_is_refused()
+    {
+        // The vault finds where a surrogate's head ends by asking the pools. A company entry "Cruz Medina"
+        // next to a given name "Cruz" and a family name "Medina" is a string the vault can also mint for a
+        // person — and the moment the company entry exists, the head of that PERSON's name becomes
+        // "Cruz Medina", so a one-word mention of them is replaced by two words and the vault reserves a
+        // head it never minted. It would corrupt a vault that was fine the day before.
+        InvalidOperationException thrown = Assert.Throws<InvalidOperationException>(() =>
+            SiluetaLineage.FromJson("""
+                { "lineage": "t", "version": "1",
+                  "pools": { "given": ["Cruz"], "family": ["Medina"], "company": ["Cruz Medina"] } }
+                """));
+
+        Assert.Contains("Cruz Medina", thrown.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_product_name_may_carry_a_number()
+    {
+        // Digits are refused in names of people and companies because an invented name with a number in it
+        // reads as a record number. Products are the exception — "Serie 7" is a product name — and the
+        // real rule still holds where it is enforced: the vault never emits a name the pattern rules would
+        // find again.
+        SiluetaLineage lineage = SiluetaLineage.FromJson("""
+            { "lineage": "t", "version": "1",
+              "pools": { "given": ["Ale"], "family": ["Bravo"], "product": ["Serie Siete", "Modelo 3"] } }
+            """);
+
+        Assert.Contains("Modelo 3", lineage.Pools.Pool(SurrogatePools.ProductPool));
+    }
+
+    [Fact]
     public void The_built_in_lineage_is_the_library_this_project_always_had()
     {
         // The pools moved out of the source and into an embedded JSON file. That is the whole point —

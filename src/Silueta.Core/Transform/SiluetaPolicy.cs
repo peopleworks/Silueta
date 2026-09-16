@@ -1,4 +1,4 @@
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -58,7 +58,10 @@ public sealed class SiluetaPolicy
 
     public string Name { get; init; } = "safe-harbor";
 
-    public string Version { get; init; } = "0.1";
+    /// <summary>"0.2" since the policy started naming kinds the standard does not: an organisation, a
+    /// product, a client. Removing more keeps the name true; it does not keep the rules identical, and a
+    /// corpus labelled 0.1 was redacted under a table that did not have those rows.</summary>
+    public string Version { get; init; } = "0.2";
 
     /// <summary>Detections below this are dropped. Raising it trades leaks for readability; the number
     /// belongs to the agency, and the harness is how they pick it.</summary>
@@ -124,6 +127,15 @@ public sealed class SiluetaPolicy
                 [IdentifierKind.AccountNumber] = RedactionAction.Label,
                 [IdentifierKind.DeviceId] = RedactionAction.Label,
                 [IdentifierKind.Other] = RedactionAction.Label,
+
+                // Not Safe Harbor identifiers, and named here anyway. ActionFor would give them Label
+                // without a row, but the fingerprint walks this table only: a kind handled by the
+                // fallback is handled under a rule the digest does not describe. Surrogate is the
+                // action; whether a surrogate can actually be drawn depends on the lineage having a
+                // pool for the kind, and the engine records it when one cannot.
+                [IdentifierKind.Organization] = RedactionAction.Surrogate,
+                [IdentifierKind.Product] = RedactionAction.Surrogate,
+                [IdentifierKind.ClientName] = RedactionAction.Surrogate,
             }.ToFrozenDictionary();
     }
 

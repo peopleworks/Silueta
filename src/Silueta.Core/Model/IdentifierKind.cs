@@ -1,10 +1,20 @@
 namespace Silueta.Core;
 
 /// <summary>
-/// What a detected span is. The list follows the eighteen HIPAA Safe Harbor identifiers
+/// What a detected span is. The list started from the eighteen HIPAA Safe Harbor identifiers
 /// (45 CFR § 164.514(b)(2)) rather than a generic PII taxonomy, because the policy that decides what
 /// happens to a span is written in those terms — and because a reviewer checking the work will be
 /// reading the rule, not our vocabulary.
+/// <para>
+/// The last three are <em>not</em> Safe Harbor identifiers: <see cref="Organization"/>,
+/// <see cref="Product"/> and <see cref="ClientName"/>. A company's transcripts are full of identifiers the
+/// standard never mentions. Removing more than it asks keeps a policy named after it true — keeping
+/// something it names would not — so a manifest's policy name says which standard the run meets, and
+/// its per-kind counts say what was actually removed. Those are not the same list.
+/// </para>
+/// <para>
+/// Appended rather than slotted in beside the other names, so that no existing value changes its number.
+/// </para>
 /// </summary>
 public enum IdentifierKind
 {
@@ -40,4 +50,48 @@ public enum IdentifierKind
     RecordNumber,
     AccountNumber,
     DeviceId,
+
+    /// <summary>
+    /// A company, institution or agency named in the record: an employer, an insurer, a vendor, a client
+    /// company. Not a person, so a roster entry is matched whole and never split into its words —
+    /// "Acme Corporation" must not make every "corporation" in the text an identifier.
+    /// <para>
+    /// An employer's name <em>is</em> a Safe Harbor identifier when it is the individual's employer
+    /// (identifier A names "employers"); a treating facility's generally is not. This kind does not tell
+    /// the two apart, and removes both.
+    /// </para>
+    /// </summary>
+    Organization,
+
+    /// <summary>A product, service or brand. Not a person.</summary>
+    Product,
+
+    /// <summary>
+    /// The customer of whoever holds the corpus, when that customer is a <b>person</b>.
+    /// <para>
+    /// This is deliberately a person and not a company. In home care — where this library started — the
+    /// client is the patient, and a kind that read "client" as a company would send a patient's name to
+    /// a pool of invented company names. A client that is a company is an <see cref="Organization"/>.
+    /// </para>
+    /// </summary>
+    ClientName,
+}
+
+/// <summary>
+/// The one place that says which kinds are people.
+/// <para>
+/// Two things turn on the answer: whether a roster entry is registered part by part (a person is often
+/// called by a first name alone; a company's words are common nouns), and which word lists an invented
+/// name is drawn from. If the roster and the vault each kept their own list, a kind added to one and not
+/// the other would be a company in one place and a person in the next.
+/// </para>
+/// </summary>
+public static class IdentifierKindExtensions
+{
+    public static bool IsPersonName(this IdentifierKind kind) => kind is
+        IdentifierKind.PatientName or
+        IdentifierKind.FamilyName or
+        IdentifierKind.StaffName or
+        IdentifierKind.OtherName or
+        IdentifierKind.ClientName;
 }

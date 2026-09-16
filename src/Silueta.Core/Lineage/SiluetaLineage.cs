@@ -106,15 +106,14 @@ public sealed class SiluetaLineage
                 "This is not a lineage file: both \"lineage\" and \"version\" are required.");
         }
 
-        IReadOnlyList<string> given = Clean(file.Pools?.Given, "pools.given");
-        IReadOnlyList<string> family = Clean(file.Pools?.Family, "pools.family");
-
         var skipped = new List<string>();
+        SurrogatePools pools = ReadPools(file.Pools, skipped);
+
         return new SiluetaLineage(
             file.Lineage.Trim(),
             file.Version.Trim(),
             string.IsNullOrWhiteSpace(file.Language) ? "und" : file.Language.Trim(),
-            new SurrogatePools(given, family),
+            pools,
             Parse(file.Labels, skipped),
             Parse(file.Generalizations, skipped),
             file.Patterns ?? [],
@@ -179,11 +178,131 @@ public sealed class SiluetaLineage
     /// recorded two distinct names.
     /// </para>
     /// </summary>
-    private static IReadOnlyList<string> Clean(List<string>? entries, string field)
+    /// <summary>
+    /// The pools, read from a map whose names this build recognises. The people's pair is required; the
+    /// others are optional, and a kind whose pool is absent is labelled rather than given a name from
+    /// somebody else's pool.
+    /// </summary>
+    private static SurrogatePools ReadPools(Dictionary<string, JsonElement>? raw, List<string> skipped)
     {
-        if (entries is null || entries.Count == 0)
+        var lists = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string name, JsonElement value) in raw ?? [])
         {
-            throw new InvalidOperationException($"A lineage needs {field}: a surrogate has to come from somewhere.");
+            if (name.StartsWith('_'))
+            {
+                continue; // a comment, by the convention the built-in file teaches
+            }
+
+            if (!SurrogatePools.Recognised.TryGetValue(name, out string? canonical))
+            {
+                // A pool a newer build would use. Recorded, so "this build has no such pool" and "the
+                // lineage did not bring one" are not the same silence.
+                skipped.Add($"pools.{name}");
+                continue;
+            }
+
+            if (value.ValueKind != JsonValueKind.Array ||
+                value.EnumerateArray().Any(static e => e.ValueKind != JsonValueKind.String))
+            {
+                throw new InvalidOperationException($"pools.{name} has to be a list of names.");
+            }
+
+            if (lists.ContainsKey(canonical))
+            {
+                throw new InvalidOperationException(
+                    $"pools.{name} is given twice, differing only in case. Which one is meant is not a " +
+                    "guess this loader makes.");
+            }
+
+            lists[canonical] = Clean(
+                [.. value.EnumerateArray().Select(static e => e.GetString()!)],
+                $"pools.{name}",
+                allowDigits: canonical is SurrogatePools.ProductPool or SurrogatePools.ProductSuffixPool);
+        }
+
+        foreach (string required in (string[])[SurrogatePools.GivenPool, SurrogatePools.FamilyPool])
+        {
+            if (!lists.ContainsKey(required))
+            {
+                throw new InvalidOperationException(
+                    $"A lineage needs pools.{required}: a person's invented name has to come from somewhere.");
+            }
+        }
+
+        RefuseHeadsMintableAsAnotherKind(lists);
+        return new SurrogatePools(lists);
+    }
+
+    /// <summary>
+    /// A head that another kind's pools can also produce, word for word, is refused.
+    /// <para>
+    /// The vault finds where a surrogate's head ends by asking every head pool for the longest entry the
+    /// name starts with. Put "Cruz Medina" in the company pool beside a given name "Cruz" and a family
+    /// name "Medina", and a <em>person</em> already minted as "Cruz Medina" suddenly has a two-word head:
+    /// a one-word mention of them is replaced by two words, and the vault reserves a head it never minted.
+    /// A vault that was fine yesterday is corrupted by adding a company name today, so the loader refuses
+    /// the company name and says which one.
+    /// </para>
+    /// </summary>
+    private static void RefuseHeadsMintableAsAnotherKind(Dictionary<string, IReadOnlyList<string>> lists)
+    {
+        (string Head, string Tail)[] pairs =
+        [
+            (SurrogatePools.GivenPool, SurrogatePools.FamilyPool),
+            (SurrogatePools.CompanyPool, SurrogatePools.CompanySuffixPool),
+            (SurrogatePools.ProductPool, SurrogatePools.ProductSuffixPool),
+        ];
+
+        HashSet<string> SetOf(string pool) => new(
+            lists.TryGetValue(pool, out IReadOnlyList<string>? entries) ? entries : [],
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach ((string head, _) in pairs)
+        {
+            if (!lists.TryGetValue(head, out IReadOnlyList<string>? entries))
+            {
+                continue;
+            }
+
+            foreach (string entry in entries)
+            {
+                string[] words = entry.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                foreach ((string otherHead, string otherTail) in pairs)
+                {
+                    if (otherHead == head)
+                    {
+                        continue;
+                    }
+
+                    HashSet<string> heads = SetOf(otherHead);
+                    HashSet<string> tails = SetOf(otherTail);
+
+                    for (int split = 1; split < words.Length; split++)
+                    {
+                        string front = string.Join(' ', words[..split]);
+                        string back = string.Join(' ', words[split..]);
+
+                        if (heads.Contains(front) && tails.Contains(back))
+                        {
+                            throw new InvalidOperationException(
+                                $"pools.{head} entry '{entry}' can also be minted from pools.{otherHead} " +
+                                $"('{front}') and pools.{otherTail} ('{back}'). A name two kinds can both " +
+                                "produce changes where the other kind's invented names end, and corrupts a " +
+                                "vault that already holds one.");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static IReadOnlyList<string> Clean(List<string> entries, string field, bool allowDigits = false)
+    {
+        if (entries.Count == 0)
+        {
+            throw new InvalidOperationException($"{field} is empty. Declare a pool with names in it, or leave it out.");
         }
 
         var cleaned = new List<string>();
@@ -199,7 +318,9 @@ public sealed class SiluetaLineage
                 throw new InvalidOperationException($"{field} has an empty entry.");
             }
 
-            if (entry.Any(char.IsDigit))
+            // Products are the exception: "Serie 7" is a product name. The rule that matters still holds
+            // where it is enforced — the vault never emits a name the pattern rules would find again.
+            if (!allowDigits && entry.Any(char.IsDigit))
             {
                 throw new InvalidOperationException(
                     $"{field} entry '{entry}' has a digit in it. An invented name with a number in it " +
@@ -243,10 +364,13 @@ public sealed class SiluetaLineage
         var canonical = new StringBuilder("silueta-lineage/1\n");
         canonical.Append(Name).Append('\t').Append(Version).Append('\t').Append(Language).Append('\n');
 
-        // Sorted: the order of a word list does not change what the list is, and the vault shuffles it
-        // before minting anyway. Two lineages that differ only in line order are the same lineage.
-        Append(canonical, "given", Pools.Given);
-        Append(canonical, "family", Pools.Family);
+        // Every pool, by name — not given and family by hand, which would give two lineages differing only
+        // in their company names one digest. Sorted: the order of a word list does not change what the
+        // list is, and the vault shuffles it before minting anyway.
+        foreach ((string name, IReadOnlyList<string> pool) in Pools.All.OrderBy(p => p.Key, StringComparer.Ordinal))
+        {
+            Append(canonical, name, pool);
+        }
 
         foreach ((IdentifierKind kind, string text) in Labels.OrderBy(p => p.Key))
         {

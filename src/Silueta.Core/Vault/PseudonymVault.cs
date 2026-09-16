@@ -106,7 +106,20 @@ public sealed class PseudonymVault
     /// surrogate that merely sounds like a roster name is found and replaced again on the next pass,
     /// and a corpus that changes every time it is reprocessed cannot be reproduced by anyone.
     /// </para></param>
-    public string SurrogateFor(string subjectId, Func<string, bool> wouldBeFound)
+    public string SurrogateFor(string subjectId, Func<string, bool> wouldBeFound) =>
+        SurrogateFor(subjectId, IdentifierKind.OtherName, wouldBeFound);
+
+    /// <summary>
+    /// Returns the invented name this subject is known by in redacted text, minting one of the right shape
+    /// for its kind the first time: a person's name for a person, a company's for an organisation.
+    /// </summary>
+    /// <param name="kind">Decides which of the lineage's pools the name is drawn from. It does not
+    /// decide anything for a subject that already has a name — see the note inside.</param>
+    /// <param name="wouldBeFound">As in the overload without a kind: the engine's own detectors.</param>
+    /// <exception cref="InvalidOperationException">The lineage has no pool for this kind. The engine
+    /// checks <see cref="SurrogatePools.Has"/> first and labels instead; this is for any other caller,
+    /// who must not silently receive a name drawn from another kind's pool.</exception>
+    public string SurrogateFor(string subjectId, IdentifierKind kind, Func<string, bool> wouldBeFound)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(subjectId);
         ArgumentNullException.ThrowIfNull(wouldBeFound);
@@ -114,11 +127,14 @@ public sealed class PseudonymVault
         if (_surrogates.TryGetValue(subjectId, out string? existing))
         {
             // Stability wins: a subject who already has a name keeps it. Changing it because a later
-            // record mentions someone similar would rewrite the corpus behind the caller.
+            // record mentions someone similar would rewrite the corpus behind the caller. That includes a
+            // later record that calls the subject a different kind: a roster that listed a company as
+            // OtherName on the first run pinned a person's name to it, and the way out is Remint with the
+            // right kind — which records what it replaced — not a quiet rename here.
             return existing;
         }
 
-        string surrogate = Mint(wouldBeFound);
+        string surrogate = Mint(kind, wouldBeFound);
 
         _surrogates[subjectId] = surrogate;
         Remember(surrogate, subjectId);
@@ -211,17 +227,25 @@ public sealed class PseudonymVault
     /// failure than the one being fixed.
     /// </para>
     /// </summary>
-    public string Remint(string subjectId, Func<string, bool> wouldBeFound)
+    public string Remint(string subjectId, Func<string, bool> wouldBeFound) =>
+        Remint(subjectId, IdentifierKind.OtherName, wouldBeFound);
+
+    /// <summary>
+    /// Gives a subject a new invented name of the shape its kind needs. Takes the kind because this is
+    /// the one path that exists to fix a bad name: without it, reminting a company would hand it a
+    /// person's name, which is the defect being fixed.
+    /// </summary>
+    public string Remint(string subjectId, IdentifierKind kind, Func<string, bool> wouldBeFound)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(subjectId);
         ArgumentNullException.ThrowIfNull(wouldBeFound);
 
         if (!_surrogates.TryGetValue(subjectId, out string? old))
         {
-            return SurrogateFor(subjectId, wouldBeFound);
+            return SurrogateFor(subjectId, kind, wouldBeFound);
         }
 
-        string replacement = Mint(wouldBeFound);
+        string replacement = Mint(kind, wouldBeFound);
 
         if (!_retired.TryGetValue(subjectId, out List<string>? history))
         {
@@ -376,26 +400,34 @@ public sealed class PseudonymVault
     }
 
     /// <summary>
-    /// Draws a name that is not already in use and does not sound like anything on the roster.
+    /// Draws a name of the right shape for the kind, not already in use, and not something this pipeline
+    /// would find in the record.
     /// <para>
-    /// Given names are exhausted before any is reused, because half the mentions in a transcript are a
-    /// first name alone: while unused ones remain, two subjects sharing "Alex" would make "Alex said" a
-    /// sentence about either of two people. Past <see cref="Surrogates.Given"/>'s length, given names do
-    /// repeat and only the full pair stays unique — two people in a corpus can share a first name, as
-    /// they do in life. That costs readability, never privacy.
+    /// Heads are exhausted before any is reused, because half the mentions in a transcript are a first
+    /// name alone: while unused ones remain, two subjects sharing "Alex" would make "Alex said" a sentence
+    /// about either of two people. Past the head pool's length, heads do repeat and only the full pair
+    /// stays unique — two people in a corpus can share a first name, as they do in life. That costs
+    /// readability, never privacy.
+    /// </para>
+    /// <para>
+    /// A company or product with no suffix pool is drawn whole from its heads: each entry is the name.
+    /// One namespace for every kind — a company and a person never share an invented name, because the
+    /// way back from a redacted transcript starts from a string, and a string does not say its kind.
     /// </para>
     /// </summary>
-    private string Mint(Func<string, bool> wouldBeFound)
+    private string Mint(IdentifierKind kind, Func<string, bool> wouldBeFound)
     {
-        string[] given = Shuffled(Pools.Given);
-        string[] family = Shuffled(Pools.Family);
+        (IReadOnlyList<string> heads, IReadOnlyList<string> tails, string headPool) = Pools.For(kind);
 
-        // The given name is tested on its own as well as inside the pair, because a one-word mention is
-        // replaced by the given name alone: a surrogate that is safe as "Remy Aguilar" is not safe if
-        // "Remy" by itself would be found.
+        string[] given = Shuffled(heads);
+        string[] family = Shuffled(tails);
+
+        // The head is tested on its own as well as inside the pair, because a one-word mention is
+        // replaced by the head alone: a surrogate that is safe as "Remy Aguilar" is not safe if "Remy" by
+        // itself would be found.
         var rejectedGiven = new HashSet<string>(StringComparer.Ordinal);
 
-        // Two sweeps: the first will not reuse a given name, the second is allowed to.
+        // Two sweeps: the first will not reuse a head, the second is allowed to.
         for (int sweep = 0; sweep < 2; sweep++)
         {
             foreach (string first in given)
@@ -416,6 +448,17 @@ public sealed class PseudonymVault
                     continue;
                 }
 
+                if (family.Length == 0)
+                {
+                    // Whole names: the entry is the surrogate, and the head test above was the whole test.
+                    if (!_takenSurrogates.Contains(first))
+                    {
+                        return first;
+                    }
+
+                    continue;
+                }
+
                 foreach (string last in family)
                 {
                     string candidate = $"{first} {last}";
@@ -428,8 +471,9 @@ public sealed class PseudonymVault
         }
 
         throw new InvalidOperationException(
-            $"The surrogate pool is exhausted: {_takenSurrogates.Count} names are in use and this record's " +
-            "roster rules out the rest. Widen the name lists before redacting a corpus this large.");
+            $"The '{headPool}' pool is exhausted for {kind}: {_takenSurrogates.Count} invented names are in " +
+            "use across this vault and this record's roster rules out the rest. Add entries to that pool " +
+            "before redacting a corpus this large.");
     }
 
     private void Remember(string surrogate, string subjectId)

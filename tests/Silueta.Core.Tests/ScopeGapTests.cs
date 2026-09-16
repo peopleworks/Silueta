@@ -3,76 +3,74 @@ using Silueta.Core;
 namespace Silueta.Core.Tests;
 
 /// <summary>
-/// The README now opens on a claim wider than the clinic: put a transcript in front of an AI without
-/// handing it the people in it. A company's transcripts are full of identifiers this library has no kind
-/// for — the client, the product, the account — and a roster entry for one of those is replaced by a
-/// <em>person's</em> name, because the only pool there is is a pool of people.
+/// The README opens on a claim wider than the clinic: put a transcript in front of an AI without handing
+/// it the people in it. A company's transcripts are full of identifiers that are not people, and these
+/// tests hold the prose about them to what the code does — deriving the gap from the code rather than
+/// restating it, so that the day the gap closes they fail and force the paragraphs to be rewritten
+/// instead of quietly becoming false.
 /// <para>
-/// So the widening has to carry its own gap statement, in the two documents someone would read on their
-/// own: the README, and the skill an agent acts on without asking. These tests derive the gap from the
-/// enum rather than restating it, so the day the kinds exist they fail and force the paragraphs to be
-/// rewritten instead of quietly becoming false. That is the failure this project keeps finding: a rule
-/// written in one place while the truth lives in another.
+/// This file used to pin the opposite: that <c>Organization</c>, <c>Product</c> and <c>ClientName</c> did
+/// not exist and that a company on the roster came back as a person. It failed the moment the kinds were
+/// added, which is what it was for. What it pins now is narrower and still true: the library invents no
+/// company names of its own, and a company is matched only in the words the roster gave it.
 /// </para>
 /// </summary>
 public class ScopeGapTests
 {
-    private static readonly string[] MissingKinds = ["Organization", "Product", "ClientName"];
-
     private static string RepoRoot => McpToolDocumentationTests.RepoRoot;
 
     [Fact]
-    public void The_kinds_a_business_transcript_needs_still_do_not_exist()
+    public void The_business_kinds_exist_and_the_built_in_lineage_invents_no_company_names()
     {
-        foreach (string kind in MissingKinds)
+        foreach (string kind in (string[])["Organization", "Product", "ClientName"])
         {
-            Assert.False(
-                Enum.TryParse(kind, ignoreCase: true, out IdentifierKind _),
-                $"IdentifierKind now has '{kind}'. Rewrite the gap paragraphs in README.md (Status) and " +
-                "SKILL.md, then delete or narrow this test by hand.");
+            Assert.True(Enum.TryParse(kind, out IdentifierKind _), $"IdentifierKind has lost '{kind}'.");
         }
+
+        // Deliberate, not missing: an invented company name is very likely a real company, and putting an
+        // uninvolved one inside a client's call is a different harm from an invented person's name. The
+        // day the built-in lineage ships company names, the README and SKILL.md paragraphs that say it
+        // does not have to be rewritten — and so does the reasoning, which is the harder part.
+        Assert.False(
+            SiluetaLineage.Default.Pools.Has(IdentifierKind.Organization),
+            "The built-in lineage now has company names. Rewrite the README (Status, and the lineage " +
+            "section) and SKILL.md rule 6, then change this test by hand.");
+        Assert.False(SiluetaLineage.Default.Pools.Has(IdentifierKind.Product));
     }
 
     [Theory]
     [InlineData("README.md")]
     [InlineData("SKILL.md")]
-    public void The_documents_that_widened_the_claim_also_name_the_gap(string relativePath)
+    public void The_documents_show_what_a_company_becomes_without_a_lineage_of_your_own(string relativePath)
     {
         string text = File.ReadAllText(Path.Combine(RepoRoot, relativePath));
 
-        foreach (string kind in MissingKinds)
-        {
-            Assert.True(
-                text.Contains(kind, StringComparison.OrdinalIgnoreCase),
-                $"{relativePath} does not say that '{kind}' is not an identifier kind, while the library " +
-                "claims to de-identify text so it can be analysed by an AI. A reader with a corpus of " +
-                "sales calls would take the claim at face value.");
-        }
+        // The observable output, not a promise about it: whoever reads either document before running a
+        // corpus of sales calls has to know the company names come back as this label.
+        Assert.Contains("[ORGANIZATION]", text, StringComparison.Ordinal);
+        Assert.Contains("ClientName", text, StringComparison.Ordinal);
     }
 
     [Fact]
-    public void A_company_on_the_roster_is_replaced_by_a_person_which_is_the_gap_itself()
+    public void A_short_form_of_a_company_is_not_found_by_the_long_one()
     {
-        // Not a wish: the behaviour the paragraphs describe. A company name IS found and removed — the
-        // identifier does go — and what takes its place has the wrong shape, which is the half that
-        // makes the sentence stop being worth analysing.
-        var roster = new DeidentificationContext("scope-1")
-            .AddPerson("client-7", "Acme Corporation", IdentifierKind.OtherName);
+        // A company is matched whole, in exactly as many words as the roster gave it. "Acme Corp" is not
+        // "Acme Corporation" to this matcher — Corp against Corporation scores 0.36 against a floor of 0.84,
+        // because abbreviation is truncation inside a word and not a sound substitution — and "Acme" alone
+        // is not found at all. The fix today is a roster entry per form. When a later slice changes this,
+        // the test fails, and the documents that tell people to add those entries have to change with it.
+        var roster = new DeidentificationContext("gap-1")
+            .AddPerson("client-7", "Acme Corporation", IdentifierKind.Organization);
 
-        var engine = SiluetaEngine.CreateDefault();
-        RedactionResult result = engine.Redact("Acme Corporation called about the delay.", roster);
+        RedactionResult result = SiluetaEngine.CreateDefault()
+            .Redact("Acme Corporation called. Acme Corp called again.", roster);
 
-        // The identifier does go. That half works.
-        Assert.DoesNotContain("Acme", result.Text, StringComparison.OrdinalIgnoreCase);
+        Assert.StartsWith("[ORGANIZATION] called.", result.Text, StringComparison.Ordinal);
+        Assert.Contains("Acme Corp called again.", result.Text, StringComparison.Ordinal);
 
-        Assert.True(engine.Vault.TryGetSurrogate("client-7", out string replacement));
-        Assert.DoesNotContain("Corp", replacement, StringComparison.OrdinalIgnoreCase);
-
-        // And it came out of the pool of people: the name a company was given is now taken, and a
-        // patient cannot be assigned it. One namespace, one pool, no shape of its own for an
-        // organisation — which is the gap the README and SKILL.md describe in prose.
-        Assert.Throws<ArgumentException>(() => new PseudonymVault()
-            .Assign("client-7", replacement)
-            .Assign("patient-9", replacement));
+        foreach (string file in (string[])["README.md", "SKILL.md"])
+        {
+            Assert.Contains("Acme Corp", File.ReadAllText(Path.Combine(RepoRoot, file)), StringComparison.Ordinal);
+        }
     }
 }

@@ -267,7 +267,8 @@ public static class Commands
                              lineage produced it.
 
             Kinds: PatientName, FamilyName, StaffName, OtherName, Phone, Email, Url, IpAddress,
-                   Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, DeviceId.
+                   Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, DeviceId,
+                   Organization, Product, ClientName (a person: the customer, not the company).
             """);
     }
 }

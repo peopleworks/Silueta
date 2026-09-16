@@ -1,4 +1,4 @@
-namespace Silueta.Core;
+﻿namespace Silueta.Core;
 
 /// <summary>A value the caller already knows identifies someone in this record.</summary>
 public sealed record KnownIdentifier(string Value, IdentifierKind Kind, string SubjectId);
@@ -48,12 +48,21 @@ public sealed class DeidentificationContext
     }
 
     /// <summary>
-    /// Adds a person by full name, and also each part of it on its own.
+    /// Adds a subject by full name — and, when the subject is a person, each part of the name on its own.
     /// <para>
     /// Half the mentions in a real transcript are a first name alone ("Sofia said she'd call"), and the
     /// other half are the full name. Registering both, under one subject id, is what lets the same person
     /// get the same surrogate whichever way they were said. Parts shorter than three characters are
     /// skipped: "de", "la" and initials would match half the transcript.
+    /// </para>
+    /// <para>
+    /// A company is registered whole and only whole. Its words are common nouns: split "Acme Corporation"
+    /// and "Corporation" becomes that client, so every unrelated corporation in the transcript is
+    /// replaced — measured, "bought a corporation" came back as "bought a Guadalupe". The price is real
+    /// and is paid on purpose: "Acme" said alone is no longer found, because it only ever was by accident
+    /// of the wrong rule. Put the short form on the roster as a value of its own. Whether a kind is a
+    /// person is decided in one place, <see cref="IdentifierKindExtensions.IsPersonName"/>, and not by
+    /// the caller choosing between this method and <see cref="AddValue"/>.
     /// </para>
     /// </summary>
     public DeidentificationContext AddPerson(string subjectId, string fullName, IdentifierKind kind)
@@ -64,6 +73,11 @@ public sealed class DeidentificationContext
         }
 
         AddValue(fullName, kind, subjectId);
+
+        if (!kind.IsPersonName())
+        {
+            return this;
+        }
 
         foreach (Token part in Tokenizer.Tokenize(fullName))
         {

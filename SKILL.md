@@ -119,12 +119,15 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
 5. **No rule emits a postal code or a street address yet**, and numbers or dates spoken as words
    ("five five five, oh one four seven", "September eleventh") are not recognised at all. If the
    transcript has those, say they were not touched.
-6. **Company names, products and client accounts are not an identifier kind.** There is no
-   `Organization`, `Product` or `ClientName` in this library, and no pool of invented ones. Put a
-   company on the roster as `OtherName` and it is replaced — by a *person's* name, because that is the
-   only pool there is. Never tell a user their business identifiers were handled: say that the roster
-   entries were matched and that the replacement has the wrong shape, and that a transcript about
-   companies is not what this was built for yet.
+6. **Companies and products come back as labels unless the lineage brings names for them.** Use
+   `Organization` for a company and `Product` for a product; `ClientName` is a **person** — in home care
+   the client is the patient — and a client that is a company is an `Organization`. The lineage that
+   ships has no company names on purpose, since an invented company is very likely a real one, so a
+   company becomes `[ORGANIZATION]` and the report's manifest lists it under `surrogatesUnavailable`.
+   Say that plainly rather than calling it replaced by an invented name. And a company is matched only
+   in the words the roster gave it: `Acme Corporation` on the roster does not find `Acme Corp` or `Acme`
+   alone. If the transcript uses short forms, say they were not touched unless each form was on the
+   roster under the same `subjectId`.
 7. **A clean-looking output is not evidence.** The honest close is what ran, what it replaced, and what
    it is known not to catch.
 

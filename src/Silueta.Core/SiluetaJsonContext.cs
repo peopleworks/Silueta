@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Silueta.Core;
 
@@ -27,14 +28,6 @@ public sealed class VaultEntry
     public List<string> Retired { get; set; } = new();
 }
 
-/// <summary>The word lists of a lineage as they sit in its file.</summary>
-public sealed class LineagePools
-{
-    public List<string> Given { get; set; } = new();
-
-    public List<string> Family { get; set; } = new();
-}
-
 /// <summary>
 /// A lineage on disk: what an organisation brings of its own. Both <see cref="Lineage"/> and
 /// <see cref="Version"/> are empty by default and both are required, so that no other JSON object in the
@@ -49,7 +42,14 @@ public sealed class LineageFile
     /// <summary>Recorded and fingerprinted; it does not select phonetic rules. See SiluetaLineage.</summary>
     public string Language { get; set; } = string.Empty;
 
-    public LineagePools? Pools { get; set; }
+    /// <summary>
+    /// Pool name to word list. Read as raw JSON rather than as lists, on purpose: a key starting with "_"
+    /// is a comment — the convention the built-in file teaches — and a list-typed map would refuse the
+    /// whole file over one. The loader matches the names regardless of case, because a dictionary's keys
+    /// are case-sensitive even where the serializer's property names are not, and "Given" loaded fine
+    /// before this was a map.
+    /// </summary>
+    public Dictionary<string, JsonElement>? Pools { get; set; }
 
     public Dictionary<string, string>? Labels { get; set; }
 

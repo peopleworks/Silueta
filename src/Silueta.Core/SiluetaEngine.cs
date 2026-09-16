@@ -40,6 +40,12 @@ public sealed class RedactionManifest
     /// such kind" and "nothing to replace" are not the same silence.</summary>
     public List<string> LineageKeysSkipped { get; set; } = new();
 
+    /// <summary>Kinds the policy asked to replace with an invented name and that were labelled instead,
+    /// because the lineage had no pool to draw one from. A label where the policy said surrogate is a
+    /// decision the run made; a manifest that stayed quiet about it would describe a policy that did not
+    /// happen.</summary>
+    public List<string> SurrogatesUnavailable { get; set; } = new();
+
     public string EngineVersion { get; set; } = string.Empty;
 
     public DateTimeOffset RunUtc { get; set; }
@@ -185,12 +191,13 @@ public sealed partial class SiluetaEngine
 
         var sb = new StringBuilder(text.Length);
         var subjects = new HashSet<string>(StringComparer.Ordinal);
+        var unavailable = new SortedSet<string>(StringComparer.Ordinal);
         int cursor = 0;
 
         foreach (Detection detection in applied)
         {
             sb.Append(text, cursor, detection.Start - cursor);
-            sb.Append(Replacement(detection, text, WouldBeFound, policy));
+            sb.Append(Replacement(detection, text, WouldBeFound, policy, unavailable));
             cursor = detection.End;
 
             if (detection.SubjectId is { Length: > 0 } subjectId && subjects.Add(subjectId))
@@ -232,6 +239,7 @@ public sealed partial class SiluetaEngine
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
                 .Select(kind => kind.ToString())
                 .Order(StringComparer.Ordinal)],
+            SurrogatesUnavailable = [.. unavailable],
         };
 
         foreach (IDetector detector in _detectors)
@@ -293,19 +301,46 @@ public sealed partial class SiluetaEngine
 
     /// <summary>The original text is read here, from the transcript the caller passed in, rather than
     /// carried on the detection: see <see cref="Detection"/> for why that matters.</summary>
-    private string Replacement(Detection detection, string source, Func<string, bool> wouldBeFound, SiluetaPolicy policy)
+    private string Replacement(
+        Detection detection, string source, Func<string, bool> wouldBeFound, SiluetaPolicy policy, ISet<string> unavailable)
     {
         string original = detection.TextIn(source);
 
         return policy.ActionFor(detection.Kind) switch
         {
             RedactionAction.Surrogate when detection.SubjectId is { Length: > 0 } subjectId =>
-                Vault.Pools.Fit(Vault.SurrogateFor(subjectId, wouldBeFound), Tokenizer.Tokenize(original).Count),
+                SurrogateOrLabel(detection.Kind, subjectId, original, wouldBeFound, unavailable),
             RedactionAction.YearOnly => YearOf(original),
             RedactionAction.Generalize => Generalized(detection.Kind, original),
             RedactionAction.Keep => original,
             _ => LabelFor(detection.Kind),
         };
+    }
+
+    /// <summary>
+    /// An invented name of the right shape, or a label when there is no pool to draw one from.
+    /// <para>
+    /// The label is the honest fallback and the pool of people is not. Reaching for the only pool there
+    /// is turned "Acme Corporation" into "Ariel Bravo": the identifier went, and in its place was a person
+    /// who reads as a fact. The built-in lineage ships no company names at all — an invented company is
+    /// very likely a real one — so for a company this is the default path, and it is recorded.
+    /// </para>
+    /// <para>
+    /// A subject the vault already knows keeps its name even when today's lineage could not have minted
+    /// it. The corpus already says that name; labelling the same company in the next document would split
+    /// one subject into two presentations, which is the inconsistency the vault exists to prevent.
+    /// </para>
+    /// </summary>
+    private string SurrogateOrLabel(
+        IdentifierKind kind, string subjectId, string original, Func<string, bool> wouldBeFound, ISet<string> unavailable)
+    {
+        if (!Vault.TryGetSurrogate(subjectId, out _) && !Vault.Pools.Has(kind))
+        {
+            unavailable.Add(kind.ToString());
+            return LabelFor(kind);
+        }
+
+        return Vault.Pools.Fit(Vault.SurrogateFor(subjectId, kind, wouldBeFound), Tokenizer.Tokenize(original).Count);
     }
 
     /// <summary>Safe Harbor keeps the year and nothing finer. A date with no year loses everything.</summary>

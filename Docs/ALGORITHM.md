@@ -36,10 +36,16 @@ roster has neither failure. What it needs instead is tolerance for spelling, whi
 This generalises past the clinic, and it is the strongest argument for the whole approach: an
 organisation already holds the list. A home-care agency has its patients and its staff; a company has its
 client accounts and its catalogue; a firm has its matters. The thing a general-purpose redactor must
-guess is the thing its user could have simply handed over. What does not yet generalise is the other
-half — there is no identifier kind for an organisation, a product or an account, and no pool to draw a
-replacement from, so a company name on the roster today is replaced by a person's name. That gap is
-named in the README's Status and it is the next piece of work after the leak rate.
+guess is the thing its user could have simply handed over.
+
+**A company is registered whole; a person is registered whole and word by word.** Half the mentions of a
+person are a first name alone, so every part of "Eleanor Vasquez" goes on the roster under one subject.
+The same rule applied to "Acme Corporation" made "Corporation" that client, and every unrelated
+corporation in the transcript was replaced — measured, "bought a corporation" came back as "bought a
+Guadalupe". So a kind that is not a person is registered only as given. What it costs: "Acme" alone is not
+found, and it used to be, but only by accident of the wrong rule. Which kinds are people is answered in
+one place, `IdentifierKindExtensions.IsPersonName`, because the roster and the vault both turn on it and
+two lists would eventually disagree about one kind.
 
 **What it costs.** Names nobody wrote down — a neighbour, a nickname, the doctor mentioned once — are
 invisible to this detector. That residue is what a model-backed detector is for, and until one is plugged
@@ -109,7 +115,7 @@ framework's own timeout exception carries the input that defeated it.
 
 | Action | Applied to | Result |
 | --- | --- | --- |
-| `Surrogate` | names | a consistent invented name per subject |
+| `Surrogate` | names of people, organisations, products | a consistent invented name per subject — or, for a kind the lineage brings no pool for, its label (see below) |
 | `Label` | phone, e-mail, URL, IP, address, record and account numbers | `[PHONE]`, `[EMAIL]`, … |
 | `YearOnly` | dates | `3/14/2026` → `2026` |
 | `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; a postal code is removed whole |
@@ -129,6 +135,23 @@ manifest and why the MCP tools return counts rather than a clean bill of health.
 makes cohorts possible — one subject, one name, five hundred transcripts — is the same property that
 links documents to each other. That is the point of it and the risk in it, and it is the reason the vault
 does not travel with the corpus.
+
+**For an organisation, a surrogate costs something a person's does not.** An invented person's name is
+shared by thousands of real people, so it points at nobody; `Urena` is in the pool and is an ordinary
+surname, and the project accepts that. An invented company name is close to unique, so it very likely
+points at one real company — which the redacted transcript then places on a call it had nothing to do
+with. That is why the built-in lineage ships no company or product names at all, and why an
+`Organization` with no pool is labelled rather than given a name from the only pool there is (which is
+people, and which turned "Acme Corporation" into "Ariel Bravo"). An organisation that wants company
+surrogates brings its own list, chosen by someone who knows what is safe in that market. What the library
+must *not* do about it, written down so it is not proposed twice: check invented names against a company
+or trademark register. That is a network call and a data licence, inside a library whose case rests on
+having no dependencies.
+
+The labelled fallback costs coreference, and the cost lands on exactly the corpus these kinds are for:
+"[ORGANIZATION] said they would call [ORGANIZATION] back" has merged two companies. It is still the better
+failure — "[ORGANIZATION] called about the delay" reads as a company, and "Ariel Bravo called about the
+delay" reads as a person and is false.
 
 **Where the words come from.** Not from the code. The pools, the labels and the generalisations are a
 **lineage**: a file the organisation writes, loaded the way a pattern pack is loaded and fingerprinted
@@ -219,7 +242,18 @@ identify them. There is no second copy by design.
 ## 8. The manifest
 
 Record id, policy name, version and **fingerprint**, engine version, counts by kind, by detector and by
-match type — plus the four things that bind it to something:
+match type.
+
+**The policy's name and the counts by kind are two different lists, and a reader has to be told so.** The
+name is the standard under which the eighteen identifiers were removed. The counts are everything that
+was removed, which since `safe-harbor/0.2` can include kinds the standard does not name — an
+organisation, a product. Safe Harbor is a floor: removing more keeps the name true, and keeping something
+it names would not. And `surrogatesUnavailable` lists the kinds the policy asked to replace with an
+invented name that were labelled instead, because the lineage had no pool; a label where the policy said
+surrogate is a decision the run made, and a manifest quiet about it describes a policy that did not
+happen.
+
+Plus the four things that bind it to something:
 
 - **`inputSha256` and `outputSha256`.** Without them the manifest is bound to nothing at all, and a
   reviewer holding a corpus and a manifest cannot say the two belong together. `textLength` was the

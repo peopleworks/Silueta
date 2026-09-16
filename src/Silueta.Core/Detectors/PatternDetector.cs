@@ -61,7 +61,7 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
 
         foreach (PatternRule rule in rules)
         {
-            if (string.IsNullOrWhiteSpace(rule.Regex) || !Enum.TryParse(rule.Kind, ignoreCase: true, out IdentifierKind kind))
+            if (string.IsNullOrWhiteSpace(rule.Regex) || !IdentifierKindExtensions.TryParseName(rule.Kind, out IdentifierKind kind))
             {
                 // A pack naming a kind we do not know is a pack written against a newer version, so the
                 // rule is skipped rather than crashing the run — but it is written down, because silence

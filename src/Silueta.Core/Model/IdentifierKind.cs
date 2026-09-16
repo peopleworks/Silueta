@@ -94,4 +94,83 @@ public static class IdentifierKindExtensions
         IdentifierKind.StaffName or
         IdentifierKind.OtherName or
         IdentifierKind.ClientName;
+
+    /// <summary>
+    /// Reads a kind the way a person writes one — by its name, in any case — and nothing else.
+    /// <para>
+    /// Not <c>Enum.TryParse</c>, which is a parser for enum <em>values</em> and reads far more than names:
+    /// "3" as the third kind, "99" as a kind that does not exist, and "PatientName, Phone" as both at
+    /// once. Every file this library reads a kind from — a roster, a lineage, a pattern pack — was written
+    /// by someone, and each of those readings is a way for a typo to become a rule.
+    /// </para>
+    /// </summary>
+    public static bool TryParseName(string? text, out IdentifierKind kind)
+    {
+        kind = default;
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return false;
+        }
+
+        string trimmed = text.Trim();
+        foreach (IdentifierKind candidate in Enum.GetValues<IdentifierKind>())
+        {
+            if (string.Equals(candidate.ToString(), trimmed, StringComparison.OrdinalIgnoreCase))
+            {
+                kind = candidate;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// The kind a misspelling most likely meant, or null when nothing is close.
+    /// <para>
+    /// For an error message, and it is the only thing an error message may say about what was written: it
+    /// answers with one of the kinds' own names, never with the input. A roster with two columns swapped
+    /// puts a person's name where the kind goes, and an error that repeated the field would print that
+    /// name. The threshold is high on purpose — "Organisation" is close to "Organization"; a name is close
+    /// to nothing.
+    /// </para>
+    /// </summary>
+    public static string? ClosestName(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        string folded = Folding.StripAccents(text.Trim()).ToLowerInvariant();
+        (string? best, double score) = (null, 0.8);
+
+        foreach (IdentifierKind candidate in Enum.GetValues<IdentifierKind>())
+        {
+            string name = candidate.ToString();
+            double ratio = Similarity.Ratio(folded, name.ToLowerInvariant());
+            if (ratio >= score)
+            {
+                (best, score) = (name, ratio);
+            }
+        }
+
+        return best;
+    }
+
+    /// <summary>
+    /// What to tell a caller whose roster entry has a kind that cannot be read. By position, with the
+    /// closest real kind when there is one — the same words from the command line and the MCP server,
+    /// because two copies of an error message drift into two different rules about what it may reveal.
+    /// </summary>
+    public static string UnreadableKindMessage(int entryNumber, string? text)
+    {
+        string hint = ClosestName(text) is { } closest ? $" The closest kind is {closest}." : string.Empty;
+        string missing = string.IsNullOrWhiteSpace(text) ? "has no \"kind\"" : "has a \"kind\" this build does not know";
+
+        return
+            $"Roster entry {entryNumber} {missing}.{hint} It used to be read as OtherName without a word, which " +
+            "sends a company to the pool of people's names. Kinds: " +
+            string.Join(", ", Enum.GetNames<IdentifierKind>()) + ".";
+    }
 }

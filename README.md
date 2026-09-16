@@ -110,6 +110,11 @@ the patient's name would publish the identifier through the very files that exis
 published. Pass `--vault` on every run of a corpus: it is where the invented names live, and without it
 each transcript invents new ones for the same people.
 
+`kind` is required too, and has to be one of the names listed by `silueta --help`. A kind that cannot be
+read stops the run and names the entry by position — never by its value — with the closest real kind
+(`Organisation` gets "the closest kind is Organization"). It used to be read as `OtherName` without a
+word, which sends a misspelled company to the pool of people's names.
+
 ## Bring your own dictionaries: the lineage
 
 A clinic, a call centre and a law firm do not redact the same things, do not speak the same language, and

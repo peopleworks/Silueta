@@ -106,6 +106,39 @@ public sealed class McpBoundaryTests : IDisposable
     }
 
     [Fact]
+    public void An_inline_roster_entry_with_a_kind_that_cannot_be_read_is_refused_without_repeating_it()
+    {
+        // "Value|Kind|SubjectId" is easy to write with two columns swapped, which puts a person's name in
+        // the kind. So the refusal names the position and the closest real kind, and never the input.
+        Exception thrown = Assert.ThrowsAny<Exception>(() =>
+            RedactionTools.RedactText("Acme Corporation called.", "r-1", ["Acme Corporation|Organisation|client-7"]));
+
+        Assert.Contains("entry 1", thrown.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Organization", thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Organisation", thrown.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Acme", thrown.Message, StringComparison.OrdinalIgnoreCase);
+
+        Exception swapped = Assert.ThrowsAny<Exception>(() =>
+            RedactionTools.RedactText("Eleanor Vasquez rested.", "r-1", ["PatientName|Eleanor Vasquez|patient-1"]));
+        Assert.DoesNotContain("Eleanor", swapped.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void A_roster_file_entry_with_a_kind_that_cannot_be_read_is_refused()
+    {
+        string transcript = Write("call.txt", "Acme Corporation called.");
+        string roster = Write("roster.json", """
+            [ { "value": "Acme Corporation", "kind": "Client Company", "subjectId": "client-7" } ]
+            """);
+
+        Exception thrown = Assert.ThrowsAny<Exception>(() =>
+            RedactionTools.RedactTranscript(transcript, "r-1", roster));
+
+        Assert.Contains("entry 1", thrown.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Acme", thrown.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void A_vault_can_never_be_read_back_through_the_redaction_tool()
     {
         var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");

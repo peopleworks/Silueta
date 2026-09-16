@@ -64,9 +64,11 @@ public static class Commands
                     return 2;
                 }
 
-                IdentifierKind kind = Enum.TryParse(dto.Kind, ignoreCase: true, out IdentifierKind parsed)
-                    ? parsed
-                    : IdentifierKind.OtherName;
+                if (!IdentifierKindExtensions.TryParseName(dto.Kind, out IdentifierKind kind))
+                {
+                    error.WriteLine(IdentifierKindExtensions.UnreadableKindMessage(i + 1, dto.Kind));
+                    return 2;
+                }
 
                 context.AddPerson(dto.SubjectId, dto.Value, kind);
             }

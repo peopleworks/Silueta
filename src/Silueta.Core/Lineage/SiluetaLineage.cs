@@ -152,7 +152,7 @@ public sealed class SiluetaLineage
         var parsed = new Dictionary<IdentifierKind, string>();
         foreach ((string key, string value) in entries)
         {
-            if (!Enum.TryParse(key, ignoreCase: true, out IdentifierKind kind))
+            if (!IdentifierKindExtensions.TryParseName(key, out IdentifierKind kind))
             {
                 // A lineage written against a newer build names kinds this one has never heard of. It is
                 // skipped rather than fatal, and written down rather than swallowed.

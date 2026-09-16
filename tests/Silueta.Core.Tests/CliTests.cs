@@ -181,6 +181,30 @@ public sealed class CliTests : IDisposable
         Assert.Contains("sound alike", _error.ToString(), StringComparison.OrdinalIgnoreCase);
     }
 
+    [Theory]
+    [InlineData("""[ { "value": "Acme Corporation", "kind": "Organisation", "subjectId": "client-7" } ]""", "Organization")]
+    [InlineData("""[ { "value": "Acme Corporation", "subjectId": "client-7" } ]""", null)]
+    public void A_roster_entry_whose_kind_cannot_be_read_stops_the_run(string roster, string? suggestion)
+    {
+        // It used to become OtherName in silence, which after the company kinds is a company sent to the
+        // pool of people's names by a typo — or by leaving the field out.
+        string input = Write("call.txt", "Acme Corporation called.");
+        string rosterPath = Write("roster.json", roster);
+        string outPath = Path("call.redacted.txt");
+
+        Assert.Equal(2, Redact("--in", input, "--record", "r-1", "--context", rosterPath, "--out", outPath));
+
+        Assert.False(File.Exists(outPath));
+        string error = _error.ToString();
+        Assert.Contains("entry 1", error, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Acme", error, StringComparison.OrdinalIgnoreCase);
+
+        if (suggestion is not null)
+        {
+            Assert.Contains(suggestion, error, StringComparison.Ordinal);
+        }
+    }
+
     [Fact]
     public void A_record_id_is_required_and_is_not_the_file_name()
     {

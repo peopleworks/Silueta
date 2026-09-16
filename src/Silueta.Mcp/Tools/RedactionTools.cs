@@ -132,7 +132,7 @@ public static class RedactionTools
                     "must not be the name.");
             }
 
-            context.AddPerson(parts[2], parts[0], ParseKind(parts[1]));
+            context.AddPerson(parts[2], parts[0], ParseKind(parts[1], i + 1));
         }
 
         SiluetaEngine engine = SiluetaEngine.FromLineage(Lineage());
@@ -350,7 +350,7 @@ public static class RedactionTools
                     "(\"patient-1\", \"s-7f3\"): it is the key the vault is filed under, and it must not be the name.");
             }
 
-            context.AddPerson(entry.SubjectId, entry.Value, ParseKind(entry.Kind));
+            context.AddPerson(entry.SubjectId, entry.Value, ParseKind(entry.Kind, i + 1));
         }
 
         return context;
@@ -373,8 +373,12 @@ public static class RedactionTools
         return recordId.Trim();
     }
 
-    private static IdentifierKind ParseKind(string kind) =>
-        Enum.TryParse(kind, ignoreCase: true, out IdentifierKind parsed) ? parsed : IdentifierKind.OtherName;
+    /// <summary>A roster kind, or a refusal. It used to fall back to OtherName, which after the company
+    /// kinds sends a misspelled company to the pool of people's names without a word.</summary>
+    private static IdentifierKind ParseKind(string? kind, int entryNumber) =>
+        IdentifierKindExtensions.TryParseName(kind, out IdentifierKind parsed)
+            ? parsed
+            : throw new McpException(IdentifierKindExtensions.UnreadableKindMessage(entryNumber, kind));
 
     /// <summary>Builds the response. Nothing here is read out of the original text.</summary>
     private static RedactionReport Report(

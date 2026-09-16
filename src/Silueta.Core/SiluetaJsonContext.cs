@@ -9,7 +9,10 @@ public sealed class KnownIdentifierDto
 {
     public string Value { get; set; } = string.Empty;
 
-    public string Kind { get; set; } = nameof(IdentifierKind.OtherName);
+    /// <summary>Empty by default, and required. It defaulted to "OtherName", so a roster entry with no
+    /// kind was a person — and after the company kinds, a company left without one went to the pool of
+    /// people's names. The third time this project has met a required field with a harmless default.</summary>
+    public string Kind { get; set; } = string.Empty;
 
     public string SubjectId { get; set; } = string.Empty;
 }

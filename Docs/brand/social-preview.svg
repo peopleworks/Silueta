@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1280 640" width="1280" height="640"
+     role="img" aria-labelledby="silueta-social-title silueta-social-desc">
+  <title id="silueta-social-title">Silueta — give an AI your conversations, not the people in them</title>
+  <desc id="silueta-social-desc">Social preview card for the repository: the hero diagram, centred on a 1280 by 640 canvas of the same dark ground. The report as a speech recogniser wrote it, the roster the agency holds, the same report as Silueta hands it on, and the one surname still in it marked as a counted failure.</desc>
+  <!--
+    GitHub's social preview takes PNG, JPG or GIF only, under 1 MB, best at 1280x640. This file is the source
+    of social-preview.png: hero.svg, unscaled, with 40px of the same ground on every side, so the hero's
+    rounded corners disappear into the canvas. It references hero.svg rather than copying it — one drawing,
+    not two that drift. To regenerate the PNG, serve this folder over HTTP and screenshot this file at a
+    1280x640 viewport.
+  -->
+  <rect width="1280" height="640" fill="#0E1317"/>
+  <image href="hero.svg" xlink:href="hero.svg" x="40" y="40" width="1200" height="560"/>
+</svg>

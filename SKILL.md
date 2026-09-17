@@ -7,8 +7,8 @@ description: >-
   clinical or customer text into a chat; when they ask what HIPAA Safe Harbor requires of a transcript;
   or when they mention Silueta. Also use to explain why a name survived a redaction. Backed by the
   Silueta engine (MCP server, CLI or .NET library), which matches a roster you already hold through ASR
-  spelling damage. It has not yet measured its own leak rate and must never be described as proof that
-  a transcript is de-identified.
+  spelling damage. Its leak rate has been measured only on a small synthetic corpus, is high, and must
+  never be described as proof that a transcript is de-identified.
 ---
 
 # Silueta — de-identify a transcript without reading it first
@@ -109,9 +109,13 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
 2. **Never call a transcript "de-identified" flatly.** Say what ran and what it found: "the roster
    matcher and the pattern pack ran; nine spans were replaced across three subjects." Whether a corpus
    may leave a building is a lawyer's decision, and an expert determination is a person signing a name.
-3. **Silueta has not yet measured its own leak rate.** The library is built around that number and the
-   number does not exist. If you are asked how good it is, say that, and do not substitute an
-   impression. Every tool result carries the same caveat in a `caveat` field — pass it on.
+3. **The leak rate is measured on a synthetic corpus, and it is high.** On thirty synthetic home-care
+   transcripts (Windows voices, phone-degraded audio, Whisper large-v3), this many still held something
+   identifying: 93.3% of 30 transcripts (95% CI 78.7%–98.2%). Counting only the kinds this build has a
+   way to find: 80.0% of 30 transcripts (95% CI 62.7%–90.5%). If you are asked how good it is, give both
+   numbers with their intervals, say the corpus is synthetic and was written by the matcher's author, and
+   never offer either as a guarantee for the user's own transcripts. Every tool result carries a `caveat`
+   field — pass it on.
 4. **Name what survives, because it is predictable.** Nicknames (`Ellie` for Eleanor). Names nobody
    wrote down — a neighbour, a doctor mentioned once. People referred to only by relationship ("my
    daughter"). Names the recogniser damaged past the matcher's threshold: `Reyes` heard as `Rays`

@@ -259,12 +259,47 @@ Read [Docs/ALGORITHM.md](Docs/ALGORITHM.md) for the detail, including what each 
 
 ## Status
 
-**Silueta has not yet measured its own leak rate.** The scorer, `silueta evaluate` and the literal-roster
-baseline exist and are tested, but the gold corpus is one document — the demo above, marked by hand as the
-evaluator's own canary. One document is not a leak rate; it is a check that the evaluator agrees with what
-this README already says (it does: the demo leaks through "Rays" and "Ellie", and through nothing else).
-Until the corpus exists, this library is a redactor with a plan, and the honest reading of the example
-above is that two of the names in it survived.
+**Silueta has a measured leak rate now, and it is high.** It was measured on thirty synthetic home-care
+transcripts — scripts written for the purpose, spoken by Windows voices, degraded like phone calls and
+transcribed by Whisper large-v3 — and it is reproduced by `silueta evaluate --gold corpus-synthetic/tts-asr`.
+A test runs that evaluation and fails if the table below stops matching it.
+
+<!-- leak-rate:start — PublishedNumberTests checks this block against a fresh evaluation -->
+| 30 documents · 16 Sep 2026 · engine 0.1.0 · lineage `silueta-core/1` | Silueta | The same roster, matched literally |
+| --- | --- | --- |
+| **Every kind marked** — could this corpus leave the building? | 93.3% of 30 transcripts (95% CI 78.7%–98.2%) | 96.7% of 30 transcripts (95% CI 83.3%–99.4%) |
+| **In scope** — the kinds this build has a way to find | 80.0% of 30 transcripts (95% CI 62.7%–90.5%) · recall 0.834 | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) · recall 0.777 |
+| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.057 [+0.021, +0.094] · leak rate -0.067 [-0.167, 0.000] | — |
+<!-- leak-rate:end -->
+
+**The first row answers whether this corpus could be shared, and the answer is no.** Almost every
+transcript still says something identifying — most often a place, which no rule looks for yet, or a person
+the roster never named.
+
+**The second row judges the matcher, and it still fails four transcripts in five.** "In scope" means the
+kinds the pattern pack has a rule for plus the kinds on each document's roster; a rule that exists and
+fails stays in. The failures are nicknames no roster lists ("Lupita", "Teddy", "Chuy") and pattern rules
+that miss what a recogniser writes for dictated numbers — a record number read out as "441729", an age as
+"96", an e-mail address as "tuan.nguyen at example.com".
+
+**The third row is the thesis, and it is small.** Matching the roster by sound instead of letter for letter
+covers about six more of every hundred characters in scope, and the interval excludes zero, so it is not
+noise. Whether that changes how many transcripts leak, thirty documents cannot say: that interval reaches
+zero.
+
+What this corpus is, so the numbers are not read as more than they are:
+
+- **Synthetic, and not independent.** The scripts were written by the author of the matcher. They were
+  committed before the corpus was first evaluated, and the history shows it.
+- **One annotator.** Automatic alignment from script to transcript, every entry read by Claude, no person.
+  Agreement between annotators cannot be computed and is not.
+- **Voices, not people.** No accents, no crosstalk, no room. Each script was recorded under a single
+  condition, so the condition is confounded with the script's content: the per-condition results in the
+  report (clean, phone, noisy phone) cannot be read as the effect of the audio.
+- **No NER baseline yet.** A literal roster match is the only comparison.
+
+How the corpus was built, and the rules that keep it from being tuned to a result:
+[`tools/corpus/README.md`](tools/corpus/README.md).
 
 What is in place: the roster matcher, the pattern pack, the Safe Harbor policy, the vault, the manifest,
 the leak-rate scorer with its interval, and `silueta evaluate`. What is next, in order: the corpus; then the matcher

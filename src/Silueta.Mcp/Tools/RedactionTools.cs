@@ -461,7 +461,8 @@ public static class RedactionTools
 
         notes.AddRange(new[]
         {
-            "Silueta has not yet measured its own leak rate, so this output is not verified to be " +
+            "Silueta's leak rate is measured only on a small synthetic corpus (see its README), and on that " +
+            "corpus most transcripts still held something identifying, so this output is not verified to be " +
             "de-identified. Names nobody wrote down — nicknames, a relative mentioned only by " +
             "relationship, a doctor named once — are invisible to the roster matcher and survive.",
         });

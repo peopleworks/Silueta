@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace Silueta.Core;
 
@@ -176,7 +176,7 @@ public static class LeakRate
             // transcript while "SOFÍA" was caught — the meter's private copy of the equality rule was
             // strict in the one direction that hides leaks, and the library's own detector could find
             // every identifier in a text this scored at recall 1.00, precision 1.00, no leak.
-            if (Folding.Contains(redacted, span.TextIn(original)))
+            if (Folding.ContainsWords(redacted, span.TextIn(original)))
             {
                 surviving++;
                 survivingByKind[span.Kind] = survivingByKind.GetValueOrDefault(span.Kind) + 1;

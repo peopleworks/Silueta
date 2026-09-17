@@ -375,9 +375,18 @@ counts is embedded data, like the lineage, not code.
 
 The gold set is the yardstick, and a redactor scored against its own output measures nothing.
 
-**None of this has produced a number yet.** The scorer, `silueta evaluate` and the literal-roster baseline
-exist and are tested; the gold corpus is one document, the demo, which the evaluator scores exactly as the
-README describes it. Everything above describes how the number will be computed, not a number anyone has.
+**It has produced a number, and the number is in the README with its corpus, its intervals and its
+limits.** Thirty synthetic transcripts with real recogniser damage; most leak whichever way it is counted.
+Two things about how it is reported are decisions and belong here. First, there are two leak rates, and
+they are not interchangeable: over every kind the annotators marked, which answers whether the corpus could
+be shared and includes places no rule looks for; and over the kinds the build has a way to find — the
+kinds the pattern pack has a rule for, plus each document's roster — which judges the matcher. The scope is
+derived from the build, not written down, so a rule that exists and fails still counts against it.
+Second, the value of matching by sound is reported as a *difference* from the literal baseline over the
+same documents, with an interval from a paired bootstrap that resamples documents rather than characters:
+characters within one document are not independent — a name said five times is one decision made five
+times — and an interval that pretended otherwise would be narrower than thirty documents can support. The
+seed is fixed, so the interval is part of what the repository reproduces.
 
 **The baseline is the point of the comparison, and it is built to be exactly as dumb as a ten-minute
 job.** `DenyListDetector` matches the same roster literally — folding case and accents, whole words only,

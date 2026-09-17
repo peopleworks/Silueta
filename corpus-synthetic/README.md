@@ -60,3 +60,10 @@ The thirty `tts-asr` documents hold 153 marked identifiers: 54 patient names, 34
 names, 4 other people, 14 places, 12 dates, 10 ages over 89, 8 phone numbers, 4 record numbers, 2 e-mail
 addresses. How they were made, and the rules that keep them from being tuned to a result, are in
 [`tools/corpus/README.md`](../tools/corpus/README.md). They were committed before they were first evaluated.
+
+**One flaw in the design, found at the first evaluation and not fixed after it.** Each script was recorded
+under one condition, so condition is confounded with content: the ten `phone` scripts happen to hold no
+place, no record number and nobody outside the roster, while the `clean` and `noisy-phone` ones hold all of
+those. The per-condition results therefore say which scripts leak, not what the audio did — `clean` comes out
+worse than `phone`. The next version of this corpus records every script under every condition. It was not
+changed here, because changing a corpus after reading its results is the thing these files promise not to do.

@@ -69,12 +69,13 @@ There is no re-identification tool, and there will not be one.
 | Built for | Text someone typed | **Text a recogniser produced**, where the name is misspelled |
 | Names | Guesses which capitalised word is a person | Matches **a roster you already hold**, so it does not delete *Parkinson* |
 | Re-identification | Often a helpful extra | **Refused** — the vault belongs to the agency |
-| Honesty | "Done, your text is anonymised" | Says the leak rate **has not been measured**, and names what survives |
+| Honesty | "Done, your text is anonymised" | Gives the **measured leak rate with its interval and its corpus**, and names what survives |
 
 ## What it does not promise
 
-Silueta has not yet measured its own leak rate. The library exists because of that number and the number
-does not exist, which the skill is required to say rather than paper over. Nicknames, people named only
+Silueta's leak rate has been measured only on thirty synthetic transcripts, and it is high: most of them
+still held something identifying. The skill is required to say so, with the interval and what the corpus
+was, rather than paper over it — the numbers are in the repository README. Nicknames, people named only
 by relationship, names nobody wrote down, and names damaged past the matcher's threshold all survive —
 and no rule emits a postal code or a street address yet.
 

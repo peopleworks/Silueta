@@ -222,16 +222,39 @@ public static class Commands
             output.WriteLine($"  caveat: {caveat}");
         }
 
+        var invariant = System.Globalization.CultureInfo.InvariantCulture;
+
         output.WriteLine();
+        output.WriteLine("  Every kind the annotators marked — can this corpus leave the building?");
         foreach (ConfigurationResult configuration in report.Configurations)
         {
             output.WriteLine(
-                $"  {configuration.Name,-18} leak rate {configuration.LeakRate}  " +
-                $"recall {configuration.PooledRecall.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)}  " +
+                $"    {configuration.Name,-18} leak rate {configuration.LeakRate}  " +
+                $"recall {configuration.PooledRecall.ToString("0.000", invariant)}  " +
                 $"over-redacted {configuration.OverRedactedCharacters} chars");
         }
 
-        output.WriteLine("  ner                not run: no NER baseline is part of this build.");
+        output.WriteLine("    ner                not run: no NER baseline is part of this build.");
+
+        output.WriteLine();
+        output.WriteLine("  In scope — kinds this build has a way to find. Judges the matcher.");
+        output.WriteLine($"    ({report.Scope})");
+        foreach (ConfigurationResult configuration in report.Configurations)
+        {
+            output.WriteLine(
+                $"    {configuration.Name,-18} leak rate {configuration.LeakRateInScope}  " +
+                $"recall {configuration.RecallInScope.ToString("0.000", invariant)}");
+        }
+
+        foreach (PairedComparison comparison in report.Comparisons)
+        {
+            output.WriteLine();
+            output.WriteLine(
+                $"  {comparison.Configuration} minus {comparison.Baseline}, in scope, paired bootstrap over documents " +
+                $"({comparison.Resamples} resamples, seed {comparison.Seed}):");
+            output.WriteLine($"    recall    {comparison.RecallDifference}");
+            output.WriteLine($"    leak rate {comparison.LeakRateDifference}");
+        }
 
         if (options.TryGetValue("out", out string? outPath))
         {

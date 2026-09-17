@@ -189,6 +189,39 @@ public class LeakRateTests
     }
 
     [Fact]
+    public void A_name_that_is_only_the_first_letters_of_another_word_did_not_survive()
+    {
+        // Found by a flaky test, which is the only reason it was found. A patient called "Mar" and a vault
+        // that minted "Marley" for somebody else in the same document: the survival check looked for the
+        // letters anywhere, found "Mar" inside "Marley", and reported a leak. The name did not survive —
+        // and because the invented name is drawn at random, the published leak rate changed between runs
+        // of the same corpus, which is worse than the false alarm.
+        DeidScore score = LeakRate.Score(
+            "Mar Salcedo talked about the sea.",
+            "Marley Bravo talked about the sea.",
+            [Span(0, 3)],
+            [new Detection(0, 11, IdentifierKind.PatientName, "known-value", 1.0)]);
+
+        Assert.Equal(0, score.SurvivingSpans);
+        Assert.False(score.Leaked);
+    }
+
+    [Fact]
+    public void A_name_inside_an_email_address_did_survive()
+    {
+        // The other side of the same rule: punctuation is a boundary, so a name left inside an address the
+        // pattern rules failed to catch is still a leak.
+        DeidScore score = LeakRate.Score(
+            "Write to jamileth.v@example.com.",
+            "Write to jamileth.v@example.com.",
+            [Span(9, 8)],
+            []);
+
+        Assert.Equal(1, score.SurvivingSpans);
+        Assert.True(score.Leaked);
+    }
+
+    [Fact]
     public void Dropping_the_accents_off_a_name_is_not_a_redaction()
     {
         // Detection.cs defines an exact match as "letter for letter (ignoring case and accents)", and

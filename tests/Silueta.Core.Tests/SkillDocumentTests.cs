@@ -1,4 +1,4 @@
-namespace Silueta.Core.Tests;
+﻿namespace Silueta.Core.Tests;
 
 /// <summary>
 /// SKILL.md is not documentation. It is an instruction set an agent loads and acts on, so a claim that
@@ -53,14 +53,6 @@ public class SkillDocumentTests
     public void It_refuses_re_identification_in_so_many_words()
     {
         Assert.Contains("Never re-identify", Skill, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void It_still_says_the_number_does_not_exist()
-    {
-        // The project's own thesis is that it measures its own failure rate. Until it has, the skill
-        // saying so is the measurement. Phase 1 is what deletes this test, deliberately, by hand.
-        Assert.Contains("has not yet measured its own leak rate", Skill, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

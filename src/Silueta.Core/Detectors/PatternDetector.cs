@@ -78,6 +78,11 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
 
     public int RulesLoaded => _rules.Count;
 
+    /// <summary>The kinds this pack has at least one rule for. What an evaluation counts as "in scope" comes
+    /// from here rather than from a list someone wrote down, so a rule added to the pack widens the scope and
+    /// a rule that exists but fails still counts against the matcher.</summary>
+    public IReadOnlyCollection<IdentifierKind> Kinds => [.. _rules.Select(r => r.Kind).Distinct()];
+
     public IReadOnlyList<string> RulesSkipped => _skipped;
 
     /// <summary>

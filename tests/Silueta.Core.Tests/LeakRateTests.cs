@@ -166,8 +166,11 @@ public class LeakRateTests
         // A number without its denominator is the thing this project exists to stop publishing.
         Assert.Throws<ArgumentOutOfRangeException>(() => new LeakRateEstimate(0, 0));
 
+        // And, since Phase 1, its interval: with forty documents three leaks is a rate that could be anywhere
+        // from one in forty to one in five, and a printed rate that hides that is a claim of precision the
+        // corpus cannot support.
         LeakRateEstimate estimate = new(40, 3);
-        Assert.Equal("7.5% of 40 transcripts", estimate.ToString());
+        Assert.Equal("7.5% of 40 transcripts (95% CI 2.6%–19.9%)", estimate.ToString());
     }
 
     [Fact]

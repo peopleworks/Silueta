@@ -62,6 +62,18 @@ public sealed class LineageFile
     public List<PatternRule>? Patterns { get; set; }
 }
 
+/// <summary>The quasi-identifier vocabulary as it sits in its embedded file.</summary>
+public sealed class QuasiIdentifierVocabularyFile
+{
+    public string Vocabulary { get; set; } = string.Empty;
+
+    public string Version { get; set; } = string.Empty;
+
+    public List<string>? Kinship { get; set; }
+
+    public List<string>? AgeBrackets { get; set; }
+}
+
 /// <summary>The vault on disk. Deliberately its own file: it is the only artefact that can undo the work.</summary>
 public sealed class VaultFile
 {
@@ -90,5 +102,6 @@ public sealed class VaultFile
 [JsonSerializable(typeof(RedactionManifest))]
 [JsonSerializable(typeof(VaultFile))]
 [JsonSerializable(typeof(LineageFile))]
+[JsonSerializable(typeof(QuasiIdentifierVocabularyFile))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
 public sealed partial class SiluetaJsonContext : JsonSerializerContext;

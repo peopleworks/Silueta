@@ -1,0 +1,22 @@
+{
+  "vocabulary": "silueta-core",
+  "version": "1",
+
+  "_why": [
+    "The words that survive a redaction on purpose and still narrow down who a document is about.",
+    "Kinship is kept because 'her daughter called' is the analysis; it is also, filed under one invented",
+    "name across a corpus, half of a family tree. Data rather than code for the same reason the lineage",
+    "is: a clinic in another language brings its own words."
+  ],
+
+  "kinship": [
+    "mother", "father", "daughter", "son", "wife", "husband", "sister", "brother",
+    "granddaughter", "grandson", "grandmother", "grandfather", "niece", "nephew",
+    "aunt", "uncle", "cousin", "partner", "widow", "widower", "caregiver",
+    "madre", "padre", "hija", "hijo", "esposa", "esposo", "hermana", "hermano",
+    "nieta", "nieto", "abuela", "abuelo", "sobrina", "sobrino", "tía", "tío",
+    "prima", "primo", "pareja", "viuda", "viudo", "cuidadora", "cuidador"
+  ],
+
+  "ageBrackets": ["90 or older", "90 o más"]
+}

@@ -347,9 +347,33 @@ which any report would print as a perfect score for a run that measured nothing.
 the number of transcripts it was measured on, because a rate without its denominator is the kind of
 number this library exists to stop people publishing.
 
-Alongside it: recall by identifier type, over-redaction (characters removed that the annotators never
-marked), and per-detector contribution. The gold set is a random sample annotated by two people, and it
-is the yardstick — a redactor scored against its own output measures nothing.
+**A rate carries its interval.** A 95% Wilson interval, not the textbook normal one: with thirty documents
+and no leaks the normal interval is [0%, 0%] and prints as a proven zero, while Wilson says the true rate
+could still be one in nine. `7.5% of 40 transcripts (95% CI 2.6%–19.9%)` is what a small corpus can
+honestly support, and the interval is part of the string so it cannot be quoted without it.
+
+**By kind of identifier and by detector.** Every score carries both breakdowns, with two attribution rules
+chosen rather than defaulted. What was sensitive, covered or left behind counts under the kind the
+*annotators* gave it — a patient's name the detector called OtherName is still a covered patient's name.
+What was removed without need counts under the kind the *detector* gave it, because that is the rule that
+fired. Where annotations of two kinds overlap, the shared characters count under both, so per-kind figures
+can add up to more than the total, which stays the total. The per-detector figures are attribution, not
+ablation: a character two detectors both covered counts for each, and only a second run without a detector
+says what would have been lost.
+
+**Across documents, keyed by invented name.** Every other measure here is per document, and the attack is
+not. The vault gives a subject one invented name across the corpus — which is what makes a dashboard
+possible, and which makes the name a join key: every visit, every kept year, every "90 or older", every
+"her daughter", filed under one string. `Linkage.Analyze` counts, per invented name, the documents it
+appears in and the quasi-identifiers that survived beside it, and reports the smallest group of subjects
+sharing one pattern — k, in k-anonymity. It is keyed by the invented name, which the corpus already
+carries, never by subject id or code. And it writes into itself what it cannot see: places (no rule finds
+them yet, so all survive), clinical detail (the analysis this library preserves is also a
+quasi-identifier), wording outside its vocabulary, and the fact that it attributes every quasi-identifier
+in a document to every subject named there — pessimistic by construction. The kinship and age wording it
+counts is embedded data, like the lineage, not code.
+
+The gold set is the yardstick, and a redactor scored against its own output measures nothing.
 
 **None of this has been run yet.** The scorer exists and is tested; the gold corpus, the `evaluate`
 command and the baselines do not. Everything above describes how the number will be computed, not a

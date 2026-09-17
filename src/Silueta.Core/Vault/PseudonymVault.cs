@@ -43,6 +43,11 @@ public sealed class PseudonymVault
     /// <summary>How many subjects this vault knows.</summary>
     public int Count => _codes.Count;
 
+    /// <summary>Every invented name this vault has handed out, retired ones included — the strings a
+    /// redacted corpus can contain. No subject ids and no codes: this is what a reader of the corpus could
+    /// already collect, and it is what a linkage report is keyed by.</summary>
+    public IReadOnlyCollection<string> Surrogates => _bySurrogate.Keys;
+
     /// <summary>Returns this subject's re-identification code, minting one the first time it is asked for.</summary>
     public string PseudonymFor(string subjectId)
     {

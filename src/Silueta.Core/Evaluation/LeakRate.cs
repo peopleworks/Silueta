@@ -37,7 +37,35 @@ public sealed record DeidScore(
 
     /// <summary>Whether this transcript still identifies someone. One surviving name is enough.</summary>
     public bool Leaked => MissedCharacters > 0 || SurvivingSpans > 0;
+
+    /// <summary>
+    /// The same measurement, by kind of identifier.
+    /// <para>
+    /// What was sensitive, covered or left behind is counted under the kind the <b>annotators</b> gave it: a
+    /// patient's name the detector called OtherName is still a patient's name that was covered. What was
+    /// removed without need is counted under the kind the <b>detector</b> gave it, because that is the rule
+    /// that fired. Where two annotations of different kinds overlap, the shared characters count under both,
+    /// so the per-kind figures can add up to more than the totals — which stay the totals.
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<IdentifierKind, KindScore> ByKind { get; init; } =
+        System.Collections.Frozen.FrozenDictionary<IdentifierKind, KindScore>.Empty;
+
+    /// <summary>What each detector covered and what it removed without need, by detector id. A character two
+    /// detectors both covered counts for each; this is attribution, not ablation — ablation is a second run
+    /// without the detector, and only that says what would have been lost.</summary>
+    public IReadOnlyDictionary<string, DetectorScore> ByDetector { get; init; } =
+        System.Collections.Frozen.FrozenDictionary<string, DetectorScore>.Empty;
 }
+
+/// <summary>One kind of identifier's share of a <see cref="DeidScore"/>.</summary>
+public sealed record KindScore(int Sensitive, int Covered, int OverRedacted, int SurvivingSpans)
+{
+    public double Recall => Sensitive == 0 ? 1.0 : (double)Covered / Sensitive;
+}
+
+/// <summary>One detector's share of a <see cref="DeidScore"/>.</summary>
+public sealed record DetectorScore(int Covered, int OverRedacted);
 
 /// <summary>
 /// A leak rate and the corpus it was measured on, which travel together on purpose: a rate without its
@@ -61,8 +89,34 @@ public sealed record LeakRateEstimate
 
     public double Rate => (double)Leaking / Transcripts;
 
+    /// <summary>Lower bound of the 95% Wilson score interval.</summary>
+    public double Lower => Wilson().Lower;
+
+    /// <summary>Upper bound of the 95% Wilson score interval.</summary>
+    public double Upper => Wilson().Upper;
+
     public override string ToString() =>
-        $"{Rate.ToString("P1", CultureInfo.InvariantCulture).Replace(" ", string.Empty)} of {Transcripts} transcripts";
+        $"{Percent(Rate)} of {Transcripts} transcripts (95% CI {Percent(Lower)}–{Percent(Upper)})";
+
+    /// <summary>
+    /// Wilson, not the textbook normal interval. With thirty documents and no leaks the normal interval is
+    /// [0%, 0%], which prints as a proven zero; Wilson says the true rate could still be one in nine. A
+    /// corpus of this size cannot support more precision than that, and the number should say so itself.
+    /// </summary>
+    private (double Lower, double Upper) Wilson()
+    {
+        const double z = 1.959963984540054;
+        double n = Transcripts;
+        double p = Rate;
+        double z2 = z * z;
+        double denominator = 1 + (z2 / n);
+        double centre = (p + (z2 / (2 * n))) / denominator;
+        double half = z * Math.Sqrt((p * (1 - p) / n) + (z2 / (4 * n * n))) / denominator;
+        return (Math.Max(0, centre - half), Math.Min(1, centre + half));
+    }
+
+    private static string Percent(double value) =>
+        value.ToString("P1", CultureInfo.InvariantCulture).Replace(" ", string.Empty);
 }
 
 /// <summary>
@@ -100,8 +154,9 @@ public static class LeakRate
         // thirty annotations per document that reports a leak in nearly every document, and a meter
         // that cries wolf is as useless as one that stays quiet.
         List<Detection> goldSpans = gold.Select(span => Tighten(span, original)).Where(span => span.Length > 0).ToList();
+        List<Detection> foundSpans = found.ToList();
         List<(int Start, int End)> goldRanges = Union(goldSpans, original.Length);
-        List<(int Start, int End)> foundRanges = Union(found, original.Length);
+        List<(int Start, int End)> foundRanges = Union(foundSpans, original.Length);
 
         int sensitive = goldRanges.Sum(range => range.End - range.Start);
         int covered = IntersectionLength(goldRanges, foundRanges);
@@ -113,6 +168,7 @@ public static class LeakRate
         // reading survived. Gold "Sofía Reyes" and gold "Reyes", output "Ale Reyes": the merged question
         // is "is 'Sofía Reyes' still here", the answer is no, and "Reyes" goes unnoticed.
         int surviving = 0;
+        var survivingByKind = new Dictionary<IdentifierKind, int>();
         foreach (Detection span in goldSpans)
         {
             // Ignoring case AND accents, through the one place that decides what "the same letters"
@@ -123,10 +179,39 @@ public static class LeakRate
             if (Folding.Contains(redacted, span.TextIn(original)))
             {
                 surviving++;
+                survivingByKind[span.Kind] = survivingByKind.GetValueOrDefault(span.Kind) + 1;
             }
         }
 
-        return new DeidScore(sensitive, covered, removed - covered, surviving);
+        var byKind = new Dictionary<IdentifierKind, KindScore>();
+        foreach (IdentifierKind kind in goldSpans.Select(s => s.Kind).Concat(foundSpans.Select(s => s.Kind)).Distinct())
+        {
+            List<(int Start, int End)> goldOfKind = Union(goldSpans.Where(s => s.Kind == kind), original.Length);
+            List<(int Start, int End)> foundOfKind = Union(foundSpans.Where(s => s.Kind == kind), original.Length);
+            int removedOfKind = foundOfKind.Sum(range => range.End - range.Start);
+
+            byKind[kind] = new KindScore(
+                Sensitive: goldOfKind.Sum(range => range.End - range.Start),
+                Covered: IntersectionLength(goldOfKind, foundRanges),
+                OverRedacted: removedOfKind - IntersectionLength(foundOfKind, goldRanges),
+                SurvivingSpans: survivingByKind.GetValueOrDefault(kind));
+        }
+
+        var byDetector = new Dictionary<string, DetectorScore>(StringComparer.Ordinal);
+        foreach (string detector in foundSpans.Select(s => s.DetectorId).Distinct(StringComparer.Ordinal))
+        {
+            List<(int Start, int End)> ofDetector = Union(foundSpans.Where(s => s.DetectorId == detector), original.Length);
+            int coveredByDetector = IntersectionLength(ofDetector, goldRanges);
+            byDetector[detector] = new DetectorScore(
+                coveredByDetector,
+                ofDetector.Sum(range => range.End - range.Start) - coveredByDetector);
+        }
+
+        return new DeidScore(sensitive, covered, removed - covered, surviving)
+        {
+            ByKind = byKind,
+            ByDetector = byDetector,
+        };
     }
 
     /// <summary>

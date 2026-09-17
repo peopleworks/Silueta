@@ -173,6 +173,76 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>
+    /// Runs the pipeline over a gold corpus under every configuration — Silueta, the literal-roster
+    /// baseline, and each detector on its own — and prints the leak rate of each with its interval.
+    /// <para>
+    /// The console gets numbers and the report file gets numbers, offsets and kinds: never a value from the
+    /// corpus, because this command will be pointed at transcripts under an NDA. The corpus caveats are
+    /// printed before any rate, so a rate cannot be copied out of the terminal without them above it.
+    /// </para>
+    /// </summary>
+    public static int Evaluate(IReadOnlyDictionary<string, string> options, TextWriter output, TextWriter error)
+    {
+        if (!options.TryGetValue("gold", out string? goldPath))
+        {
+            error.WriteLine("silueta evaluate needs --gold <directory of gold documents>.");
+            return 2;
+        }
+
+        GoldCorpus corpus;
+        SiluetaLineage lineage = SiluetaLineage.Default;
+        try
+        {
+            corpus = GoldCorpus.Load(goldPath);
+            if (options.TryGetValue("lineage", out string? lineagePath))
+            {
+                lineage = SiluetaLineage.Load(lineagePath);
+            }
+        }
+        catch (InvalidOperationException ex)
+        {
+            error.WriteLine(ex.Message);
+            return 2;
+        }
+
+        EvaluationReport report = Evaluation.Run(
+            corpus,
+            lineage,
+            EvaluationConfiguration.Silueta,
+            EvaluationConfiguration.DenyList,
+            EvaluationConfiguration.KnownValuesOnly,
+            EvaluationConfiguration.PatternsOnly);
+
+        output.WriteLine(
+            $"Corpus: {report.Corpus.Documents} documents ({string.Join(", ", report.Corpus.Sources.Select(s => $"{s.Key}: {s.Value}"))}). " +
+            $"Engine {report.EngineVersion}, lineage {report.Lineage}, policy fingerprint {report.PolicyFingerprint}.");
+        foreach (string caveat in report.Corpus.Caveats)
+        {
+            output.WriteLine($"  caveat: {caveat}");
+        }
+
+        output.WriteLine();
+        foreach (ConfigurationResult configuration in report.Configurations)
+        {
+            output.WriteLine(
+                $"  {configuration.Name,-18} leak rate {configuration.LeakRate}  " +
+                $"recall {configuration.PooledRecall.ToString("0.000", System.Globalization.CultureInfo.InvariantCulture)}  " +
+                $"over-redacted {configuration.OverRedactedCharacters} chars");
+        }
+
+        output.WriteLine("  ner                not run: no NER baseline is part of this build.");
+
+        if (options.TryGetValue("out", out string? outPath))
+        {
+            File.WriteAllText(outPath, JsonSerializer.Serialize(report, SiluetaJsonContext.Default.EvaluationReport));
+            output.WriteLine();
+            output.WriteLine($"Wrote {outPath}.");
+        }
+
+        return 0;
+    }
+
     // The example is the argument: every name below is damaged the way a speech recogniser damages names.
     public static int Demo(TextWriter output)
     {
@@ -267,6 +337,12 @@ public static class Commands
                              language. Without it, the lists this library ships with. Its
                              fingerprint goes in the manifest, so a corpus says which
                              lineage produced it.
+
+              silueta evaluate --gold <directory> [--out <report.json>] [--lineage <file>]
+
+                  Scores a gold corpus: the leak rate, with its interval, for Silueta,
+                  for the same roster matched literally, and for each detector on its
+                  own. The report holds offsets and counts, never a value from the corpus.
 
             Kinds: PatientName, FamilyName, StaffName, OtherName, Phone, Email, Url, IpAddress,
                    Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, DeviceId,

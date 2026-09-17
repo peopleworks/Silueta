@@ -16,6 +16,7 @@ Dictionary<string, string> options = Commands.ParseOptions(args.AsSpan(1));
 return command switch
 {
     "redact" => Commands.Redact(options, Console.Out, Console.Error),
+    "evaluate" => Commands.Evaluate(options, Console.Out, Console.Error),
     "demo" => Commands.Demo(Console.Out),
     _ => Commands.Unknown(command, Console.Out, Console.Error),
 };

@@ -259,13 +259,15 @@ Read [Docs/ALGORITHM.md](Docs/ALGORITHM.md) for the detail, including what each 
 
 ## Status
 
-**Silueta has not yet measured its own leak rate.** The scorer is in the box and tested; the gold corpus
-it needs, the `evaluate` command that would run it, and the baselines that would make the result mean
-something are not written. Until they are, this library is a redactor with a plan, and the honest reading
-of the example above is that two of the names in it survived.
+**Silueta has not yet measured its own leak rate.** The scorer, `silueta evaluate` and the literal-roster
+baseline exist and are tested, but the gold corpus is one document — the demo above, marked by hand as the
+evaluator's own canary. One document is not a leak rate; it is a check that the evaluator agrees with what
+this README already says (it does: the demo leaks through "Rays" and "Ellie", and through nothing else).
+Until the corpus exists, this library is a redactor with a plan, and the honest reading of the example
+above is that two of the names in it survived.
 
 What is in place: the roster matcher, the pattern pack, the Safe Harbor policy, the vault, the manifest,
-and the leak-rate scorer. What is next, in order: the corpus and `silueta evaluate`; then the matcher
+the leak-rate scorer with its interval, and `silueta evaluate`. What is next, in order: the corpus; then the matcher
 changes that corpus will judge; then the parts of Safe Harbor still missing — no rule emits a postal code
 or a street address today, and spoken numbers and dates ("five five five, oh one four seven",
 "September eleventh") are not normalised at all.

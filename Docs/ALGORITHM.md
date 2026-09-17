@@ -375,9 +375,17 @@ counts is embedded data, like the lineage, not code.
 
 The gold set is the yardstick, and a redactor scored against its own output measures nothing.
 
-**None of this has been run yet.** The scorer exists and is tested; the gold corpus, the `evaluate`
-command and the baselines do not. Everything above describes how the number will be computed, not a
-number anyone has.
+**None of this has produced a number yet.** The scorer, `silueta evaluate` and the literal-roster baseline
+exist and are tested; the gold corpus is one document, the demo, which the evaluator scores exactly as the
+README describes it. Everything above describes how the number will be computed, not a number anyone has.
+
+**The baseline is the point of the comparison, and it is built to be exactly as dumb as a ten-minute
+job.** `DenyListDetector` matches the same roster literally — folding case and accents, whole words only,
+first names registered the way the roster registers them — and hears nothing. Folding matters: a literal
+baseline that missed "SOFIA" for "Sofía" would be a straw man, and a thesis that beats a straw man has
+proven nothing. On the demo it finds none of the names at all, because every one of them was damaged by the
+recogniser; its recall equals the pattern pack's on its own. That is one document and it is not a result.
+It is the shape the result will have.
 
 What the code cannot do for you is the **motivated intruder test**: someone who knows the clients reads
 the redacted transcripts and tries to name them. For a small agency in one city, that test is the one that

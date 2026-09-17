@@ -62,6 +62,40 @@ public sealed class LineageFile
     public List<PatternRule>? Patterns { get; set; }
 }
 
+/// <summary>A gold document as it sits on disk. Validated by <see cref="GoldCorpus"/>, not trusted.</summary>
+public sealed class GoldDocumentFile
+{
+    public string DocumentId { get; set; } = string.Empty;
+
+    public string Source { get; set; } = string.Empty;
+
+    public string? Language { get; set; }
+
+    public string? Speaker { get; set; }
+
+    public string? Text { get; set; }
+
+    public List<KnownIdentifierDto>? Roster { get; set; }
+
+    public List<GoldSpanFile>? Spans { get; set; }
+
+    /// <summary>How the spans were produced. Carried for the reader of the corpus; the loader does not
+    /// interpret it.</summary>
+    public JsonElement? Annotation { get; set; }
+}
+
+/// <summary>One annotation as it sits on disk.</summary>
+public sealed class GoldSpanFile
+{
+    public int Start { get; set; }
+
+    public int Length { get; set; }
+
+    public string Kind { get; set; } = string.Empty;
+
+    public string Annotator { get; set; } = string.Empty;
+}
+
 /// <summary>The quasi-identifier vocabulary as it sits in its embedded file.</summary>
 public sealed class QuasiIdentifierVocabularyFile
 {
@@ -103,5 +137,8 @@ public sealed class VaultFile
 [JsonSerializable(typeof(VaultFile))]
 [JsonSerializable(typeof(LineageFile))]
 [JsonSerializable(typeof(QuasiIdentifierVocabularyFile))]
+[JsonSerializable(typeof(GoldDocumentFile))]
+[JsonSerializable(typeof(EvaluationReport))]
+[JsonSerializable(typeof(LinkageReport))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
 public sealed partial class SiluetaJsonContext : JsonSerializerContext;

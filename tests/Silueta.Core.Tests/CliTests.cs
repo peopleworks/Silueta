@@ -206,6 +206,36 @@ public sealed class CliTests : IDisposable
     }
 
     [Fact]
+    public void Evaluate_prints_the_caveats_before_any_rate_and_writes_a_report_with_no_values_in_it()
+    {
+        string gold = System.IO.Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus", "readme-demo");
+        string report = Path("report.json");
+
+        Assert.Equal(0, Commands.Evaluate(Commands.ParseOptions(["--gold", gold, "--out", report]), _output, _error));
+
+        string printed = _output.ToString();
+        int caveat = printed.IndexOf("caveat:", StringComparison.Ordinal);
+        int rate = printed.IndexOf("leak rate", StringComparison.Ordinal);
+        Assert.True(caveat >= 0 && caveat < rate, "The corpus caveats have to come before the first rate.");
+        Assert.Contains("95% CI", printed, StringComparison.Ordinal);
+        Assert.Contains("deny-list", printed, StringComparison.Ordinal);
+
+        string json = File.ReadAllText(report);
+        Assert.Contains("\"leakRate\"", json, StringComparison.Ordinal);
+        foreach (string value in (string[])["Ellie", "Rays", "Jamileth", "Vasques", "602-555-0147"])
+        {
+            Assert.DoesNotContain(value, json, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Evaluate_refuses_a_directory_that_is_not_a_corpus()
+    {
+        Assert.Equal(2, Commands.Evaluate(Commands.ParseOptions(["--gold", _directory]), _output, _error));
+        Assert.Contains("no gold documents", _error.ToString(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void A_record_id_is_required_and_is_not_the_file_name()
     {
         string input = Write("Ana-Perez.txt", "Nothing here.");

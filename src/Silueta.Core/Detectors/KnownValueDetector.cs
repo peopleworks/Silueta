@@ -58,7 +58,7 @@ public sealed class KnownValueDetector : IDetector
                     punctuatedGaps[g] = known.Value.AsSpan(from, valueTokens[g + 1].Start - from).IndexOfAny(SentenceEnds) >= 0;
                 }
 
-                targets.Add(new Target(known, parts, punctuatedGaps));
+                targets.Add(new Target(known, parts, punctuatedGaps, [.. valueTokens.Select(static t => t.Text)]));
             }
         }
 
@@ -77,7 +77,7 @@ public sealed class KnownValueDetector : IDetector
                     continue;
                 }
 
-                double score = ScoreWindow(keys, i, target.Keys);
+                double score = ScoreWindow(keys, tokens, i, target);
                 if (score <= 0)
                 {
                     continue;
@@ -103,15 +103,28 @@ public sealed class KnownValueDetector : IDetector
         return results;
     }
 
-    /// <summary>The window's score is its weakest word: every part of a name has to be recognisable.</summary>
-    private double ScoreWindow(string[] keys, int offset, string[] targetKeys)
+    /// <summary>
+    /// The window's score is its weakest word: every part of a name has to be recognisable.
+    /// <para>
+    /// A short key is matched only exactly, and for a person that is the right amount of tolerance: "Ana"
+    /// written as "Anna" is the same key and the same patient. For an organisation or a product it is not
+    /// tolerance, it is a collision with the language. The key exists to make different spellings equal, so
+    /// "Inc" and "ink" share the key <c>ink</c>, "Zoho" and "so" share <c>so</c>, "HP" and "P" share
+    /// <c>p</c> — and a roster entry for any of them redacted the ordinary word everywhere it appeared. So
+    /// below the fuzzy floor, a word of a company or product must also be the same letters. Above the floor
+    /// nothing changes here: whether a brand should be compared by sound at all ("Lyft" and "lift", "Nvidia"
+    /// and "envidia") is a question for a corpus, not for this method.
+    /// </para>
+    /// </summary>
+    private double ScoreWindow(string[] keys, List<Token> tokens, int offset, Target target)
     {
         double weakest = 1.0;
+        bool person = target.Known.Kind.IsPersonName();
 
-        for (int k = 0; k < targetKeys.Length; k++)
+        for (int k = 0; k < target.Keys.Length; k++)
         {
             string found = keys[offset + k];
-            string wanted = targetKeys[k];
+            string wanted = target.Keys[k];
 
             if (found.Length == 0)
             {
@@ -120,6 +133,11 @@ public sealed class KnownValueDetector : IDetector
 
             if (string.Equals(found, wanted, StringComparison.Ordinal))
             {
+                if (!person && wanted.Length < _minFuzzyLength && !Folding.SameLetters(tokens[offset + k].Text, target.Words[k]))
+                {
+                    return 0;
+                }
+
                 continue;
             }
 
@@ -210,5 +228,5 @@ public sealed class KnownValueDetector : IDetector
         return count;
     }
 
-    private readonly record struct Target(KnownIdentifier Known, string[] Keys, bool[] PunctuatedGaps);
+    private readonly record struct Target(KnownIdentifier Known, string[] Keys, bool[] PunctuatedGaps, string[] Words);
 }

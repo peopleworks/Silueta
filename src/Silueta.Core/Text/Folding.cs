@@ -33,6 +33,15 @@ public static class Folding
         return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
+    /// <summary>Whether two strings are the same letters, ignoring case and accents: "Zohó" and "ZOHO".</summary>
+    public static bool SameLetters(string a, string b)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+
+        return string.Equals(StripAccents(a), StripAccents(b), StringComparison.OrdinalIgnoreCase);
+    }
+
     /// <summary>
     /// Whether <paramref name="needle"/> appears in <paramref name="haystack"/>, ignoring case and
     /// accents. Deliberately generous: this decides whether an identifier survived a redaction, and a

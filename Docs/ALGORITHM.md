@@ -89,6 +89,19 @@ damage is not phonetically principled — it substitutes whole words (`shift` �
 an edit distance catches more of it. The cost is false positives, which is exactly why this detector only
 ever compares against values the caller already knows, never against open text.
 
+**A short key is exact, and for a company that is still not exact enough.** Below four characters only an
+exact key match counts, because short keys are where fuzzy matching starts eating real words. For a
+person that is the right amount of tolerance — "Ana" and "Anna" share a key and are one patient. For an
+organisation or a product it is a collision with the language: the key exists to make different
+spellings equal, so "Inc" and "ink" share `ink`, "Zoho" and "so" share `so`, "HP" and "P" share `p`, and a
+roster entry for any of them redacted the ordinary word everywhere it appeared. So a short word of a
+company or product must also be the same letters, case and accents aside. What it costs: a short brand
+the recogniser misspelled is no longer caught, and the residue check cannot see it either. What it does
+not decide: whether a brand should be compared by sound at all. "Lyft" still matches "lift" (a four-letter
+key) and "Nvidia" still matches "envidia" (0.857); that question is for a corpus, and two tests pin it as
+open. `explain_name_match` takes the kind and asks the detector for its verdict rather than re-deriving
+it — it used to carry its own copy of these rules, and the first change to them made the copy wrong.
+
 **A name of N words is matched against N adjacent words, and the window stops at a sentence end.** It
 used to see only the words, so with "Acme Corporation" on the roster, "We called Acme. Corporation tax is
 due next month." came back as "We called Ariel Gaitan tax is due next month." — two sentences fused, a

@@ -133,10 +133,12 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
 
 ## When a name survives and someone asks why
 
-Run `explain_name_match` with the two spellings. It gives the phonetic key of each, the edit distance,
-the similarity ratio and the threshold — which turns "it missed it" into "`reyes` and `rais` are three
-edits apart, 0.40 against 0.84." That is a sentence someone can act on: add the alias to the roster, or
-lower the threshold and accept more false positives.
+Run `explain_name_match` with the two spellings and the kind of the first one. It gives the phonetic key
+of each, the edit distance, the similarity ratio and the threshold — which turns "it missed it" into
+"`reyes` and `rais` are three edits apart, 0.40 against 0.84." That is a sentence someone can act on: add
+the alias to the roster, or lower the threshold and accept more false positives. Pass the kind because
+the answer depends on it: a short company or product name has to be the same letters, not only the same
+sound, so `Inc` and `ink` are one word for a person and two for an `Organization`.
 
 ## The test that no tool can run
 

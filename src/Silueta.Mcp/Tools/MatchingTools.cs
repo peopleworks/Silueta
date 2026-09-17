@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ModelContextProtocol;
 using ModelContextProtocol.Server;
 using Silueta.Core;
 
@@ -25,16 +26,30 @@ public static class MatchingTools
         Worked example: "Reyes" and "Rays" are the same surname, one as the agency writes it and one as
         the recogniser heard it. Their keys are "reyes" and "rais" — three edits apart, ratio 0.40,
         threshold 0.84. Silueta misses it, and that is a matcher failure rather than a design decision.
+
+        Pass the kind of the first spelling. The answer depends on it: a company or product whose key is
+        shorter than four characters must also be the same letters, because "Inc" and "ink" share a key and
+        a roster entry for "Inc" would otherwise redact every "ink". For a person the same pair matches.
+        The verdict comes from the detector a redaction runs, not from a copy of its rules.
         """)]
     public static MatchExplanation ExplainNameMatch(
         [Description("One spelling, e.g. the name as the roster has it: \"Sofía Reyes\".")] string a,
         [Description("The other, e.g. as the recogniser wrote it: \"Sophia Rays\".")] string b,
+        [Description("What kind of identifier the first spelling is: \"PatientName\", \"Organization\", \"Product\"… A company or a product is held to a stricter rule for short words than a person. Default OtherName.")] string kind = "OtherName",
         [Description("Similarity threshold per word. Silueta's default is 0.84.")] double threshold = 0.84,
         [Description("Below this key length only an exact key match counts. Default 4.")] int minFuzzyLength = 4)
     {
         ArgumentNullException.ThrowIfNull(a);
         ArgumentNullException.ThrowIfNull(b);
 
+        if (!IdentifierKindExtensions.TryParseName(kind, out IdentifierKind parsedKind))
+        {
+            string hint = IdentifierKindExtensions.ClosestName(kind) is { } closest ? $" The closest kind is {closest}." : string.Empty;
+            throw new McpException(
+                $"That kind is not one this build knows.{hint} Kinds: {string.Join(", ", Enum.GetNames<IdentifierKind>())}.");
+        }
+
+        bool person = parsedKind.IsPersonName();
         List<Token> left = Tokenizer.Tokenize(a);
         List<Token> right = Tokenizer.Tokenize(b);
 
@@ -50,6 +65,12 @@ public static class MatchingTools
             if (keyA.Length == 0 || keyB.Length == 0)
             {
                 verdict = "no key — one side has no letters, or the names have a different number of words";
+            }
+            else if (string.Equals(keyA, keyB, StringComparison.Ordinal)
+                && !person && keyA.Length < minFuzzyLength && !Folding.SameLetters(wordA, wordB))
+            {
+                verdict = $"same key, but for a company or product a key shorter than {minFuzzyLength} must also be " +
+                    "the same letters — otherwise \"Inc\" would redact every \"ink\" — so this is a miss";
             }
             else if (string.Equals(keyA, keyB, StringComparison.Ordinal))
             {
@@ -77,12 +98,14 @@ public static class MatchingTools
                 verdict));
         }
 
-        bool wouldMatch = left.Count > 0
-            && left.Count == right.Count
-            && words.All(w => w.KeyA.Length > 0
-                && w.KeyB.Length > 0
-                && (w.KeyA == w.KeyB
-                    || (w.KeyA.Length >= minFuzzyLength && w.KeyB.Length >= minFuzzyLength && w.Ratio >= threshold)));
+        // The verdict is the detector's, not a re-derivation of it. This tool used to recompute the match
+        // from the keys, which is a second copy of the matcher — and the first change to the real one (short
+        // company names must be the same letters) left the copy saying "Inc" and "ink" match. The words
+        // above explain; this decides, and it cannot drift from what a redaction would do.
+        var context = new DeidentificationContext("explain").AddValue(a, parsedKind, "explain-subject");
+        bool wouldMatch = right.Count > 0 && new KnownValueDetector(threshold, minFuzzyLength)
+            .Detect(b, context)
+            .Any(d => d.Start == right[0].Start && d.End == right[^1].End);
 
         return new MatchExplanation(
             a,

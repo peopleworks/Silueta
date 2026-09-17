@@ -45,10 +45,20 @@ public sealed class KnownValueDetector : IDetector
         var targets = new List<Target>();
         foreach (KnownIdentifier known in context.Known)
         {
-            string[] parts = PhoneticKey.ComputeAll(Tokenizer.Tokenize(known.Value));
+            List<Token> valueTokens = Tokenizer.Tokenize(known.Value);
+            string[] parts = PhoneticKey.ComputeAll(valueTokens);
             if (parts.Length > 0 && Array.TrueForAll(parts, static p => p.Length > 0))
             {
-                targets.Add(new Target(known, parts));
+                // Where the roster value itself has sentence punctuation between two words — "St. Mary" —
+                // the same punctuation in the transcript is part of the name, not the end of a sentence.
+                bool[] punctuatedGaps = new bool[parts.Length - 1];
+                for (int g = 0; g < punctuatedGaps.Length; g++)
+                {
+                    int from = valueTokens[g].End;
+                    punctuatedGaps[g] = known.Value.AsSpan(from, valueTokens[g + 1].Start - from).IndexOfAny(SentenceEnds) >= 0;
+                }
+
+                targets.Add(new Target(known, parts, punctuatedGaps));
             }
         }
 
@@ -58,6 +68,11 @@ public sealed class KnownValueDetector : IDetector
             {
                 int words = target.Keys.Length;
                 if (i + words > tokens.Count)
+                {
+                    continue;
+                }
+
+                if (CrossesABoundary(text, tokens, i, target))
                 {
                     continue;
                 }
@@ -129,5 +144,71 @@ public sealed class KnownValueDetector : IDetector
         ? string.Equals(matched, known, StringComparison.OrdinalIgnoreCase) ? MatchKind.Exact : MatchKind.Phonetic
         : MatchKind.Fuzzy;
 
-    private readonly record struct Target(KnownIdentifier Known, string[] Keys);
+    private static readonly System.Buffers.SearchValues<char> SentenceEnds = System.Buffers.SearchValues.Create(".!?…");
+
+    /// <summary>
+    /// Whether a window of adjacent words runs across the end of a sentence or a paragraph.
+    /// <para>
+    /// The window used to see only the words, so "We called Acme. Corporation tax is due" matched
+    /// "Acme Corporation" and came back as one fused sentence with a person's name in it. A sentence end is
+    /// a <c>. ! ? …</c> between two words of the window — unless the roster value has punctuation in the
+    /// same place ("St. Mary Hospital"), or the word before it is a single letter ("John F. Kennedy").
+    /// </para>
+    /// <para>
+    /// A blank line is a boundary; a single line break is <em>not</em>, and that asymmetry is deliberate.
+    /// A transcript wrapped at a fixed width breaks lines wherever the column runs out, including inside a
+    /// name. For a person that would cost little, because a person is also registered word by word. A
+    /// company is registered only whole, so a wrap counted as a boundary would lose the company name
+    /// entirely. A merged sentence is an ugly false positive; a lost company name is a leak.
+    /// </para>
+    /// </summary>
+    private static bool CrossesABoundary(string text, List<Token> tokens, int offset, Target target)
+    {
+        for (int g = 0; g < target.Keys.Length - 1; g++)
+        {
+            Token before = tokens[offset + g];
+            ReadOnlySpan<char> gap = text.AsSpan(before.End, tokens[offset + g + 1].Start - before.End);
+
+            if (LineBreaks(gap) >= 2)
+            {
+                return true;
+            }
+
+            if (target.PunctuatedGaps[g])
+            {
+                continue;
+            }
+
+            int at = gap.IndexOfAny(SentenceEnds);
+            if (at < 0)
+            {
+                continue;
+            }
+
+            bool initial = gap[at] == '.' && before.Text.Length == 1 && gap[(at + 1)..].IndexOfAny(SentenceEnds) < 0;
+            if (!initial)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>"\r\n", "\n" and a lone "\r" each count once, so a Windows blank line is two breaks.</summary>
+    private static int LineBreaks(ReadOnlySpan<char> gap)
+    {
+        int count = 0;
+        for (int c = 0; c < gap.Length; c++)
+        {
+            if (gap[c] == '\n' || (gap[c] == '\r' && (c + 1 == gap.Length || gap[c + 1] != '\n')))
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private readonly record struct Target(KnownIdentifier Known, string[] Keys, bool[] PunctuatedGaps);
 }

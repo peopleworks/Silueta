@@ -89,6 +89,21 @@ damage is not phonetically principled — it substitutes whole words (`shift` �
 an edit distance catches more of it. The cost is false positives, which is exactly why this detector only
 ever compares against values the caller already knows, never against open text.
 
+**A name of N words is matched against N adjacent words, and the window stops at a sentence end.** It
+used to see only the words, so with "Acme Corporation" on the roster, "We called Acme. Corporation tax is
+due next month." came back as "We called Ariel Gaitan tax is due next month." — two sentences fused, a
+full stop eaten, a tax replaced. A window is now refused when a `.` `!` `?` or `…` sits between two of its
+words, unless the roster value has punctuation in the same place ("St. Mary Hospital") or the word before
+it is a single letter ("John F. Kennedy"); and it is refused across a blank line.
+
+It is *not* refused across a single line break, and that asymmetry is the decision. A transcript wrapped
+at a fixed width breaks lines wherever the column ends, including inside a name. A person split that way
+would still be caught, word by word; a company is registered only whole, so counting a wrap as a
+boundary would lose the whole company name. A fused sentence is an ugly false positive; a lost company
+name is a leak, and this library takes the first over the second. What it costs: a name the text
+punctuates and the roster does not ("Acme Corp. Industries" against "Acme Corp Industries") is no longer
+matched as one name.
+
 ## 4. Shapes by rule
 
 Phone numbers, e-mail, URLs, IPs, record numbers, numeric and spoken-month dates in both languages, ages

@@ -1,29 +1,68 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="Docs/brand/silueta-dark.svg">
-    <img src="Docs/brand/silueta.svg" alt="Silueta" width="88" height="88">
-  </picture>
-</p>
+<div align="center">
 
-# Silueta
-
-**Put a transcript in front of an AI without handing it the people in it.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/brand/silueta-dark.svg">
+  <img src="Docs/brand/silueta.svg" alt="Silueta" width="96" height="96">
+</picture>
 
 <!-- The mark is a sheet of canvas with the S cut out of it: a silhouette is what is left when the person
      is taken away, so the letter is the hole rather than the drawing. Docs/brand/. -->
 
+# Silueta
 
-[![License: MIT](https://img.shields.io/github/license/peopleworks/Silueta?color=blue)](LICENSE)
-[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+**Give an AI your conversations — not the people in them.**
+
+De-identification for the text an organisation wants analysed: calls, home visits, shift notes, support
+chats. Built hardest for what a speech recogniser writes, where every name arrives misspelled.
+
+[![CI](https://github.com/peopleworks/Silueta/actions/workflows/ci.yml/badge.svg)](https://github.com/peopleworks/Silueta/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/peopleworks/Silueta/actions/workflows/codeql.yml/badge.svg)](https://github.com/peopleworks/Silueta/actions/workflows/codeql.yml)
+[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Core: zero dependencies](https://img.shields.io/badge/core-zero%20dependencies-39454E?style=flat-square)](src/Silueta.Core)
+[![MCP server](https://img.shields.io/badge/MCP-server-4E7C6B?style=flat-square)](#use-it-from-an-agent)
+[![Agent skill](https://img.shields.io/badge/agent-skill-4E7C6B?style=flat-square)](SKILL.md)
+[![Leak rate: measured, and high](https://img.shields.io/badge/leak%20rate-measured%2C%20and%20high-C0503F?style=flat-square)](#the-number)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
+[![PeopleWorks](https://img.shields.io/badge/by-PeopleWorks-636f61?style=flat-square)](https://mvp.microsoft.com/en-US/mvp/profile/24060a02-dbc6-44ec-bca5-c213ff9835c5)
+
+<img src="Docs/brand/hero.svg" width="900"
+     alt="Two panels. On the left, a shift report as a speech recogniser wrote it, with every name misspelled compared with the agency's roster of Sofía Reyes, Eleanor Vasquez and Yamilet Vasquez. An arrow labelled matched by sound, policy safe harbor, leads to the right panel: the same report as Silueta hands it on, where people became other invented people and the phone number and date became a label and a year. The surname Rays is still there and is marked as a failure the leak rate counts. Along the bottom: the manifest travels, the vault never does, and the failure rate is measured.">
+
+<sub>The example is the demo below — including the name that is still in it, which is counted as a failure
+and published with the rest.</sub>
+
+</div>
+
+---
 
 A silhouette keeps the shape and loses the face. What was said, felt and decided survives; who said it
 does not. *Patient 1 has high cholesterol* carries exactly the statistical content of the same sentence
 with a real name in it, and none of the identity — so the sentiment analysis, the cohort, the dashboard
 and the summary all still work on text that no longer says whose life it describes.
 
-It is built for **the text a speech recogniser produced**, not the text someone typed, and it is built to
-**measure how often it fails** rather than to promise that it doesn't. Both are narrower claims than "PII
+Silueta is for the moment an organisation wants to put its own text in front of an AI it does not run,
+and the reason to hesitate is not the analysis — it is that the text says who. Typed text is the easy
+case. The case it is built for is **the text a speech recogniser produced**, and it is built to **measure
+how often it fails** rather than to promise that it doesn't. Both are narrower claims than "PII
 redaction", and they are the two this repository can defend.
+
+### Why it exists
+
+> Removing a name is easy. Removing it after a recogniser misspelled it, keeping the text worth
+> analysing, and publishing how often you still failed — is not.
+
+| Concern | How Silueta handles it |
+|---|---|
+| 🧬 **The analysis needs the shape, not the face** | People become invented people of the same kind; phone numbers and e-mail addresses become labels. Sentiment, cohorts and timelines still read. |
+| 🎙️ **A recogniser misspells every name** | The roster you already hold is matched by *sound*, not by letters — `Ellenor Vasques` is found as `Eleanor Vasquez`. |
+| 🔁 **One person has to stay one person** | A vault gives each subject one invented name across the whole corpus — and the vault never leaves the building. |
+| 🤖 **The redactor must not be the leak** | The MCP server takes a *path* the model never opens, so the identified text never enters a context window. |
+| 📏 **You need to know how often it fails** | A leak rate measured on a published corpus, with its interval, and checked against the code on every build. |
+| 🗂️ **Your data, your words** | Word lists, labels and pattern rules come from a *lineage* file you write, in your own language. |
+
+---
+
+## See it
 
 ```
 Shift report. Sophia Rays was with Mrs. Ellenor Vasques this morning.
@@ -52,41 +91,14 @@ name the matcher failed on. Their phonetic keys are `reyes` and `rais`: three ed
 of 0.40 against a threshold of 0.84. `Ellie` survived for a different reason: it is a nickname, `eleanor`
 against `elie` scores 0.29, and nothing in the roster or the rules knows that Eleanors are called Ellie.
 One is a matcher that needs work; the other is a category the library does not handle yet. Both are
-counted as failures, neither is a design decision, and the difference between them is the kind of thing a
-leak rate is supposed to tell you.
-
-This library is built to measure how often it fails rather than to promise that it doesn't. **That number
-does not exist yet** — see [Status](#status) before you rely on anything here.
-
-## Invented names, not blanks
-
-Look at the output above: the people became *other people*, while the phone number and the e-mail became
-`[PHONE]` and `[EMAIL]`. That split is deliberate, and it is the difference between a transcript an AI
-can analyse and one it can only count.
-
-**Names become invented names.** Replace them with markers and the text stops being text: the grammar
-breaks, and a model reading it loses track of who "she" and "her daughter" refer to — which is exactly
-what sentiment, behaviour and timeline analysis are built on. A realistic surrogate keeps the sentence
-readable and keeps the reference chain intact, and it costs nothing, because a name carries no analytic
-signal in the first place. The invented names are gender-neutral on purpose: guessing a real person's
-gender is an inference this library has no business making.
-
-**Shapes become masks.** A phone number, an e-mail or a record number carries no signal worth preserving
-either, and an invented one is somebody's real number. So those are removed rather than replaced.
-
-**And the vault is what makes a dashboard possible.** For statistics you need Patient 1 to be the same
-Patient 1 across five hundred transcripts — that is what cohorts, trends and "this patient is
-deteriorating" are made of. The vault is what keeps that stable, and it is also why it never leaves the
-building: a stable pseudonym is exactly what links documents together, for you and for anyone else who
-gets hold of it.
-
-Those invented names, and the labels around them, come from a **lineage** — see below. Nothing about the
-words is compiled in.
+counted as failures, neither is a design decision, and the difference between them is exactly what a
+leak rate is for. That rate is [measured, and it is below](#the-number).
 
 ## Try it
 
 ```bash
-dotnet run --project src/Silueta.Cli -- demo
+dotnet run --project src/Silueta.Cli -- demo                  # the example above
+silueta evaluate --gold corpus-synthetic/tts-asr              # the published number, reproduced
 ```
 
 ```bash
@@ -108,12 +120,37 @@ Both ids are required and both must be opaque. `--record` goes into the manifest
 key the vault is filed under, so a record named after its file (`Ana-Perez.txt`) or a subject keyed by
 the patient's name would publish the identifier through the very files that exist to show none were
 published. Pass `--vault` on every run of a corpus: it is where the invented names live, and without it
-each transcript invents new ones for the same people.
+each document invents new ones for the same people.
 
 `kind` is required too, and has to be one of the names listed by `silueta --help`. A kind that cannot be
 read stops the run and names the entry by position — never by its value — with the closest real kind
 (`Organisation` gets "the closest kind is Organization"). It used to be read as `OtherName` without a
 word, which sends a misspelled company to the pool of people's names.
+
+## Invented names, not blanks
+
+Look at the output above: the people became *other people*, while the phone number and the e-mail became
+`[PHONE]` and `[EMAIL]`. That split is deliberate, and it is the difference between text an AI can
+analyse and text it can only count.
+
+**Names become invented names.** Replace them with markers and the text stops being text: the grammar
+breaks, and a model reading it loses track of who "she" and "her daughter" refer to — which is exactly
+what sentiment, behaviour and timeline analysis are built on. A realistic surrogate keeps the sentence
+readable and keeps the reference chain intact, and it costs nothing, because a name carries no analytic
+signal in the first place. The invented names are gender-neutral on purpose: guessing a real person's
+gender is an inference this library has no business making.
+
+**Shapes become masks.** A phone number, an e-mail or a record number carries no signal worth preserving
+either, and an invented one is somebody's real number. So those are removed rather than replaced.
+
+**And the vault is what makes a dashboard possible.** For statistics you need Patient 1 to be the same
+Patient 1 across five hundred documents — that is what cohorts, trends and "this patient is
+deteriorating" are made of. The vault is what keeps that stable, and it is also why it never leaves the
+building: a stable pseudonym is exactly what links documents together, for you and for anyone else who
+gets hold of it.
+
+Those invented names, and the labels around them, come from a **lineage** — see below. Nothing about the
+words is compiled in.
 
 ## Bring your own dictionaries: the lineage
 
@@ -179,7 +216,7 @@ Silueta ships as an **MCP server** and as an **agent skill**, and the two exist 
 stating plainly.
 
 **The arguments of a tool call are written by the model.** A tool shaped `redact(text)` requires the
-model to have read the transcript in order to pass it — so by the time the redactor runs, the identified
+model to have read the document in order to pass it — so by the time the redactor runs, the identified
 text is already in the context window, in the conversation history, and in whatever the provider logs.
 The tool can return clean text. It cannot un-expose its own input.
 
@@ -196,7 +233,7 @@ neither does the vault's mapping from a person to their invented name.
 | --- | --- | --- |
 | `redact_transcript` | De-identifies a file on disk against a roster; returns the redacted text and a manifest | **no** — use this one |
 | `redact_text` | The same for text passed inline — already exposed by being passed | yes, unavoidably |
-| `explain_name_match` | Why the matcher does or does not treat two spellings as one name: keys, edit distance, ratio, threshold | no |
+| `explain_name_match` | Why the matcher does or does not treat two spellings as one name, for a given kind: keys, edit distance, ratio, threshold — with the verdict taken from the detector itself | no |
 | `list_pattern_rules` | The pattern rules, and which Safe Harbor identifiers no rule emits | no |
 
 **There is no re-identification tool, and there will not be one.** The vault is the only artefact that
@@ -211,15 +248,16 @@ reported as safe to export. The server therefore:
 - **confines every path to one directory** — set `SILUETA_ROOT`, or it uses the directory the server was
   started in;
 - **refuses to read anything that looks like a vault**, and refuses a run where the vault is also the
-  transcript or the output;
+  document or the output;
 - **withholds the redacted text** rather than returning it when no roster was given, when nothing was
   replaced, or when the run left residue. The reason comes back in a `withheld` field; `outputPath`
   still writes a clean result to disk.
 
-The skill ([`SKILL.md`](SKILL.md)) is the judgment that goes with those tools: never read a transcript
-into the conversation, never quote its content back, never claim a corpus is de-identified, and say what
-is known to survive. Install it with `npx skills add peopleworks/Silueta -g`, or as a Claude Code plugin
-with `/plugin marketplace add peopleworks/Silueta`. More in [`skill/README.md`](skill/README.md).
+The skill ([`SKILL.md`](SKILL.md)) is the judgment that goes with those tools: never read a document into
+the conversation, never quote its content back, never claim a corpus is de-identified, give the measured
+leak rate with its interval when asked, and say what is known to survive. Install it with
+`npx skills add peopleworks/Silueta -g`, or as a Claude Code plugin with
+`/plugin marketplace add peopleworks/Silueta`. More in [`skill/README.md`](skill/README.md).
 
 ## How it works
 
@@ -230,36 +268,40 @@ with `/plugin marketplace add peopleworks/Silueta`. More in [`skill/README.md`](
    residue.
 2. **Names are compared by sound.** A coarse phonetic key shared by Spanish and English collapses the
    confusions that actually happen — b/v, s/z/c, ph/f, y/j, silent h, doubled letters — and an edit
-   distance on top absorbs the rest. `Na'vi`, `Navy` and `Navi` are one word here.
+   distance on top absorbs the rest. `Na'vi`, `Navy` and `Navi` are one word here. A window of words
+   stops at the end of a sentence, and a short company name has to be the same letters, not only the
+   same sound — "Inc" is not "ink".
 3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89: a JSON
    pattern pack, which is a file anyone can extend by pull request, never compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
    dates keep only their year, ages above 89 become "90 or older". Postal codes are removed whole rather
    than kept to three digits — the rule allows three digits only where that area holds more than 20,000
    people, and the census table that decides which is which is not in this package yet.
-5. **Every run writes a manifest.** What was removed, by kind, by detector, under which policy version.
-   An expert determination rests on the method being written down.
+5. **Every run writes a manifest.** What was removed, by kind, by detector, under which policy and which
+   lineage, bound to the text it came from by a hash. An expert determination rests on the method being
+   written down.
 6. **The vault decides the invented names, and remembers them.** One subject, one invented name, across
-   every transcript in the corpus — and a re-identification code that is random rather than derived from
-   the person, per 45 CFR § 164.514(c). No invented name is allowed to sound like anyone on the roster,
-   so running a redacted transcript through again changes nothing. The vault never travels with the data.
+   every document in the corpus — and a re-identification code that is random rather than derived from
+   the person, per 45 CFR § 164.514(c). No invented name is allowed to be one this pipeline would find
+   again, so running a redacted document through again changes nothing. The vault never travels with the
+   data.
 7. **Every run reads its own output back.** After replacing, the same detectors run over the result. If
-   they still find anything, the run is reported as unsafe to export and the CLI exits non-zero. Every
-   other rule here is enforced when something is *chosen* — the surrogate the roster would not match —
-   and a rule enforced at choosing time is not the same as one that holds at emitting time: a surrogate
-   minted safely for one transcript is reused in the next, whose roster it may well be on. An empty
-   residue proves nothing on its own, since a name no detector knows is missing from it too.
+   they still find anything, the run is reported as unsafe to export and nothing is written. Every other
+   rule here is enforced when something is *chosen*, and a rule enforced at choosing time is not the same
+   as one that holds at emitting time: a surrogate minted safely for one document is reused in the next,
+   whose roster it may well be on. An empty residue proves nothing on its own, since a name no detector
+   knows is missing from it too.
 8. **The leak rate is the headline number.** Not the share of identifiers removed, which always looks
-   good: the share of *transcripts* with at least one identifier left. At 99% recall per mention, a
-   transcript with fifty mentions leaks about 40% of the time. It is counted in characters and against
-   the redacted text, so half a name covered is a name leaked, and a replacement that equals the original
-   is a leak rather than a success.
+   good: the share of *documents* with at least one identifier left. At 99% recall per mention, a document
+   with fifty mentions leaks about 40% of the time. It is counted in characters and against the redacted
+   text, so half a name covered is a name leaked, and a replacement that equals the original is a leak
+   rather than a success.
 
 Read [Docs/ALGORITHM.md](Docs/ALGORITHM.md) for the detail, including what each choice costs.
 
-## Status
+## The number
 
-**Silueta has a measured leak rate now, and it is high.** It was measured on thirty synthetic home-care
+**Silueta has a measured leak rate, and it is high.** It was measured on thirty synthetic home-care
 transcripts — scripts written for the purpose, spoken by Windows voices, degraded like phone calls and
 transcribed by Whisper large-v3 — and it is reproduced by `silueta evaluate --gold corpus-synthetic/tts-asr`.
 A test runs that evaluation and fails if the table below stops matching it.
@@ -301,14 +343,15 @@ What this corpus is, so the numbers are not read as more than they are:
 How the corpus was built, and the rules that keep it from being tuned to a result:
 [`tools/corpus/README.md`](tools/corpus/README.md).
 
-What is in place: the roster matcher, the pattern pack, the Safe Harbor policy, the vault, the manifest,
-the leak-rate scorer with its interval, and `silueta evaluate`. What is next, in order: the corpus; then the matcher
-changes that corpus will judge; then the parts of Safe Harbor still missing — no rule emits a postal code
-or a street address today, and spoken numbers and dates ("five five five, oh one four seven",
-"September eleventh") are not normalised at all.
+**What is next, in order.** The matcher work this corpus pointed at — nicknames, and the dictated numbers
+the pattern pack misses — judged on data it was not tuned against. A second corpus that records every
+script under every condition, and a person as a second annotator. Then the parts of Safe Harbor still
+missing: no rule emits a postal code or a street address today, and numbers and dates spoken as words
+("five five five, oh one four seven", "September eleventh") are not normalised at all.
 
-**What the claim at the top of this file costs for data that is not a person.** Named here because the
-opening is wider than the code.
+### Data that is not a person
+
+The claim at the top of this file is wider than clinical records, and this is what it costs.
 
 *Companies and products are identifier kinds, and the library invents no names for them.* `Organization`
 and `Product` exist, and so does `ClientName` — which is a **person**, deliberately: in home care the
@@ -321,18 +364,18 @@ names for you. Bring a `company` pool in a [lineage](#bring-your-own-dictionarie
 company names back, from a list you know is safe in your market.
 
 *A company is matched in exactly the words the roster gave it.* It is registered whole, never word by
-word, so `Acme Corporation` does not turn every "corporation" in the transcript into an identifier. The
-price is that `Acme` said alone is not found, and neither is `Acme Corp`: "Corp" against "Corporation"
-scores 0.36 against a floor of 0.84, because abbreviation cuts a word short and is not a sound the
-recogniser confused. Put each form on the roster as its own entry under the same `subjectId`. And
-`TurboFresh` on the roster still does not find `Turbo Fresh` in the text — one word against two — which
-is the next piece of matcher work, not this one.
+word, so `Acme Corporation` does not turn every "corporation" in the text into an identifier. The price is
+that `Acme` said alone is not found, and neither is `Acme Corp`: "Corp" against "Corporation" scores 0.36
+against a floor of 0.84, because abbreviation cuts a word short and is not a sound the recogniser
+confused. Put each form on the roster as its own entry under the same `subjectId`. And `TurboFresh` on the
+roster still does not find `Turbo Fresh` in the text — one word against two — which is the next piece of
+matcher work, not this one.
 
 *The lineage exists, and it does not yet cover everything it should.* Pools, labels, generalisations and
 pattern rules are yours to bring. Three things are still the library's: `language` does not select
-phonetic rules, the kinds themselves are a fixed list, and a generalisation is a literal string —
-there is no ladder that derives a wider value from the one it replaces, so `85001 → 850**` is not
-expressible. That last one waits on the same census table as the postal-code rule.
+phonetic rules, the kinds themselves are a fixed list, and a generalisation is a literal string — there is
+no ladder that derives a wider value from the one it replaces, so `85001 → 850**` is not expressible. That
+last one waits on the same census table as the postal-code rule.
 
 ## What it is not
 
@@ -348,7 +391,7 @@ expressible. That last one waits on the same census table as the postal-code rul
   rate, not a promise, is the point of the project.
 - **Not a model.** Nothing is downloaded and nothing is uploaded. `Silueta.Core` has no dependencies, so
   it runs offline, inside the environment that is allowed to hold the identified text.
-- **Not finished.** See [Status](#status).
+- **Not finished.** See [the number](#the-number).
 
 ## What already exists, and what is actually left over
 
@@ -365,8 +408,8 @@ de-identification to one vendor's pipeline.
 Medical, Philter, scrubadub — work on written text, where a name is spelled the way someone typed it.
 Point them at a transcript and they miss `Ellenor Vasques` and delete `Parkinson`.
 
-**Evaluation harnesses** — Presidio Research in particular — already do much of what Phase 1 below needs,
-and are worth borrowing from rather than reinventing.
+**Evaluation harnesses** — Presidio Research in particular — already do much of what `silueta evaluate`
+does, and are worth borrowing from rather than reinventing.
 
 **[ARX](https://github.com/arx-deidentifier/arx) is not an alternative; it is the stage after this one,**
 and it is worth knowing before anyone claims a corpus is safe. ARX anonymises *tables*, and its subject is
@@ -374,25 +417,73 @@ the risk this library does not address: once the eighteen identifiers are gone, 
 remaining attributes still single someone out? It answers with k-anonymity, ℓ-diversity, t-closeness,
 δ-presence and differential privacy, and it measures the utility its own transformations destroyed.
 Silueta produces the de-identified text and the structured fields that come out of it — age band, region,
-date, condition — which is exactly the table ARX evaluates. Where it has already been borrowed from:
-generalisation *hierarchies as data* rather than compiled-in rules (`94 → 90 or older → older adult`),
-which is how the lineage will express how far to climb.
+date, condition — which is exactly the table ARX evaluates. Silueta's own linkage report counts the
+smallest group of subjects that share their surviving details; ARX is where that question is answered
+properly.
 
-So what is genuinely Silueta's: matching a roster you already hold *through* ASR damage, a leak rate
-measured per transcript rather than per mention, and both in a dependency-free .NET library you can run
-where the identified text is allowed to be. That is a narrower claim than "PII redaction", and it is the
-one this repository can defend.
+So what is genuinely Silueta's: matching a roster you already hold *through* recogniser damage, a leak rate
+measured per document rather than per mention and published with its interval, and both in a
+dependency-free .NET library you can run where the identified text is allowed to be. That is a narrower
+claim than "PII redaction", and it is the one this repository can defend.
 
 ## Layout
 
 | Path | What it is |
 | --- | --- |
-| `src/Silueta.Core` | The engine: detectors, policy, vault, manifest, leak rate. No dependencies. |
-| `src/Silueta.Cli` | `silueta demo` and `silueta redact`, shipped as a dotnet tool. |
+| `src/Silueta.Core` | The engine: detectors, lineage, policy, vault, manifest, and the evaluation — leak rate, linkage report. No dependencies. |
+| `src/Silueta.Cli` | `silueta demo`, `silueta redact` and `silueta evaluate`, shipped as a dotnet tool. |
 | `src/Silueta.Mcp` | The MCP server: four tools, the main one taking a path. |
 | `SKILL.md` · `skill/` | The agent skill and how to install it. |
-| `tests/Silueta.Core.Tests` | Every case in them is real speech-recognition damage, not invented. |
+| `corpus-synthetic/` | The gold corpus the published number is measured on. Synthetic, and nothing real is ever committed. |
+| `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |
+| `tests/Silueta.Core.Tests` | The tests — including the ones that hold this README's demo and numbers to the code. |
+| `Docs/` | `ALGORITHM.md`, every decision and what it costs; and the brand. |
+
+## Contributing
+
+Issues and pull requests are welcome. Three things this repository holds to, so a contribution does too:
+
+1. **Nothing about a real person enters the repository** — not in a test, a corpus, a roster, a lineage or
+   an issue. Real corpora belong in `corpus/`, which `.gitignore` keeps out of every commit.
+2. **A defect is fixed test-first.** The test fails on the old code before the fix goes in.
+3. **The numbers are held to the code.** CI checks that the demo does not leak, that this README shows what
+   the demo prints, that the MCP server declares its tools, and — through the test suite — that the leak
+   rate above is what a fresh evaluation computes. If your change moves the number, the pull request says so.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
+
+---
+
+<div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="Docs/brand/silueta-dark.svg">
+  <img src="Docs/brand/silueta.svg" alt="" width="44" height="44">
+</picture>
+
+### Built by PeopleWorks
+
+Created by **Pedro Hernández — PeopleWorks**,
+[Microsoft MVP for .NET](https://mvp.microsoft.com/en-US/mvp/profile/24060a02-dbc6-44ec-bca5-c213ff9835c5)
+
+Built with [.NET 10](https://dotnet.microsoft.com/) · [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) ·
+[faster-whisper](https://github.com/SYSTRAN/faster-whisper) for the evaluation corpus
+
+**PeopleWorks AI tools** — [Signs of AI](https://github.com/peopleworks/SignsofAI) reads what an AI wrote ·
+**Silueta** keeps the people out of what you give one
+
+[📐 Algorithm](Docs/ALGORITHM.md) ·
+[🧪 Corpus](corpus-synthetic/README.md) ·
+[🤖 Agent skill](SKILL.md) ·
+[🔌 MCP server](src/Silueta.Mcp/README.md)
+
+**The numbers in this README are checked against the code on every build — including the one that says
+the leak rate is high.**
+
+MIT licensed — use it, fork it, ship it.
+
+© 2026 PeopleWorks
+
+</div>

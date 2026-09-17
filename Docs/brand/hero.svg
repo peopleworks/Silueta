@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560"
+     role="img" aria-labelledby="silueta-hero-title silueta-hero-desc">
+  <title id="silueta-hero-title">Silueta — what goes in, what comes out, and what never leaves</title>
+  <desc id="silueta-hero-desc">Two panels side by side. On the left, a shift report as a speech recogniser wrote it: "Shift report. Sophia Rays was with Mrs. Ellenor Vasques this morning. Her daughter Jamileth called at 602-555-0147 about the 3/14/2026 appointment." Every name is misspelled compared with the agency's roster, which is shown beneath as Sofía Reyes, Eleanor Vasquez and Yamilet Vasquez. An arrow labelled "matched by sound, then replaced under a policy" leads to the right panel, the same report as Silueta hands it on: "Shift report. Yael Rays was with Mrs. Ale Espinal this morning. Her daughter Chris called at [PHONE] about the 2026 appointment." People became other people and shapes became labels, but the surname "Rays" is still there and is marked as a failure the leak rate counts. Along the bottom: the manifest travels with the corpus, the vault never does, and the leak rate is measured rather than promised.</desc>
+
+  <defs>
+    <marker id="silueta-arrow" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#7FB39D"/>
+    </marker>
+    <mask id="silueta-hero-mark">
+      <path d="M11 9C21 4 33 13 42 8C48 5 52 6 54 10L54 54C52 59 48 60 42 57C33 52 21 61 11 56Z" fill="#fff"/>
+      <g transform="translate(32 32) scale(0.74) translate(-32 -32)">
+        <path d="M45 18C45 12 37 9 30 9C22 9 17 13 17 19C17 31 45 27 45 43C45 51 38 55 30 55C22 55 17 51 17 46"
+              fill="none" stroke="#000" stroke-width="10" stroke-linecap="round"/>
+      </g>
+    </mask>
+  </defs>
+
+  <rect width="1200" height="560" rx="20" fill="#0E1317"/>
+
+  <g transform="translate(44 34) scale(0.72)">
+    <path d="M11 9C21 4 33 13 42 8C48 5 52 6 54 10L54 54C52 59 48 60 42 57C33 52 21 61 11 56Z"
+          fill="#E7EAE6" mask="url(#silueta-hero-mark)"/>
+  </g>
+
+  <text x="96" y="58" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="25" font-weight="600" fill="#E7EAE6">A silhouette keeps the shape and loses the face.</text>
+  <text x="96" y="86" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="15" fill="#8B989D">What was said, felt and decided survives. Who said it does not — and where that fails, the number says so.</text>
+
+  <!-- left: the transcript as the recogniser wrote it -->
+  <rect x="44" y="118" width="500" height="196" rx="12" fill="#171E24" stroke="#2A353B"/>
+  <text x="64" y="146" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12" letter-spacing="1.4" fill="#8B989D">AS THE RECOGNISER WROTE IT</text>
+  <text x="64" y="180" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan>Shift report. </tspan><tspan fill="#E7B36A">Sophia Rays</tspan><tspan> was with</tspan>
+  </text>
+  <text x="64" y="206" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan>Mrs. </tspan><tspan fill="#E7B36A">Ellenor Vasques</tspan><tspan> this morning.</tspan>
+  </text>
+  <text x="64" y="232" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan>Her daughter </tspan><tspan fill="#E7B36A">Jamileth</tspan><tspan> called at</tspan>
+  </text>
+  <text x="64" y="258" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan fill="#E7B36A">602-555-0147</tspan><tspan> about the </tspan><tspan fill="#E7B36A">3/14/2026</tspan><tspan>…</tspan>
+  </text>
+  <text x="64" y="292" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="13" fill="#8B989D">Not one name is spelled the way the agency spells it.</text>
+
+  <!-- the roster, feeding the matcher -->
+  <rect x="44" y="336" width="500" height="92" rx="12" fill="#12191E" stroke="#2A353B"/>
+  <text x="64" y="362" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12" letter-spacing="1.4" fill="#8B989D">THE ROSTER YOU ALREADY HOLD</text>
+  <text x="64" y="390" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#7FB39D">Sofía Reyes · Eleanor Vasquez · Yamilet Vasquez</text>
+  <text x="64" y="412" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">An agency knows its people. Matching a list beats guessing which word is a name.</text>
+
+  <!-- the arrow and what happens on it -->
+  <path d="M566 232 L 636 232" stroke="#7FB39D" stroke-width="2.5" marker-end="url(#silueta-arrow)"/>
+  <text x="601" y="206" text-anchor="middle" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#7FB39D">matched by</text>
+  <text x="601" y="222" text-anchor="middle" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#7FB39D">sound</text>
+  <text x="601" y="262" text-anchor="middle" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">policy:</text>
+  <text x="601" y="278" text-anchor="middle" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">safe harbor</text>
+
+  <!-- right: as Silueta hands it on -->
+  <rect x="658" y="118" width="498" height="196" rx="12" fill="#171E24" stroke="#3E6656"/>
+  <text x="678" y="146" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12" letter-spacing="1.4" fill="#7FB39D">AS SILUETA HANDS IT ON</text>
+  <text x="678" y="180" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan>Shift report. </tspan><tspan fill="#7FB39D">Yael</tspan><tspan> </tspan><tspan fill="#E06C5A">Rays</tspan><tspan> was with</tspan>
+  </text>
+  <text x="678" y="206" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan>Mrs. </tspan><tspan fill="#7FB39D">Ale Espinal</tspan><tspan> this morning.</tspan>
+  </text>
+  <text x="678" y="232" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan>Her daughter </tspan><tspan fill="#7FB39D">Chris</tspan><tspan> called at</tspan>
+  </text>
+  <text x="678" y="258" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#C6CEC9">
+    <tspan fill="#7FB39D">[PHONE]</tspan><tspan> about the </tspan><tspan fill="#7FB39D">2026</tspan><tspan> appointment…</tspan>
+  </text>
+  <text x="678" y="292" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="13" fill="#8B989D">People became other people. Shapes became labels.</text>
+
+  <!-- the failure, named -->
+  <rect x="658" y="336" width="498" height="92" rx="12" fill="#1C1416" stroke="#5A2E2A"/>
+  <text x="678" y="362" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12" letter-spacing="1.4" fill="#E06C5A">AND ONE NAME IS STILL THERE</text>
+  <text x="678" y="390" font-family="Consolas, ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14.5" fill="#E06C5A">Rays</text>
+  <text x="730" y="390" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="13" fill="#C6CEC9">— the roster says Reyes. Keys three edits apart, 0.40 against 0.84.</text>
+  <text x="678" y="412" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">A matcher failure, not a design decision. It is in the leak rate, and in this diagram.</text>
+
+  <!-- what travels and what does not -->
+  <rect x="44" y="458" width="352" height="62" rx="10" fill="#12191E" stroke="#2A353B"/>
+  <text x="64" y="484" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="600" fill="#E7EAE6">The manifest travels</text>
+  <text x="64" y="504" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">what was removed, by kind, under which policy</text>
+
+  <rect x="412" y="458" width="352" height="62" rx="10" fill="#12191E" stroke="#2A353B"/>
+  <text x="432" y="484" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="600" fill="#E7EAE6">The vault never does</text>
+  <text x="432" y="504" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">it is the only way back, so it stays in the building</text>
+
+  <rect x="780" y="458" width="376" height="62" rx="10" fill="#12191E" stroke="#3E6656"/>
+  <text x="800" y="484" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="600" fill="#7FB39D">The failure rate is measured</text>
+  <text x="800" y="504" font-family="Segoe UI, system-ui, -apple-system, Helvetica, Arial, sans-serif"
+        font-size="12.5" fill="#8B989D">published with its interval and its corpus, not promised</text>
+</svg>

@@ -1,0 +1,130 @@
+{
+  "documentId": "tts-en-03",
+  "source": "tts-asr/noisy-phone",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "maria chen covered the morning shift for maria lopez mrs lopez slept poorly and asked twice for her husband who passed away in june maria helped her shower and changed the dressing on her left heel the wound looks smaller her neighbor mr aquifer stopped by with soup",
+  "roster": [
+    {
+      "value": "Maria Lopez",
+      "kind": "PatientName",
+      "subjectId": "p-03"
+    },
+    {
+      "value": "Maria Chen",
+      "kind": "StaffName",
+      "subjectId": "s-03"
+    }
+  ],
+  "spans": [
+    {
+      "start": 0,
+      "length": 10,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 41,
+      "length": 11,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 57,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 127,
+      "length": 4,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 132,
+      "length": 5,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 238,
+      "length": 7,
+      "kind": "OtherName",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Maria Chen covered the morning shift for Maria Lopez. Mrs. Lopez slept poorly and asked twice for her husband, who passed away in June. Maria helped her shower and changed the dressing on her left heel. The wound looks smaller. Her neighbor Mr. Okafor stopped by with soup.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=3[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 3
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Maria Chen",
+        "start": 0,
+        "length": 10,
+        "transcribed": "maria chen"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Maria Lopez",
+        "start": 41,
+        "length": 11,
+        "transcribed": "maria lopez"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Lopez",
+        "start": 57,
+        "length": 5,
+        "transcribed": "lopez"
+      },
+      {
+        "kind": "Date",
+        "script": "June",
+        "start": 127,
+        "length": 4,
+        "transcribed": "june"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Maria",
+        "start": 132,
+        "length": 5,
+        "transcribed": "maria"
+      },
+      {
+        "kind": "OtherName",
+        "script": "Okafor",
+        "start": 238,
+        "length": 7,
+        "transcribed": "aquifer"
+      }
+    ]
+  }
+}

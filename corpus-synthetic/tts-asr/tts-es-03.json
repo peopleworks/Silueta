@@ -1,0 +1,117 @@
+{
+  "documentId": "tts-es-03",
+  "source": "tts-asr/noisy-phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Luz Carrillo cubrió el turno de la mañana con Luz Ochoa. La señora Ochoa no durmió bien y pidió que dejáramos la luz prendida. Luz le cambió el vendaje del talón. La herida se ve más pequeña. La vecina Doña Chela trajo caldo.",
+  "roster": [
+    {
+      "value": "Luz Ochoa",
+      "kind": "PatientName",
+      "subjectId": "p-18"
+    },
+    {
+      "value": "Luz Carrillo",
+      "kind": "StaffName",
+      "subjectId": "s-18"
+    }
+  ],
+  "spans": [
+    {
+      "start": 0,
+      "length": 12,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 46,
+      "length": 9,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 67,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 127,
+      "length": 3,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 207,
+      "length": 5,
+      "kind": "OtherName",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Luz Carrillo cubrió el turno de la mañana con Luz Ochoa. La señora Ochoa no durmió bien y pidió que dejáramos la luz prendida. Luz le cambió el vendaje del talón. La herida se ve más pequeña. La vecina doña Chela trajo caldo.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=18[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 18
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Luz Carrillo",
+        "start": 0,
+        "length": 12,
+        "transcribed": "Luz Carrillo"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Luz Ochoa",
+        "start": 46,
+        "length": 9,
+        "transcribed": "Luz Ochoa"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Ochoa",
+        "start": 67,
+        "length": 5,
+        "transcribed": "Ochoa"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Luz",
+        "start": 127,
+        "length": 3,
+        "transcribed": "Luz"
+      },
+      {
+        "kind": "OtherName",
+        "script": "Chela",
+        "start": 207,
+        "length": 5,
+        "transcribed": "Chela"
+      }
+    ]
+  }
+}

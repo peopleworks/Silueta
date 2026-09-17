@@ -22,6 +22,9 @@ roster*.json
 /data/
 /corpus/
 /samples/private/
+# A real corpus goes in corpus/, which stays ignored however inconvenient that is. The synthetic gold corpus
+# that IS committed lives in corpus-synthetic/, named so nobody drops real transcripts beside it by habit.
+# (It first went into corpus/ and this rule silently kept it out of two commits, one of which said it was in.)
 
 # …except the made-up ones that document the format.
 !**/*.example.json
@@ -34,3 +37,6 @@ AI_Tasks/
 
 # Local pack output
 out/
+
+# Audio and intermediate files from the corpus generator: regenerable, and large.
+tools/corpus/work/

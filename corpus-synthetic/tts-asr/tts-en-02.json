@@ -1,0 +1,116 @@
+{
+  "documentId": "tts-en-02",
+  "source": "tts-asr/phone",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "This is Marcus Oyeloran with the evening visit for Robert Zymanski. Bob was in good spirits tonight. He is 92 years old and still does the crossword every morning. His son called about the cardiology appointment on March 14th. Pain 2 out of 10. Next visit is Thursday.",
+  "roster": [
+    {
+      "value": "Robert Szymanski",
+      "kind": "PatientName",
+      "subjectId": "p-02"
+    },
+    {
+      "value": "Marcus Oyelaran",
+      "kind": "StaffName",
+      "subjectId": "s-02"
+    }
+  ],
+  "spans": [
+    {
+      "start": 8,
+      "length": 15,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 51,
+      "length": 15,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 68,
+      "length": 3,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 107,
+      "length": 12,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 215,
+      "length": 10,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "This is Marcus Oyelaran with the evening visit for Robert Szymanski. Bob was in good spirits tonight. He is ninety two years old and still does the crossword every morning. His son called about the cardiology appointment on March fourteenth. Pain two out of ten. Next visit is Thursday.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Marcus Oyelaran",
+        "start": 8,
+        "length": 15,
+        "transcribed": "Marcus Oyeloran"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Robert Szymanski",
+        "start": 51,
+        "length": 15,
+        "transcribed": "Robert Zymanski"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Bob",
+        "start": 68,
+        "length": 3,
+        "transcribed": "Bob"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "ninety two years old",
+        "start": 107,
+        "length": 12,
+        "transcribed": "92 years old"
+      },
+      {
+        "kind": "Date",
+        "script": "March fourteenth",
+        "start": 215,
+        "length": 10,
+        "transcribed": "March 14th"
+      }
+    ]
+  }
+}

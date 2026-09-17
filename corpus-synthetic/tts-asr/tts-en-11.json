@@ -1,0 +1,108 @@
+{
+  "documentId": "tts-en-11",
+  "source": "tts-asr/phone",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "Ana Torres with the morning report. Walter Oconquo was up early. His daughter Grace stayed overnight and says he coughed a lot. By the grace of good timing the nurse was already scheduled. Walter denies chest pain. Temperature normal.",
+  "roster": [
+    {
+      "value": "Walter Okonkwo",
+      "kind": "PatientName",
+      "subjectId": "p-11"
+    },
+    {
+      "value": "Grace Okonkwo",
+      "kind": "FamilyName",
+      "subjectId": "f-11"
+    },
+    {
+      "value": "Ana Torres",
+      "kind": "StaffName",
+      "subjectId": "s-11"
+    }
+  ],
+  "spans": [
+    {
+      "start": 0,
+      "length": 10,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 36,
+      "length": 14,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 78,
+      "length": 5,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 189,
+      "length": 6,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Ana Torres with the morning report. Walter Okonkwo was up early. His daughter Grace stayed overnight and says he coughed a lot. By the grace of good timing the nurse was already scheduled. Walter denies chest pain. Temperature normal.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Ana Torres",
+        "start": 0,
+        "length": 10,
+        "transcribed": "Ana Torres"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Walter Okonkwo",
+        "start": 36,
+        "length": 14,
+        "transcribed": "Walter Oconquo"
+      },
+      {
+        "kind": "FamilyName",
+        "script": "Grace",
+        "start": 78,
+        "length": 5,
+        "transcribed": "Grace"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Walter",
+        "start": 189,
+        "length": 6,
+        "transcribed": "Walter"
+      }
+    ]
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "documentId": "tts-en-14",
+  "source": "tts-asr/phone",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "Call from Jesus Martinez, son of Consuelo Martinez. Chuy says his mother did not sleep and asked for Eric by name. He wants the Saturday visit moved to the 23rd. I confirmed with Eric Johanson and he agreed.",
+  "roster": [
+    {
+      "value": "Consuelo Martínez",
+      "kind": "PatientName",
+      "subjectId": "p-14"
+    },
+    {
+      "value": "Eric Johansson",
+      "kind": "StaffName",
+      "subjectId": "s-14"
+    },
+    {
+      "value": "Jesús Martínez",
+      "kind": "FamilyName",
+      "subjectId": "f-14"
+    }
+  ],
+  "spans": [
+    {
+      "start": 10,
+      "length": 14,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 33,
+      "length": 17,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 52,
+      "length": 4,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 101,
+      "length": 4,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 156,
+      "length": 4,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 179,
+      "length": 13,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Call from Jesus Martinez, son of Consuelo Martinez. Chuy says his mother did not sleep and asked for Eric by name. He wants the Saturday visit moved to the twenty third. I confirmed with Eric Johansson and he agreed.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "FamilyName",
+        "script": "Jesus Martinez",
+        "start": 10,
+        "length": 14,
+        "transcribed": "Jesus Martinez"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Consuelo Martinez",
+        "start": 33,
+        "length": 17,
+        "transcribed": "Consuelo Martinez"
+      },
+      {
+        "kind": "FamilyName",
+        "script": "Chuy",
+        "start": 52,
+        "length": 4,
+        "transcribed": "Chuy"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Eric",
+        "start": 101,
+        "length": 4,
+        "transcribed": "Eric"
+      },
+      {
+        "kind": "Date",
+        "script": "twenty third",
+        "start": 156,
+        "length": 4,
+        "transcribed": "23rd"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Eric Johansson",
+        "start": 179,
+        "length": 13,
+        "transcribed": "Eric Johanson"
+      }
+    ]
+  }
+}

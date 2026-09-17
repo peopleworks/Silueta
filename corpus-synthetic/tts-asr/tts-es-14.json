@@ -1,0 +1,121 @@
+{
+  "documentId": "tts-es-14",
+  "source": "tts-asr/phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Llamada de Julián Zambrano, hijo de Ofelia Zambrano. Dice que su mamá no durmió y preguntó por Aurora. Quiere cambiar la visita del sábado al 23. Lo confirmé con Aurora Peña y está de acuerdo. Desde la Aurora ya estaba despierta.",
+  "roster": [
+    {
+      "value": "Ofelia Zambrano",
+      "kind": "PatientName",
+      "subjectId": "p-29"
+    },
+    {
+      "value": "Julián Zambrano",
+      "kind": "FamilyName",
+      "subjectId": "f-29"
+    },
+    {
+      "value": "Aurora Peña",
+      "kind": "StaffName",
+      "subjectId": "s-29"
+    }
+  ],
+  "spans": [
+    {
+      "start": 11,
+      "length": 15,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 36,
+      "length": 15,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 95,
+      "length": 6,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 142,
+      "length": 2,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 162,
+      "length": 11,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Llamada de Julián Zambrano, hijo de Ofelia Zambrano. Dice que su mamá no durmió y preguntó por Aurora. Quiere cambiar la visita del sábado al veintitrés. Lo confirmé con Aurora Peña y está de acuerdo. Desde la aurora ya estaba despierta.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "FamilyName",
+        "script": "Julián Zambrano",
+        "start": 11,
+        "length": 15,
+        "transcribed": "Julián Zambrano"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Ofelia Zambrano",
+        "start": 36,
+        "length": 15,
+        "transcribed": "Ofelia Zambrano"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Aurora",
+        "start": 95,
+        "length": 6,
+        "transcribed": "Aurora"
+      },
+      {
+        "kind": "Date",
+        "script": "veintitrés",
+        "start": 142,
+        "length": 2,
+        "transcribed": "23"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Aurora Peña",
+        "start": 162,
+        "length": 11,
+        "transcribed": "Aurora Peña"
+      }
+    ]
+  }
+}

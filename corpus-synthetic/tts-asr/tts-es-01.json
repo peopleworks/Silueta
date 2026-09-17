@@ -1,0 +1,115 @@
+{
+  "documentId": "tts-es-01",
+  "source": "tts-asr/clean",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Reporte de turno de Rosa Villanueva. La señora Guadalupe Hernández desayunó bien y se tomó la metformina. Lupita dice que le duele la rodilla izquierda. Su hija llamó desde Hermosillo y pidió que le regresemos la llamada al 602-555-0147. Presión 130 sobre 80.",
+  "roster": [
+    {
+      "value": "Guadalupe Hernández",
+      "kind": "PatientName",
+      "subjectId": "p-16"
+    },
+    {
+      "value": "Rosa Villanueva",
+      "kind": "StaffName",
+      "subjectId": "s-16"
+    }
+  ],
+  "spans": [
+    {
+      "start": 20,
+      "length": 15,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 47,
+      "length": 19,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 106,
+      "length": 6,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 173,
+      "length": 10,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 224,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Reporte de turno de Rosa Villanueva. La señora Guadalupe Hernández desayunó bien y se tomó la metformina. Lupita dice que le duele la rodilla izquierda. Su hija llamó desde Hermosillo y pidió que le regresemos la llamada al seis cero dos, cinco cinco cinco, cero uno cuatro siete. Presión ciento treinta sobre ochenta.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Rosa Villanueva",
+        "start": 20,
+        "length": 15,
+        "transcribed": "Rosa Villanueva"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Guadalupe Hernández",
+        "start": 47,
+        "length": 19,
+        "transcribed": "Guadalupe Hernández"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Lupita",
+        "start": 106,
+        "length": 6,
+        "transcribed": "Lupita"
+      },
+      {
+        "kind": "Address",
+        "script": "Hermosillo",
+        "start": 173,
+        "length": 10,
+        "transcribed": "Hermosillo"
+      },
+      {
+        "kind": "Phone",
+        "script": "seis cero dos, cinco cinco cinco, cero uno cuatro siete",
+        "start": 224,
+        "length": 12,
+        "transcribed": "602-555-0147"
+      }
+    ]
+  }
+}

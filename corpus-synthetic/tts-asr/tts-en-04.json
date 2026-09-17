@@ -1,0 +1,119 @@
+{
+  "documentId": "tts-en-04",
+  "source": "tts-asr/clean",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "Visit note. Grace Whitfield here with Lee Wong. Lee was already dressed and sitting by the window when I arrived. We walked to the end of Cactus Road and back. Oxygen saturation 95%. He asked me to remind his granddaughter about the pharmacy pickup on Friday the 20th.",
+  "roster": [
+    {
+      "value": "Li Wang",
+      "kind": "PatientName",
+      "subjectId": "p-04"
+    },
+    {
+      "value": "Grace Whitfield",
+      "kind": "StaffName",
+      "subjectId": "s-04"
+    }
+  ],
+  "spans": [
+    {
+      "start": 12,
+      "length": 15,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 38,
+      "length": 8,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 48,
+      "length": 3,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 138,
+      "length": 11,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 263,
+      "length": 4,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Visit note. Grace Whitfield here with Li Wang. Li was already dressed and sitting by the window when I arrived. We walked to the end of Cactus Road and back. Oxygen saturation ninety five percent. He asked me to remind his granddaughter about the pharmacy pickup on Friday the twentieth.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Grace Whitfield",
+        "start": 12,
+        "length": 15,
+        "transcribed": "Grace Whitfield"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Li Wang",
+        "start": 38,
+        "length": 8,
+        "transcribed": "Lee Wong",
+        "flag": "reviewed",
+        "review": "The recogniser rewrote 'Li Wang. Li' as one block; the full name is the first two words."
+      },
+      {
+        "kind": "PatientName",
+        "script": "Li",
+        "start": 48,
+        "length": 3,
+        "transcribed": "Lee",
+        "flag": "reviewed",
+        "review": "Same block: the one-word mention is the second 'Lee', not the full name before it."
+      },
+      {
+        "kind": "Address",
+        "script": "Cactus Road",
+        "start": 138,
+        "length": 11,
+        "transcribed": "Cactus Road"
+      },
+      {
+        "kind": "Date",
+        "script": "twentieth",
+        "start": 263,
+        "length": 4,
+        "transcribed": "20th"
+      }
+    ]
+  }
+}

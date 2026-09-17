@@ -1,0 +1,133 @@
+{
+  "documentId": "tts-en-01",
+  "source": "tts-asr/clean",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "Shift report for Eleanor Vasquez. Sofia Reyes arrived at 8 and stayed until 2. Ellie ate most of her breakfast and took the metformin with water. Her daughter Yamile called from Mesa and asked us to call her back at 602-555-0147. Blood pressure 130 over 80. No falls this week.",
+  "roster": [
+    {
+      "value": "Eleanor Vasquez",
+      "kind": "PatientName",
+      "subjectId": "p-01"
+    },
+    {
+      "value": "Yamilet Vasquez",
+      "kind": "FamilyName",
+      "subjectId": "f-01"
+    },
+    {
+      "value": "Sofía Reyes",
+      "kind": "StaffName",
+      "subjectId": "s-01"
+    }
+  ],
+  "spans": [
+    {
+      "start": 17,
+      "length": 15,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 34,
+      "length": 11,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 79,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 159,
+      "length": 6,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 178,
+      "length": 4,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 216,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Shift report for Eleanor Vasquez. Sofia Reyes arrived at eight and stayed until two. Ellie ate most of her breakfast and took the metformin with water. Her daughter Yamilet called from Mesa and asked us to call her back at six oh two, five five five, oh one four seven. Blood pressure one thirty over eighty. No falls this week.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "PatientName",
+        "script": "Eleanor Vasquez",
+        "start": 17,
+        "length": 15,
+        "transcribed": "Eleanor Vasquez"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Sofia Reyes",
+        "start": 34,
+        "length": 11,
+        "transcribed": "Sofia Reyes"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Ellie",
+        "start": 79,
+        "length": 5,
+        "transcribed": "Ellie"
+      },
+      {
+        "kind": "FamilyName",
+        "script": "Yamilet",
+        "start": 159,
+        "length": 6,
+        "transcribed": "Yamile"
+      },
+      {
+        "kind": "Address",
+        "script": "Mesa",
+        "start": 178,
+        "length": 4,
+        "transcribed": "Mesa"
+      },
+      {
+        "kind": "Phone",
+        "script": "six oh two, five five five, oh one four seven",
+        "start": 216,
+        "length": 12,
+        "transcribed": "602-555-0147"
+      }
+    ]
+  }
+}

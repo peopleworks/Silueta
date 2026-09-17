@@ -1,0 +1,116 @@
+{
+  "documentId": "tts-es-02",
+  "source": "tts-asr/phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Habla Pilar Montoya con la visita de la tarde. Don José Echeverría estaba de buen humor. Pepe tiene 93 años y todavía hace crucigramas. Su nieto preguntó por la cita del 14 de marzo. Dolor 2 de 10. La próxima visita es el jueves.",
+  "roster": [
+    {
+      "value": "José Echeverría",
+      "kind": "PatientName",
+      "subjectId": "p-17"
+    },
+    {
+      "value": "Pilar Montoya",
+      "kind": "StaffName",
+      "subjectId": "s-17"
+    }
+  ],
+  "spans": [
+    {
+      "start": 6,
+      "length": 13,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 51,
+      "length": 15,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 89,
+      "length": 4,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 100,
+      "length": 7,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 170,
+      "length": 11,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Habla Pilar Montoya con la visita de la tarde. Don José Echeverría estaba de buen humor. Pepe tiene noventa y tres años y todavía hace crucigramas. Su nieto preguntó por la cita del catorce de marzo. Dolor dos de diez. La próxima visita es el jueves.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Pilar Montoya",
+        "start": 6,
+        "length": 13,
+        "transcribed": "Pilar Montoya"
+      },
+      {
+        "kind": "PatientName",
+        "script": "José Echeverría",
+        "start": 51,
+        "length": 15,
+        "transcribed": "José Echeverría"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Pepe",
+        "start": 89,
+        "length": 4,
+        "transcribed": "Pepe"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "noventa y tres años",
+        "start": 100,
+        "length": 7,
+        "transcribed": "93 años"
+      },
+      {
+        "kind": "Date",
+        "script": "catorce de marzo",
+        "start": 170,
+        "length": 11,
+        "transcribed": "14 de marzo"
+      }
+    ]
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "documentId": "tts-en-09",
+  "source": "tts-asr/noisy-phone",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "He fell Ramirez here. Mr. Blackwood was confused this morning and thought it was 1960. Harold calms down after breakfast. His wife says this happens after a bad night. He is 91 years old. We should flag it for the nurse on Monday.",
+  "roster": [
+    {
+      "value": "Harold Blackwood",
+      "kind": "PatientName",
+      "subjectId": "p-09"
+    },
+    {
+      "value": "Itzel Ramírez",
+      "kind": "StaffName",
+      "subjectId": "s-09"
+    }
+  ],
+  "spans": [
+    {
+      "start": 0,
+      "length": 15,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 26,
+      "length": 9,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 87,
+      "length": 6,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 174,
+      "length": 12,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Itzel Ramirez here. Mr. Blackwood was confused this morning and thought it was nineteen sixty. Harold calmed down after breakfast. His wife says this happens after a bad night. He is ninety one years old. We should flag it for the nurse on Monday.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=9[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 9
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Itzel Ramirez",
+        "start": 0,
+        "length": 15,
+        "transcribed": "He fell Ramirez"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Blackwood",
+        "start": 26,
+        "length": 9,
+        "transcribed": "Blackwood"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Harold",
+        "start": 87,
+        "length": 6,
+        "transcribed": "Harold"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "ninety one years old",
+        "start": 174,
+        "length": 12,
+        "transcribed": "91 years old"
+      }
+    ]
+  }
+}

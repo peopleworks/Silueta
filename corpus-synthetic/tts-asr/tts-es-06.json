@@ -1,0 +1,130 @@
+{
+  "documentId": "tts-es-06",
+  "source": "tts-asr/noisy-phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Reporta Andrés Beltrán. La señora Socorro Cicotencas no quiso la medicina de la mañana porque dice que la marea. Tiene 96 años. Llamé a la doctora Ibañez a la clínica de Nogales y le dejé recado. Su número de expediente es 441729.",
+  "roster": [
+    {
+      "value": "Socorro Xicoténcatl",
+      "kind": "PatientName",
+      "subjectId": "p-21"
+    },
+    {
+      "value": "Andrés Beltrán",
+      "kind": "StaffName",
+      "subjectId": "s-21"
+    }
+  ],
+  "spans": [
+    {
+      "start": 8,
+      "length": 14,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 34,
+      "length": 18,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 119,
+      "length": 7,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 147,
+      "length": 6,
+      "kind": "OtherName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 170,
+      "length": 7,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 223,
+      "length": 6,
+      "kind": "RecordNumber",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Reporta Andrés Beltrán. La señora Socorro Xicoténcatl no quiso la medicina de la mañana porque dice que la marea. Tiene noventa y seis años. Llamé a la doctora Ibáñez a la clínica de Nogales y le dejé recado. Su número de expediente es cuatro cuatro uno siete dos nueve.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=21[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 21
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Andrés Beltrán",
+        "start": 8,
+        "length": 14,
+        "transcribed": "Andrés Beltrán"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Socorro Xicoténcatl",
+        "start": 34,
+        "length": 18,
+        "transcribed": "Socorro Cicotencas"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "noventa y seis años",
+        "start": 119,
+        "length": 7,
+        "transcribed": "96 años"
+      },
+      {
+        "kind": "OtherName",
+        "script": "Ibáñez",
+        "start": 147,
+        "length": 6,
+        "transcribed": "Ibañez"
+      },
+      {
+        "kind": "Address",
+        "script": "Nogales",
+        "start": 170,
+        "length": 7,
+        "transcribed": "Nogales"
+      },
+      {
+        "kind": "RecordNumber",
+        "script": "cuatro cuatro uno siete dos nueve",
+        "start": 223,
+        "length": 6,
+        "transcribed": "441729"
+      }
+    ]
+  }
+}

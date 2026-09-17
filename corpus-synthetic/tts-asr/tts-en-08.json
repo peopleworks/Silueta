@@ -1,0 +1,103 @@
+{
+  "documentId": "tts-en-08",
+  "source": "tts-asr/phone",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "This is Paul Anderson. Quick update on Zayadani Ortiz. She had a low-grade fever this afternoon, 99.4. Her appointment was moved to October 2nd. Her caregiver asked that we text 623-555-0988 before the visit instead of knocking.",
+  "roster": [
+    {
+      "value": "Xiadani Ortiz",
+      "kind": "PatientName",
+      "subjectId": "p-08"
+    },
+    {
+      "value": "Paul Anderson",
+      "kind": "StaffName",
+      "subjectId": "s-08"
+    }
+  ],
+  "spans": [
+    {
+      "start": 8,
+      "length": 13,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 39,
+      "length": 14,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 132,
+      "length": 11,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 178,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "This is Paul Anderson. Quick update on Xiadani Ortiz. She had a low grade fever this afternoon, ninety nine point four. Her appointment was moved to October second. Her caregiver asked that we text six two three, five five five, oh nine eight eight before the visit instead of knocking.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Paul Anderson",
+        "start": 8,
+        "length": 13,
+        "transcribed": "Paul Anderson"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Xiadani Ortiz",
+        "start": 39,
+        "length": 14,
+        "transcribed": "Zayadani Ortiz"
+      },
+      {
+        "kind": "Date",
+        "script": "October second",
+        "start": 132,
+        "length": 11,
+        "transcribed": "October 2nd"
+      },
+      {
+        "kind": "Phone",
+        "script": "six two three, five five five, oh nine eight eight",
+        "start": 178,
+        "length": 12,
+        "transcribed": "623-555-0988"
+      }
+    ]
+  }
+}

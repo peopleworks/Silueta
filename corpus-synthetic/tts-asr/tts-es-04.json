@@ -1,0 +1,115 @@
+{
+  "documentId": "tts-es-04",
+  "source": "tts-asr/clean",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Nota de visita. Aquí Sol Aguirre con Ignacio Tlapa. A Nacho le gusta sentarse al sol por la mañana. Caminamos hasta la esquina de la calle Morelos y regresamos. Saturación 95%. Me pidió recordarle a su nieta la receta del viernes 20.",
+  "roster": [
+    {
+      "value": "Ignacio Tlapa",
+      "kind": "PatientName",
+      "subjectId": "p-19"
+    },
+    {
+      "value": "Sol Aguirre",
+      "kind": "StaffName",
+      "subjectId": "s-19"
+    }
+  ],
+  "spans": [
+    {
+      "start": 21,
+      "length": 11,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 37,
+      "length": 13,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 54,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 133,
+      "length": 13,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 230,
+      "length": 2,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Nota de visita. Aquí Sol Aguirre con Ignacio Tlapa. A Nacho le gusta sentarse al sol por la mañana. Caminamos hasta la esquina de la calle Morelos y regresamos. Saturación noventa y cinco por ciento. Me pidió recordarle a su nieta la receta del viernes veinte.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Sol Aguirre",
+        "start": 21,
+        "length": 11,
+        "transcribed": "Sol Aguirre"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Ignacio Tlapa",
+        "start": 37,
+        "length": 13,
+        "transcribed": "Ignacio Tlapa"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Nacho",
+        "start": 54,
+        "length": 5,
+        "transcribed": "Nacho"
+      },
+      {
+        "kind": "Address",
+        "script": "calle Morelos",
+        "start": 133,
+        "length": 13,
+        "transcribed": "calle Morelos"
+      },
+      {
+        "kind": "Date",
+        "script": "veinte",
+        "start": 230,
+        "length": 2,
+        "transcribed": "20"
+      }
+    ]
+  }
+}

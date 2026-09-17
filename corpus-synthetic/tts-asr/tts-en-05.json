@@ -1,0 +1,134 @@
+{
+  "documentId": "tts-en-05",
+  "source": "tts-asr/phone",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "call log. Tuan Nguyen called about his mother, Margaret Nguyen. He said Maggie fell asleep during lunch again. I told him Hope will check her blood sugar tomorrow at 9. He wants a call back at 480-555-2219 or by email at tuan.nguyen at example.com.",
+  "roster": [
+    {
+      "value": "Margaret Nguyen",
+      "kind": "PatientName",
+      "subjectId": "p-05"
+    },
+    {
+      "value": "Hope Delgado",
+      "kind": "StaffName",
+      "subjectId": "s-05"
+    },
+    {
+      "value": "Tuan Nguyen",
+      "kind": "FamilyName",
+      "subjectId": "f-05"
+    }
+  ],
+  "spans": [
+    {
+      "start": 10,
+      "length": 11,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 47,
+      "length": 15,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 72,
+      "length": 6,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 122,
+      "length": 4,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 193,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 221,
+      "length": 26,
+      "kind": "Email",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Call log. Tuan Nguyen called about his mother, Margaret Nguyen. He said Maggie fell asleep during lunch again. I told him Hope will check her blood sugar tomorrow at nine. He wants a callback at four eight oh, five five five, two two one nine or by email at tuan dot nguyen at example dot com.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "FamilyName",
+        "script": "Tuan Nguyen",
+        "start": 10,
+        "length": 11,
+        "transcribed": "Tuan Nguyen"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Margaret Nguyen",
+        "start": 47,
+        "length": 15,
+        "transcribed": "Margaret Nguyen"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Maggie",
+        "start": 72,
+        "length": 6,
+        "transcribed": "Maggie"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Hope",
+        "start": 122,
+        "length": 4,
+        "transcribed": "Hope"
+      },
+      {
+        "kind": "Phone",
+        "script": "four eight oh, five five five, two two one nine",
+        "start": 193,
+        "length": 12,
+        "transcribed": "480-555-2219"
+      },
+      {
+        "kind": "Email",
+        "script": "tuan dot nguyen at example dot com",
+        "start": 221,
+        "length": 26,
+        "transcribed": "tuan.nguyen at example.com"
+      }
+    ]
+  }
+}

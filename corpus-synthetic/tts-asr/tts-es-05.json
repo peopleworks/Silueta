@@ -1,0 +1,147 @@
+{
+  "documentId": "tts-es-05",
+  "source": "tts-asr/phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Registro de llamada. Alberto Iturbide llamó por su mamá, Concepción Iturbide. Beto dice que Concha se quedó dormida en la comida otra vez. Le dije que Paz le va a checar el azúcar mañana a las 9. Quiere que le hablen al 623-555-2219 o que le escriban a beto.iturbide.com.",
+  "roster": [
+    {
+      "value": "Concepción Iturbide",
+      "kind": "PatientName",
+      "subjectId": "p-20"
+    },
+    {
+      "value": "Alberto Iturbide",
+      "kind": "FamilyName",
+      "subjectId": "f-20"
+    },
+    {
+      "value": "Paz Medrano",
+      "kind": "StaffName",
+      "subjectId": "s-20"
+    }
+  ],
+  "spans": [
+    {
+      "start": 21,
+      "length": 16,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 57,
+      "length": 19,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 78,
+      "length": 4,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 92,
+      "length": 6,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 151,
+      "length": 3,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 220,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 253,
+      "length": 17,
+      "kind": "Email",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Registro de llamada. Alberto Iturbide llamó por su mamá, Concepción Iturbide. Beto dice que Concha se quedó dormida en la comida otra vez. Le dije que Paz le va a checar el azúcar mañana a las nueve. Quiere que le hablen al seis dos tres, cinco cinco cinco, dos dos uno nueve o que le escriban a beto punto iturbide arroba ejemplo punto com.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "phone",
+      "filter": "highpass=f=300,lowpass=f=3400,aresample=8000",
+      "codec": "opus 8 kbps"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "FamilyName",
+        "script": "Alberto Iturbide",
+        "start": 21,
+        "length": 16,
+        "transcribed": "Alberto Iturbide"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Concepción Iturbide",
+        "start": 57,
+        "length": 19,
+        "transcribed": "Concepción Iturbide"
+      },
+      {
+        "kind": "FamilyName",
+        "script": "Beto",
+        "start": 78,
+        "length": 4,
+        "transcribed": "Beto"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Concha",
+        "start": 92,
+        "length": 6,
+        "transcribed": "Concha"
+      },
+      {
+        "kind": "StaffName",
+        "script": "Paz",
+        "start": 151,
+        "length": 3,
+        "transcribed": "Paz"
+      },
+      {
+        "kind": "Phone",
+        "script": "seis dos tres, cinco cinco cinco, dos dos uno nueve",
+        "start": 220,
+        "length": 12,
+        "transcribed": "623-555-2219"
+      },
+      {
+        "kind": "Email",
+        "script": "beto punto iturbide arroba ejemplo punto com",
+        "start": 253,
+        "length": 17,
+        "transcribed": "beto.iturbide.com"
+      }
+    ]
+  }
+}

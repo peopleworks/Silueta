@@ -21,6 +21,22 @@ public sealed class GoldCorpusTests : IDisposable
         """;
 
     [Fact]
+    public void The_committed_corpus_loads_and_is_what_its_README_says_it_is()
+    {
+        // Structure only — no rates. The corpus was frozen in a commit before it was ever evaluated, and
+        // this test holds its shape so a later edit to a gold file shows up as a failure, not as a number.
+        GoldCorpus corpus = GoldCorpus.Load(Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus-synthetic"));
+
+        Assert.Equal(31, corpus.Documents.Count);
+        Assert.Equal(30, corpus.Documents.Count(d => d.Source.StartsWith("tts-asr/", StringComparison.Ordinal)));
+        Assert.Equal(10, corpus.Documents.Count(d => d.Source == "tts-asr/clean"));
+        Assert.Equal(10, corpus.Documents.Count(d => d.Source == "tts-asr/phone"));
+        Assert.Equal(10, corpus.Documents.Count(d => d.Source == "tts-asr/noisy-phone"));
+        Assert.Equal(153, corpus.Documents.Where(d => d.Source.StartsWith("tts-asr/", StringComparison.Ordinal)).Sum(d => d.Spans.Count));
+        Assert.All(corpus.Documents, d => Assert.Single(d.Annotators));
+    }
+
+    [Fact]
     public void A_valid_document_loads()
     {
         Write("g-1.json", Valid);

@@ -1,0 +1,81 @@
+{
+  "documentId": "gold-001",
+  "source": "readme-demo",
+  "language": "en",
+  "speaker": null,
+  "text": "Shift report. Sophia Rays was with Mrs. Ellenor Vasques this morning.\nHer daughter Jamileth called at 602-555-0147 about the 3/14/2026 appointment,\nand Ellie said she would email jamileth.v@example.com. The patient is 94 years old.\nBlood pressure 138 over 82, pain 4 out of 10, and she took the warfarin with breakfast.",
+  "roster": [
+    {
+      "value": "Eleanor Vasquez",
+      "kind": "PatientName",
+      "subjectId": "patient-1"
+    },
+    {
+      "value": "Yamilet Vasquez",
+      "kind": "FamilyName",
+      "subjectId": "family-1"
+    },
+    {
+      "value": "Sofía Reyes",
+      "kind": "StaffName",
+      "subjectId": "staff-1"
+    }
+  ],
+  "spans": [
+    {
+      "start": 14,
+      "length": 11,
+      "kind": "StaffName",
+      "annotator": "claude"
+    },
+    {
+      "start": 40,
+      "length": 15,
+      "kind": "PatientName",
+      "annotator": "claude"
+    },
+    {
+      "start": 83,
+      "length": 8,
+      "kind": "FamilyName",
+      "annotator": "claude"
+    },
+    {
+      "start": 102,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude"
+    },
+    {
+      "start": 125,
+      "length": 9,
+      "kind": "Date",
+      "annotator": "claude"
+    },
+    {
+      "start": 152,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude"
+    },
+    {
+      "start": 179,
+      "length": 22,
+      "kind": "Email",
+      "annotator": "claude"
+    },
+    {
+      "start": 218,
+      "length": 12,
+      "kind": "AgeOver89",
+      "annotator": "claude"
+    }
+  ],
+  "annotation": {
+    "method": "By hand, reading the text. The README states in prose that 'Rays' and 'Ellie' survive; this document is the evaluator's own canary for that claim.",
+    "annotators": [
+      "claude"
+    ],
+    "humanReviewed": false
+  }
+}

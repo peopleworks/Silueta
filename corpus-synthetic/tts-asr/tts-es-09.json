@@ -1,0 +1,104 @@
+{
+  "documentId": "tts-es-09",
+  "source": "tts-asr/noisy-phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Aquí, Sel Cuautli. Don Francisco Villaseñor amaneció confundido y pensaba que era 1960. Paco se calmó después del desayuno. Su esposa dice que le pasa después de una mala noche. Tiene 91 años. Hay que avisarle a la enfermera el lunes.",
+  "roster": [
+    {
+      "value": "Francisco Villaseñor",
+      "kind": "PatientName",
+      "subjectId": "p-24"
+    },
+    {
+      "value": "Itzel Cuauhtli",
+      "kind": "StaffName",
+      "subjectId": "s-24"
+    }
+  ],
+  "spans": [
+    {
+      "start": 6,
+      "length": 11,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 23,
+      "length": 20,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 88,
+      "length": 4,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 184,
+      "length": 7,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Aquí Itzel Cuauhtli. Don Francisco Villaseñor amaneció confundido y pensaba que era mil novecientos sesenta. Paco se calmó después del desayuno. Su esposa dice que le pasa después de una mala noche. Tiene noventa y un años. Hay que avisarle a la enfermera el lunes.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=24[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 24
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Itzel Cuauhtli",
+        "start": 6,
+        "length": 11,
+        "transcribed": "Sel Cuautli"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Francisco Villaseñor",
+        "start": 23,
+        "length": 20,
+        "transcribed": "Francisco Villaseñor"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Paco",
+        "start": 88,
+        "length": 4,
+        "transcribed": "Paco"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "noventa y un años",
+        "start": 184,
+        "length": 7,
+        "transcribed": "91 años"
+      }
+    ]
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "documentId": "tts-es-12",
+  "source": "tts-asr/noisy-phone",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Nota de la tarde de Marisol Quintanilla. Refugio Anaya tuvo un buen día. En su familia le dicen Juca. Tiene 98 años y está muy lúcida. Me recordó que su cumpleaños es el 9 de agosto. Su nieto viene de Tucson el domingo.",
+  "roster": [
+    {
+      "value": "Refugio Anaya",
+      "kind": "PatientName",
+      "subjectId": "p-27"
+    },
+    {
+      "value": "Marisol Quintanilla",
+      "kind": "StaffName",
+      "subjectId": "s-27"
+    }
+  ],
+  "spans": [
+    {
+      "start": 20,
+      "length": 19,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 41,
+      "length": 13,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 96,
+      "length": 4,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 108,
+      "length": 7,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 170,
+      "length": 11,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 201,
+      "length": 6,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Nota de la tarde de Marisol Quintanilla. Refugio Anaya tuvo un buen día. En su familia le dicen Cuca. Tiene noventa y ocho años y está muy lúcida. Me recordó que su cumpleaños es el nueve de agosto. Su nieto viene de Tucson el domingo.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=27[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 27
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Marisol Quintanilla",
+        "start": 20,
+        "length": 19,
+        "transcribed": "Marisol Quintanilla"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Refugio Anaya",
+        "start": 41,
+        "length": 13,
+        "transcribed": "Refugio Anaya"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Cuca",
+        "start": 96,
+        "length": 4,
+        "transcribed": "Juca"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "noventa y ocho años",
+        "start": 108,
+        "length": 7,
+        "transcribed": "98 años"
+      },
+      {
+        "kind": "Date",
+        "script": "nueve de agosto",
+        "start": 170,
+        "length": 11,
+        "transcribed": "9 de agosto"
+      },
+      {
+        "kind": "Address",
+        "script": "Tucson",
+        "start": 201,
+        "length": 6,
+        "transcribed": "Tucson"
+      }
+    ]
+  }
+}

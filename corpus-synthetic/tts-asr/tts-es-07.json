@@ -1,0 +1,120 @@
+{
+  "documentId": "tts-es-07",
+  "source": "tts-asr/clean",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Turno de la noche. Víctor Garza con Mar Salcedo. Mar habló mucho de sus vacaciones en el mar cuando era joven. Su hermana Rosario vino a verla y le trajo pan dulce. Cenó sopa y medio sándwich. Quiere ir a Guaymas el próximo mes.",
+  "roster": [
+    {
+      "value": "Mar Salcedo",
+      "kind": "PatientName",
+      "subjectId": "p-22"
+    },
+    {
+      "value": "Rosario Salcedo",
+      "kind": "FamilyName",
+      "subjectId": "f-22"
+    },
+    {
+      "value": "Víctor Garza",
+      "kind": "StaffName",
+      "subjectId": "s-22"
+    }
+  ],
+  "spans": [
+    {
+      "start": 19,
+      "length": 12,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 36,
+      "length": 11,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 49,
+      "length": 3,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 122,
+      "length": 7,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 205,
+      "length": 7,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Turno de la noche. Víctor Garza con Mar Salcedo. Mar habló mucho de sus vacaciones en el mar cuando era joven. Su hermana Rosario vino a verla y le trajo pan dulce. Cenó sopa y medio sándwich. Quiere ir a Guaymas el próximo mes.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Víctor Garza",
+        "start": 19,
+        "length": 12,
+        "transcribed": "Víctor Garza"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Mar Salcedo",
+        "start": 36,
+        "length": 11,
+        "transcribed": "Mar Salcedo"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Mar",
+        "start": 49,
+        "length": 3,
+        "transcribed": "Mar"
+      },
+      {
+        "kind": "FamilyName",
+        "script": "Rosario",
+        "start": 122,
+        "length": 7,
+        "transcribed": "Rosario"
+      },
+      {
+        "kind": "Address",
+        "script": "Guaymas",
+        "start": 205,
+        "length": 7,
+        "transcribed": "Guaymas"
+      }
+    ]
+  }
+}

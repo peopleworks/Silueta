@@ -1,0 +1,130 @@
+{
+  "documentId": "tts-en-06",
+  "source": "tts-asr/noisy-phone",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "James Carter reporting. Dolores Echevarria refused her morning medication and said it makes her dizzy. She is 96. I called Dr. Patel at the Tempe Clinic and left a message. Her medical record number is 441729. I will try the medication again at noon.",
+  "roster": [
+    {
+      "value": "Dolores Echeverría",
+      "kind": "PatientName",
+      "subjectId": "p-06"
+    },
+    {
+      "value": "James Carter",
+      "kind": "StaffName",
+      "subjectId": "s-06"
+    }
+  ],
+  "spans": [
+    {
+      "start": 0,
+      "length": 12,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 24,
+      "length": 18,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 110,
+      "length": 2,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 127,
+      "length": 5,
+      "kind": "OtherName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 140,
+      "length": 5,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 202,
+      "length": 6,
+      "kind": "RecordNumber",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "James Carter reporting. Dolores Echeverria refused her morning medication and said it makes her dizzy. She is ninety six. I called Dr. Patel at the Tempe clinic and left a message. Her medical record number is four four one seven two nine. I will try the medication again at noon.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=6[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 6
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "James Carter",
+        "start": 0,
+        "length": 12,
+        "transcribed": "James Carter"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Dolores Echeverria",
+        "start": 24,
+        "length": 18,
+        "transcribed": "Dolores Echevarria"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "ninety six",
+        "start": 110,
+        "length": 2,
+        "transcribed": "96"
+      },
+      {
+        "kind": "OtherName",
+        "script": "Patel",
+        "start": 127,
+        "length": 5,
+        "transcribed": "Patel"
+      },
+      {
+        "kind": "Address",
+        "script": "Tempe",
+        "start": 140,
+        "length": 5,
+        "transcribed": "Tempe"
+      },
+      {
+        "kind": "RecordNumber",
+        "script": "four four one seven two nine",
+        "start": 202,
+        "length": 6,
+        "transcribed": "441729"
+      }
+    ]
+  }
+}

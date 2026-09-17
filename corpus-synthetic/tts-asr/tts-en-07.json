@@ -1,0 +1,133 @@
+{
+  "documentId": "tts-en-07",
+  "source": "tts-asr/clean",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "Evening shift. Kevin Brooks with Mae Thompson. In May we started the new walker and she uses it well now. Her sister Rose visited and brought roses from the garden. Mae ate soup and half a sandwich. We talked about her trip to Flagstaff next month.",
+  "roster": [
+    {
+      "value": "May Thompson",
+      "kind": "PatientName",
+      "subjectId": "p-07"
+    },
+    {
+      "value": "Rose Bennett",
+      "kind": "FamilyName",
+      "subjectId": "f-07"
+    },
+    {
+      "value": "Kevin Brooks",
+      "kind": "StaffName",
+      "subjectId": "s-07"
+    }
+  ],
+  "spans": [
+    {
+      "start": 15,
+      "length": 12,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 33,
+      "length": 12,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 50,
+      "length": 3,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 117,
+      "length": 4,
+      "kind": "FamilyName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 165,
+      "length": 3,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 227,
+      "length": 9,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Evening shift. Kevin Brooks with May Thompson. In May we started the new walker and she uses it well now. Her sister Rose visited and brought roses from the garden. May ate soup and half a sandwich. We talked about her trip to Flagstaff next month.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Kevin Brooks",
+        "start": 15,
+        "length": 12,
+        "transcribed": "Kevin Brooks"
+      },
+      {
+        "kind": "PatientName",
+        "script": "May Thompson",
+        "start": 33,
+        "length": 12,
+        "transcribed": "Mae Thompson"
+      },
+      {
+        "kind": "Date",
+        "script": "May",
+        "start": 50,
+        "length": 3,
+        "transcribed": "May"
+      },
+      {
+        "kind": "FamilyName",
+        "script": "Rose",
+        "start": 117,
+        "length": 4,
+        "transcribed": "Rose"
+      },
+      {
+        "kind": "PatientName",
+        "script": "May",
+        "start": 165,
+        "length": 3,
+        "transcribed": "Mae"
+      },
+      {
+        "kind": "Address",
+        "script": "Flagstaff",
+        "start": 227,
+        "length": 9,
+        "transcribed": "Flagstaff"
+      }
+    ]
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "documentId": "tts-en-10",
+  "source": "tts-asr/clean",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "Visit summary from Derek Linear Patricia Quiñones completed all her exercises today. Patty says the knee feels stronger. We practiced the stairs twice. Her insurance called to confirm the address, 412 West Palm Lane. Next visit Tuesday afternoon.",
+  "roster": [
+    {
+      "value": "Patricia Quiñones",
+      "kind": "PatientName",
+      "subjectId": "p-10"
+    },
+    {
+      "value": "Derek Lin",
+      "kind": "StaffName",
+      "subjectId": "s-10"
+    }
+  ],
+  "spans": [
+    {
+      "start": 19,
+      "length": 12,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 32,
+      "length": 17,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 85,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 197,
+      "length": 18,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Visit summary from Derek Lin. Patricia Quinones completed all her exercises today. Patty says the knee feels stronger. We practiced the stairs twice. Her insurance called to confirm the address, four twelve West Palm Lane. Next visit Tuesday afternoon.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Derek Lin",
+        "start": 19,
+        "length": 12,
+        "transcribed": "Derek Linear"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Patricia Quinones",
+        "start": 32,
+        "length": 17,
+        "transcribed": "Patricia Quiñones"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Patty",
+        "start": 85,
+        "length": 5,
+        "transcribed": "Patty"
+      },
+      {
+        "kind": "Address",
+        "script": "four twelve West Palm Lane",
+        "start": 197,
+        "length": 18,
+        "transcribed": "412 West Palm Lane"
+      }
+    ]
+  }
+}

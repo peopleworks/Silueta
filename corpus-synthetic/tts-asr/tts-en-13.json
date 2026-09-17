@@ -1,0 +1,115 @@
+{
+  "documentId": "tts-en-13",
+  "source": "tts-asr/clean",
+  "language": "en",
+  "speaker": "Microsoft Zira Desktop",
+  "text": "nadia hadid reporting on theodore marsh teddy skipped lunch and said his stomach hurts i checked his record number 77314 and the new antibiotic started yesterday i called his son at 480-555-7610 no answer left a voicemail",
+  "roster": [
+    {
+      "value": "Theodore Marsh",
+      "kind": "PatientName",
+      "subjectId": "p-13"
+    },
+    {
+      "value": "Nadia Haddad",
+      "kind": "StaffName",
+      "subjectId": "s-13"
+    }
+  ],
+  "spans": [
+    {
+      "start": 0,
+      "length": 11,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 25,
+      "length": 14,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 40,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 115,
+      "length": 5,
+      "kind": "RecordNumber",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 182,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Nadia Haddad reporting on Theodore Marsh. Teddy skipped lunch and said his stomach hurts. I checked his record, number seven seven three one four, and the new antibiotic started yesterday. I called his son at four eight oh, five five five, seven six one oh. No answer, left a voicemail.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Zira Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Nadia Haddad",
+        "start": 0,
+        "length": 11,
+        "transcribed": "nadia hadid"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Theodore Marsh",
+        "start": 25,
+        "length": 14,
+        "transcribed": "theodore marsh"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Teddy",
+        "start": 40,
+        "length": 5,
+        "transcribed": "teddy"
+      },
+      {
+        "kind": "RecordNumber",
+        "script": "seven seven three one four",
+        "start": 115,
+        "length": 5,
+        "transcribed": "77314"
+      },
+      {
+        "kind": "Phone",
+        "script": "four eight oh, five five five, seven six one oh",
+        "start": 182,
+        "length": 12,
+        "transcribed": "480-555-7610"
+      }
+    ]
+  }
+}

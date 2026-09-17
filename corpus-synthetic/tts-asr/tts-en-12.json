@@ -1,0 +1,130 @@
+{
+  "documentId": "tts-en-12",
+  "source": "tts-asr/noisy-phone",
+  "language": "en",
+  "speaker": "Microsoft David Desktop",
+  "text": "Evening note by Brian Kowalski. Guadalupe Ibanez had a good day. Her family calls her Lupita. She is 98 and sharp as ever. She reminded me her birthday is August 9. Her grandson will visit from Tucson on Sunday.",
+  "roster": [
+    {
+      "value": "Guadalupe Ibáñez",
+      "kind": "PatientName",
+      "subjectId": "p-12"
+    },
+    {
+      "value": "Brian Kowalski",
+      "kind": "StaffName",
+      "subjectId": "s-12"
+    }
+  ],
+  "spans": [
+    {
+      "start": 16,
+      "length": 14,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 32,
+      "length": 16,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 86,
+      "length": 6,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 101,
+      "length": 2,
+      "kind": "AgeOver89",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 155,
+      "length": 8,
+      "kind": "Date",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 194,
+      "length": 6,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Evening note by Brian Kowalski. Guadalupe Ibanez had a good day. Her family calls her Lupita. She is ninety eight and sharp as ever. She reminded me her birthday is August ninth. Her grandson will visit from Tucson on Sunday.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft David Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "noisy-phone",
+      "filter": "[0:a]atempo=1.1,highpass=f=300,lowpass=f=3400[v];anoisesrc=color=pink:amplitude=0.08:seed=12[n];[v][n]amix=inputs=2:duration=first:weights=1 1,aresample=8000[m]",
+      "codec": "opus 8 kbps",
+      "noiseSeed": 12
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Brian Kowalski",
+        "start": 16,
+        "length": 14,
+        "transcribed": "Brian Kowalski"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Guadalupe Ibanez",
+        "start": 32,
+        "length": 16,
+        "transcribed": "Guadalupe Ibanez"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Lupita",
+        "start": 86,
+        "length": 6,
+        "transcribed": "Lupita"
+      },
+      {
+        "kind": "AgeOver89",
+        "script": "ninety eight",
+        "start": 101,
+        "length": 2,
+        "transcribed": "98"
+      },
+      {
+        "kind": "Date",
+        "script": "August ninth",
+        "start": 155,
+        "length": 8,
+        "transcribed": "August 9"
+      },
+      {
+        "kind": "Address",
+        "script": "Tucson",
+        "start": 194,
+        "length": 6,
+        "transcribed": "Tucson"
+      }
+    ]
+  }
+}

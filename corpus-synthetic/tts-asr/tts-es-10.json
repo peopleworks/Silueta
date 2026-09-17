@@ -1,0 +1,102 @@
+{
+  "documentId": "tts-es-10",
+  "source": "tts-asr/clean",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Resumen de visita de Daniel Ortega. Eva Ruiz terminó todos sus ejercicios. Eva dice que la rodilla ya está más fuerte. Practicamos las escaleras dos veces. Del seguro llamaron para confirmar el domicilio, calle Álamo 412. La próxima visita es el martes.",
+  "roster": [
+    {
+      "value": "Eva Ruiz",
+      "kind": "PatientName",
+      "subjectId": "p-25"
+    },
+    {
+      "value": "Daniel Ortega",
+      "kind": "StaffName",
+      "subjectId": "s-25"
+    }
+  ],
+  "spans": [
+    {
+      "start": 21,
+      "length": 13,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 36,
+      "length": 8,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 75,
+      "length": 3,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 205,
+      "length": 15,
+      "kind": "Address",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Resumen de visita de Daniel Ortega. Eva Ruiz terminó todos sus ejercicios. Eva dice que la rodilla ya está más fuerte. Practicamos las escaleras dos veces. Del seguro llamaron para confirmar el domicilio, calle Álamo cuatrocientos doce. La próxima visita es el martes.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Daniel Ortega",
+        "start": 21,
+        "length": 13,
+        "transcribed": "Daniel Ortega"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Eva Ruiz",
+        "start": 36,
+        "length": 8,
+        "transcribed": "Eva Ruiz"
+      },
+      {
+        "kind": "PatientName",
+        "script": "Eva",
+        "start": 75,
+        "length": 3,
+        "transcribed": "Eva"
+      },
+      {
+        "kind": "Address",
+        "script": "calle Álamo cuatrocientos doce",
+        "start": 205,
+        "length": 15,
+        "transcribed": "calle Álamo 412"
+      }
+    ]
+  }
+}

@@ -1,0 +1,261 @@
+{
+  "_about": [
+    "Synthetic scripts for the tts-asr gold corpus. Every person, place and number here is invented.",
+    "Markup: [[Kind|spoken text]] marks an identifier; the kind is an IdentifierKind name. Everything the",
+    "annotator would mark is marked, including kinds Silueta has no rule for (places, spoken dates, people",
+    "who are not on the roster) — leaving those out would flatter the number.",
+    "Written by Claude on 16 Sep 2026, the same author who wrote and changed the matcher, before any of",
+    "these documents was ever evaluated. That is not an independent test and every report says so."
+  ],
+  "documents": [
+    {
+      "id": "tts-en-01", "language": "en",
+      "roster": [
+        { "value": "Eleanor Vasquez", "kind": "PatientName", "subjectId": "p-01" },
+        { "value": "Yamilet Vasquez", "kind": "FamilyName", "subjectId": "f-01" },
+        { "value": "Sofía Reyes", "kind": "StaffName", "subjectId": "s-01" }
+      ],
+      "script": "Shift report for [[PatientName|Eleanor Vasquez]]. [[StaffName|Sofia Reyes]] arrived at eight and stayed until two. [[PatientName|Ellie]] ate most of her breakfast and took the metformin with water. Her daughter [[FamilyName|Yamilet]] called from [[Address|Mesa]] and asked us to call her back at [[Phone|six oh two, five five five, oh one four seven]]. Blood pressure one thirty over eighty. No falls this week."
+    },
+    {
+      "id": "tts-en-02", "language": "en",
+      "roster": [
+        { "value": "Robert Szymanski", "kind": "PatientName", "subjectId": "p-02" },
+        { "value": "Marcus Oyelaran", "kind": "StaffName", "subjectId": "s-02" }
+      ],
+      "script": "This is [[StaffName|Marcus Oyelaran]] with the evening visit for [[PatientName|Robert Szymanski]]. [[PatientName|Bob]] was in good spirits tonight. He is [[AgeOver89|ninety two years old]] and still does the crossword every morning. His son called about the cardiology appointment on [[Date|March fourteenth]]. Pain two out of ten. Next visit is Thursday."
+    },
+    {
+      "id": "tts-en-03", "language": "en",
+      "roster": [
+        { "value": "Maria Lopez", "kind": "PatientName", "subjectId": "p-03" },
+        { "value": "Maria Chen", "kind": "StaffName", "subjectId": "s-03" }
+      ],
+      "script": "[[StaffName|Maria Chen]] covered the morning shift for [[PatientName|Maria Lopez]]. Mrs. [[PatientName|Lopez]] slept poorly and asked twice for her husband, who passed away in [[Date|June]]. [[StaffName|Maria]] helped her shower and changed the dressing on her left heel. The wound looks smaller. Her neighbor Mr. [[OtherName|Okafor]] stopped by with soup."
+    },
+    {
+      "id": "tts-en-04", "language": "en",
+      "roster": [
+        { "value": "Li Wang", "kind": "PatientName", "subjectId": "p-04" },
+        { "value": "Grace Whitfield", "kind": "StaffName", "subjectId": "s-04" }
+      ],
+      "script": "Visit note. [[StaffName|Grace Whitfield]] here with [[PatientName|Li Wang]]. [[PatientName|Li]] was already dressed and sitting by the window when I arrived. We walked to the end of [[Address|Cactus Road]] and back. Oxygen saturation ninety five percent. He asked me to remind his granddaughter about the pharmacy pickup on Friday the [[Date|twentieth]]."
+    },
+    {
+      "id": "tts-en-05", "language": "en",
+      "roster": [
+        { "value": "Margaret Nguyen", "kind": "PatientName", "subjectId": "p-05" },
+        { "value": "Hope Delgado", "kind": "StaffName", "subjectId": "s-05" },
+        { "value": "Tuan Nguyen", "kind": "FamilyName", "subjectId": "f-05" }
+      ],
+      "script": "Call log. [[FamilyName|Tuan Nguyen]] called about his mother, [[PatientName|Margaret Nguyen]]. He said [[PatientName|Maggie]] fell asleep during lunch again. I told him [[StaffName|Hope]] will check her blood sugar tomorrow at nine. He wants a callback at [[Phone|four eight oh, five five five, two two one nine]] or by email at [[Email|tuan dot nguyen at example dot com]]."
+    },
+    {
+      "id": "tts-en-06", "language": "en",
+      "roster": [
+        { "value": "Dolores Echeverría", "kind": "PatientName", "subjectId": "p-06" },
+        { "value": "James Carter", "kind": "StaffName", "subjectId": "s-06" }
+      ],
+      "script": "[[StaffName|James Carter]] reporting. [[PatientName|Dolores Echeverria]] refused her morning medication and said it makes her dizzy. She is [[AgeOver89|ninety six]]. I called Dr. [[OtherName|Patel]] at the [[Address|Tempe]] clinic and left a message. Her medical record number is [[RecordNumber|four four one seven two nine]]. I will try the medication again at noon."
+    },
+    {
+      "id": "tts-en-07", "language": "en",
+      "roster": [
+        { "value": "May Thompson", "kind": "PatientName", "subjectId": "p-07" },
+        { "value": "Rose Bennett", "kind": "FamilyName", "subjectId": "f-07" },
+        { "value": "Kevin Brooks", "kind": "StaffName", "subjectId": "s-07" }
+      ],
+      "script": "Evening shift. [[StaffName|Kevin Brooks]] with [[PatientName|May Thompson]]. In [[Date|May]] we started the new walker and she uses it well now. Her sister [[FamilyName|Rose]] visited and brought roses from the garden. [[PatientName|May]] ate soup and half a sandwich. We talked about her trip to [[Address|Flagstaff]] next month."
+    },
+    {
+      "id": "tts-en-08", "language": "en",
+      "roster": [
+        { "value": "Xiadani Ortiz", "kind": "PatientName", "subjectId": "p-08" },
+        { "value": "Paul Anderson", "kind": "StaffName", "subjectId": "s-08" }
+      ],
+      "script": "This is [[StaffName|Paul Anderson]]. Quick update on [[PatientName|Xiadani Ortiz]]. She had a low grade fever this afternoon, ninety nine point four. Her appointment was moved to [[Date|October second]]. Her caregiver asked that we text [[Phone|six two three, five five five, oh nine eight eight]] before the visit instead of knocking."
+    },
+    {
+      "id": "tts-en-09", "language": "en",
+      "roster": [
+        { "value": "Harold Blackwood", "kind": "PatientName", "subjectId": "p-09" },
+        { "value": "Itzel Ramírez", "kind": "StaffName", "subjectId": "s-09" }
+      ],
+      "script": "[[StaffName|Itzel Ramirez]] here. Mr. [[PatientName|Blackwood]] was confused this morning and thought it was nineteen sixty. [[PatientName|Harold]] calmed down after breakfast. His wife says this happens after a bad night. He is [[AgeOver89|ninety one years old]]. We should flag it for the nurse on Monday."
+    },
+    {
+      "id": "tts-en-10", "language": "en",
+      "roster": [
+        { "value": "Patricia Quiñones", "kind": "PatientName", "subjectId": "p-10" },
+        { "value": "Derek Lin", "kind": "StaffName", "subjectId": "s-10" }
+      ],
+      "script": "Visit summary from [[StaffName|Derek Lin]]. [[PatientName|Patricia Quinones]] completed all her exercises today. [[PatientName|Patty]] says the knee feels stronger. We practiced the stairs twice. Her insurance called to confirm the address, [[Address|four twelve West Palm Lane]]. Next visit Tuesday afternoon."
+    },
+    {
+      "id": "tts-en-11", "language": "en",
+      "roster": [
+        { "value": "Walter Okonkwo", "kind": "PatientName", "subjectId": "p-11" },
+        { "value": "Grace Okonkwo", "kind": "FamilyName", "subjectId": "f-11" },
+        { "value": "Ana Torres", "kind": "StaffName", "subjectId": "s-11" }
+      ],
+      "script": "[[StaffName|Ana Torres]] with the morning report. [[PatientName|Walter Okonkwo]] was up early. His daughter [[FamilyName|Grace]] stayed overnight and says he coughed a lot. By the grace of good timing the nurse was already scheduled. [[PatientName|Walter]] denies chest pain. Temperature normal."
+    },
+    {
+      "id": "tts-en-12", "language": "en",
+      "roster": [
+        { "value": "Guadalupe Ibáñez", "kind": "PatientName", "subjectId": "p-12" },
+        { "value": "Brian Kowalski", "kind": "StaffName", "subjectId": "s-12" }
+      ],
+      "script": "Evening note by [[StaffName|Brian Kowalski]]. [[PatientName|Guadalupe Ibanez]] had a good day. Her family calls her [[PatientName|Lupita]]. She is [[AgeOver89|ninety eight]] and sharp as ever. She reminded me her birthday is [[Date|August ninth]]. Her grandson will visit from [[Address|Tucson]] on Sunday."
+    },
+    {
+      "id": "tts-en-13", "language": "en",
+      "roster": [
+        { "value": "Theodore Marsh", "kind": "PatientName", "subjectId": "p-13" },
+        { "value": "Nadia Haddad", "kind": "StaffName", "subjectId": "s-13" }
+      ],
+      "script": "[[StaffName|Nadia Haddad]] reporting on [[PatientName|Theodore Marsh]]. [[PatientName|Teddy]] skipped lunch and said his stomach hurts. I checked his record, number [[RecordNumber|seven seven three one four]], and the new antibiotic started yesterday. I called his son at [[Phone|four eight oh, five five five, seven six one oh]]. No answer, left a voicemail."
+    },
+    {
+      "id": "tts-en-14", "language": "en",
+      "roster": [
+        { "value": "Consuelo Martínez", "kind": "PatientName", "subjectId": "p-14" },
+        { "value": "Eric Johansson", "kind": "StaffName", "subjectId": "s-14" },
+        { "value": "Jesús Martínez", "kind": "FamilyName", "subjectId": "f-14" }
+      ],
+      "script": "Call from [[FamilyName|Jesus Martinez]], son of [[PatientName|Consuelo Martinez]]. [[FamilyName|Chuy]] says his mother did not sleep and asked for [[StaffName|Eric]] by name. He wants the Saturday visit moved to the [[Date|twenty third]]. I confirmed with [[StaffName|Eric Johansson]] and he agreed."
+    },
+    {
+      "id": "tts-en-15", "language": "en",
+      "roster": [
+        { "value": "Ruth Abernathy", "kind": "PatientName", "subjectId": "p-15" },
+        { "value": "Sam Osei", "kind": "StaffName", "subjectId": "s-15" }
+      ],
+      "script": "Short note. [[StaffName|Sam Osei]] visited [[PatientName|Ruth Abernathy]] today. [[PatientName|Ruth]] is [[AgeOver89|one hundred and one]] and told me about growing up in [[Address|Prescott]]. Her daughter in law handles the bills. Vitals stable. She asked that nobody call before ten."
+    },
+    {
+      "id": "tts-es-01", "language": "es",
+      "roster": [
+        { "value": "Guadalupe Hernández", "kind": "PatientName", "subjectId": "p-16" },
+        { "value": "Rosa Villanueva", "kind": "StaffName", "subjectId": "s-16" }
+      ],
+      "script": "Reporte de turno de [[StaffName|Rosa Villanueva]]. La señora [[PatientName|Guadalupe Hernández]] desayunó bien y se tomó la metformina. [[PatientName|Lupita]] dice que le duele la rodilla izquierda. Su hija llamó desde [[Address|Hermosillo]] y pidió que le regresemos la llamada al [[Phone|seis cero dos, cinco cinco cinco, cero uno cuatro siete]]. Presión ciento treinta sobre ochenta."
+    },
+    {
+      "id": "tts-es-02", "language": "es",
+      "roster": [
+        { "value": "José Echeverría", "kind": "PatientName", "subjectId": "p-17" },
+        { "value": "Pilar Montoya", "kind": "StaffName", "subjectId": "s-17" }
+      ],
+      "script": "Habla [[StaffName|Pilar Montoya]] con la visita de la tarde. Don [[PatientName|José Echeverría]] estaba de buen humor. [[PatientName|Pepe]] tiene [[AgeOver89|noventa y tres años]] y todavía hace crucigramas. Su nieto preguntó por la cita del [[Date|catorce de marzo]]. Dolor dos de diez. La próxima visita es el jueves."
+    },
+    {
+      "id": "tts-es-03", "language": "es",
+      "roster": [
+        { "value": "Luz Ochoa", "kind": "PatientName", "subjectId": "p-18" },
+        { "value": "Luz Carrillo", "kind": "StaffName", "subjectId": "s-18" }
+      ],
+      "script": "[[StaffName|Luz Carrillo]] cubrió el turno de la mañana con [[PatientName|Luz Ochoa]]. La señora [[PatientName|Ochoa]] no durmió bien y pidió que dejáramos la luz prendida. [[StaffName|Luz]] le cambió el vendaje del talón. La herida se ve más pequeña. La vecina doña [[OtherName|Chela]] trajo caldo."
+    },
+    {
+      "id": "tts-es-04", "language": "es",
+      "roster": [
+        { "value": "Ignacio Tlapa", "kind": "PatientName", "subjectId": "p-19" },
+        { "value": "Sol Aguirre", "kind": "StaffName", "subjectId": "s-19" }
+      ],
+      "script": "Nota de visita. Aquí [[StaffName|Sol Aguirre]] con [[PatientName|Ignacio Tlapa]]. A [[PatientName|Nacho]] le gusta sentarse al sol por la mañana. Caminamos hasta la esquina de la [[Address|calle Morelos]] y regresamos. Saturación noventa y cinco por ciento. Me pidió recordarle a su nieta la receta del viernes [[Date|veinte]]."
+    },
+    {
+      "id": "tts-es-05", "language": "es",
+      "roster": [
+        { "value": "Concepción Iturbide", "kind": "PatientName", "subjectId": "p-20" },
+        { "value": "Alberto Iturbide", "kind": "FamilyName", "subjectId": "f-20" },
+        { "value": "Paz Medrano", "kind": "StaffName", "subjectId": "s-20" }
+      ],
+      "script": "Registro de llamada. [[FamilyName|Alberto Iturbide]] llamó por su mamá, [[PatientName|Concepción Iturbide]]. [[FamilyName|Beto]] dice que [[PatientName|Concha]] se quedó dormida en la comida otra vez. Le dije que [[StaffName|Paz]] le va a checar el azúcar mañana a las nueve. Quiere que le hablen al [[Phone|seis dos tres, cinco cinco cinco, dos dos uno nueve]] o que le escriban a [[Email|beto punto iturbide arroba ejemplo punto com]]."
+    },
+    {
+      "id": "tts-es-06", "language": "es",
+      "roster": [
+        { "value": "Socorro Xicoténcatl", "kind": "PatientName", "subjectId": "p-21" },
+        { "value": "Andrés Beltrán", "kind": "StaffName", "subjectId": "s-21" }
+      ],
+      "script": "Reporta [[StaffName|Andrés Beltrán]]. La señora [[PatientName|Socorro Xicoténcatl]] no quiso la medicina de la mañana porque dice que la marea. Tiene [[AgeOver89|noventa y seis años]]. Llamé a la doctora [[OtherName|Ibáñez]] a la clínica de [[Address|Nogales]] y le dejé recado. Su número de expediente es [[RecordNumber|cuatro cuatro uno siete dos nueve]]."
+    },
+    {
+      "id": "tts-es-07", "language": "es",
+      "roster": [
+        { "value": "Mar Salcedo", "kind": "PatientName", "subjectId": "p-22" },
+        { "value": "Rosario Salcedo", "kind": "FamilyName", "subjectId": "f-22" },
+        { "value": "Víctor Garza", "kind": "StaffName", "subjectId": "s-22" }
+      ],
+      "script": "Turno de la noche. [[StaffName|Víctor Garza]] con [[PatientName|Mar Salcedo]]. [[PatientName|Mar]] habló mucho de sus vacaciones en el mar cuando era joven. Su hermana [[FamilyName|Rosario]] vino a verla y le trajo pan dulce. Cenó sopa y medio sándwich. Quiere ir a [[Address|Guaymas]] el próximo mes."
+    },
+    {
+      "id": "tts-es-08", "language": "es",
+      "roster": [
+        { "value": "Yuridia Tzompa", "kind": "PatientName", "subjectId": "p-23" },
+        { "value": "Ramón Esquivel", "kind": "StaffName", "subjectId": "s-23" }
+      ],
+      "script": "Habla [[StaffName|Ramón Esquivel]]. Actualización rápida de [[PatientName|Yuridia Tzompa]]. En la tarde tuvo un poco de fiebre, treinta y siete punto ocho. Su cita se movió al [[Date|dos de octubre]]. Su cuidadora pidió que le mandemos mensaje al [[Phone|cuatro ocho cero, cinco cinco cinco, cero nueve ocho ocho]] antes de llegar."
+    },
+    {
+      "id": "tts-es-09", "language": "es",
+      "roster": [
+        { "value": "Francisco Villaseñor", "kind": "PatientName", "subjectId": "p-24" },
+        { "value": "Itzel Cuauhtli", "kind": "StaffName", "subjectId": "s-24" }
+      ],
+      "script": "Aquí [[StaffName|Itzel Cuauhtli]]. Don [[PatientName|Francisco Villaseñor]] amaneció confundido y pensaba que era mil novecientos sesenta. [[PatientName|Paco]] se calmó después del desayuno. Su esposa dice que le pasa después de una mala noche. Tiene [[AgeOver89|noventa y un años]]. Hay que avisarle a la enfermera el lunes."
+    },
+    {
+      "id": "tts-es-10", "language": "es",
+      "roster": [
+        { "value": "Eva Ruiz", "kind": "PatientName", "subjectId": "p-25" },
+        { "value": "Daniel Ortega", "kind": "StaffName", "subjectId": "s-25" }
+      ],
+      "script": "Resumen de visita de [[StaffName|Daniel Ortega]]. [[PatientName|Eva Ruiz]] terminó todos sus ejercicios. [[PatientName|Eva]] dice que la rodilla ya está más fuerte. Practicamos las escaleras dos veces. Del seguro llamaron para confirmar el domicilio, [[Address|calle Álamo cuatrocientos doce]]. La próxima visita es el martes."
+    },
+    {
+      "id": "tts-es-11", "language": "es",
+      "roster": [
+        { "value": "Tomás Acuña", "kind": "PatientName", "subjectId": "p-26" },
+        { "value": "Dolores Acuña", "kind": "FamilyName", "subjectId": "f-26" },
+        { "value": "Cruz Fonseca", "kind": "StaffName", "subjectId": "s-26" }
+      ],
+      "script": "[[StaffName|Cruz Fonseca]] con el reporte de la mañana. [[PatientName|Tomás Acuña]] se levantó temprano. Su hija [[FamilyName|Dolores]] se quedó a dormir y dice que tosió mucho. Le dolía la cabeza y le dieron dolores de espalda en la noche. [[PatientName|Tomás]] niega dolor de pecho. Temperatura normal."
+    },
+    {
+      "id": "tts-es-12", "language": "es",
+      "roster": [
+        { "value": "Refugio Anaya", "kind": "PatientName", "subjectId": "p-27" },
+        { "value": "Marisol Quintanilla", "kind": "StaffName", "subjectId": "s-27" }
+      ],
+      "script": "Nota de la tarde de [[StaffName|Marisol Quintanilla]]. [[PatientName|Refugio Anaya]] tuvo un buen día. En su familia le dicen [[PatientName|Cuca]]. Tiene [[AgeOver89|noventa y ocho años]] y está muy lúcida. Me recordó que su cumpleaños es el [[Date|nueve de agosto]]. Su nieto viene de [[Address|Tucson]] el domingo."
+    },
+    {
+      "id": "tts-es-13", "language": "es",
+      "roster": [
+        { "value": "Eusebio Garcilazo", "kind": "PatientName", "subjectId": "p-28" },
+        { "value": "Nayeli Huerta", "kind": "StaffName", "subjectId": "s-28" }
+      ],
+      "script": "Reporta [[StaffName|Nayeli Huerta]] sobre [[PatientName|Eusebio Garcilazo]]. [[PatientName|Chebo]] no quiso comer y dice que le duele el estómago. Revisé su expediente, número [[RecordNumber|siete siete tres uno cuatro]], y el antibiótico nuevo empezó ayer. Le hablé a su hijo al [[Phone|seis cero dos, cinco cinco cinco, siete seis uno cero]] y no contestó."
+    },
+    {
+      "id": "tts-es-14", "language": "es",
+      "roster": [
+        { "value": "Ofelia Zambrano", "kind": "PatientName", "subjectId": "p-29" },
+        { "value": "Julián Zambrano", "kind": "FamilyName", "subjectId": "f-29" },
+        { "value": "Aurora Peña", "kind": "StaffName", "subjectId": "s-29" }
+      ],
+      "script": "Llamada de [[FamilyName|Julián Zambrano]], hijo de [[PatientName|Ofelia Zambrano]]. Dice que su mamá no durmió y preguntó por [[StaffName|Aurora]]. Quiere cambiar la visita del sábado al [[Date|veintitrés]]. Lo confirmé con [[StaffName|Aurora Peña]] y está de acuerdo. Desde la aurora ya estaba despierta."
+    },
+    {
+      "id": "tts-es-15", "language": "es",
+      "roster": [
+        { "value": "Cándida Ybarra", "kind": "PatientName", "subjectId": "p-30" },
+        { "value": "Hugo Solís", "kind": "StaffName", "subjectId": "s-30" }
+      ],
+      "script": "Nota corta. [[StaffName|Hugo Solís]] visitó a [[PatientName|Cándida Ybarra]]. Doña [[PatientName|Cándida]] tiene [[AgeOver89|ciento un años]] y me contó cómo creció en [[Address|Álamos]]. Su nuera se encarga de las cuentas. Signos vitales estables. Pidió que nadie llame antes de las diez."
+    }
+  ]
+}

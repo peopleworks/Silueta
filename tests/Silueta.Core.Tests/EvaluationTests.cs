@@ -7,7 +7,7 @@ namespace Silueta.Core.Tests;
 /// The evaluator, starting from the one document whose right answer is already written down in public.
 /// <para>
 /// The README shows the demo's output and says, in prose, that "Rays" and "Ellie" survive it. That makes the
-/// demo transcript the evaluator's own canary: annotated by hand as <c>corpus/readme-demo/gold-001.json</c>,
+/// demo transcript the evaluator's own canary: annotated by hand as <c>corpus-synthetic/readme-demo/gold-001.json</c>,
 /// scored by the same code that will score the real corpus, it has to come back leaked — through exactly
 /// the staff surname and the nickname, and through nothing else. If the evaluator says anything different,
 /// the evaluator is wrong, and every number it prints later would be too.
@@ -15,7 +15,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public class EvaluationTests
 {
-    private static string CorpusRoot => Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus");
+    private static string CorpusRoot => Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus-synthetic");
 
     private static GoldCorpus Demo() => GoldCorpus.Load(Path.Combine(CorpusRoot, "readme-demo"));
 

@@ -1,0 +1,37 @@
+{
+  "_about": [
+    "Corrections a reviewer made to the automatic alignment, applied by generate.py after aligning.",
+    "A review decides WHICH transcribed words belong to which identifier. It never decides that damaged",
+    "words stop counting: everything the recogniser wrote in place of an identifier stays marked, even when",
+    "it turned the name into ordinary words ('He fell' for 'Itzel', 'aquifer' for 'Okafor'), because someone",
+    "who knows the person can still recognise it. If the transcript no longer contains the text a correction",
+    "names, the generator fails rather than guessing."
+  ],
+  "corrections": [
+    {
+      "documentId": "tts-en-04", "kind": "PatientName", "script": "Li Wang", "occurrence": 1,
+      "transcribed": "Lee Wong", "transcribedOccurrence": 1,
+      "why": "The recogniser rewrote 'Li Wang. Li' as one block; the full name is the first two words."
+    },
+    {
+      "documentId": "tts-en-04", "kind": "PatientName", "script": "Li", "occurrence": 1,
+      "transcribed": "Lee", "transcribedOccurrence": 2,
+      "why": "Same block: the one-word mention is the second 'Lee', not the full name before it."
+    },
+    {
+      "documentId": "tts-es-13", "kind": "StaffName", "script": "Nayeli Huerta", "occurrence": 1,
+      "transcribed": "a Jelly Huerta", "transcribedOccurrence": 1,
+      "why": "'Reporta Nayeli' became 'Reportan a Jelly': the verb absorbed one sound of the name and stays unmarked; everything written in place of the name is marked."
+    },
+    {
+      "documentId": "tts-es-13", "kind": "PatientName", "script": "Eusebio Garcilazo", "occurrence": 1,
+      "transcribed": "Eusebio Garcilaso", "transcribedOccurrence": 1,
+      "why": "The recogniser rewrote 'Garcilazo. Chebo' as one block; the full name ends before the full stop."
+    },
+    {
+      "documentId": "tts-es-13", "kind": "PatientName", "script": "Chebo", "occurrence": 1,
+      "transcribed": "Chevo", "transcribedOccurrence": 1,
+      "why": "Same block: the nickname is the word after the full stop."
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "documentId": "tts-es-13",
+  "source": "tts-asr/clean",
+  "language": "es",
+  "speaker": "Microsoft Sabina Desktop",
+  "text": "Reportan a Jelly Huerta sobre Eusebio Garcilaso. Chevo no quiso comer y dice que le duele el estómago. Revisé su expediente, número 77314, y el antibiótico nuevo empezó ayer. Le hablé a su hijo al 602-555-7610 y no contestó.",
+  "roster": [
+    {
+      "value": "Eusebio Garcilazo",
+      "kind": "PatientName",
+      "subjectId": "p-28"
+    },
+    {
+      "value": "Nayeli Huerta",
+      "kind": "StaffName",
+      "subjectId": "s-28"
+    }
+  ],
+  "spans": [
+    {
+      "start": 9,
+      "length": 14,
+      "kind": "StaffName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 30,
+      "length": 17,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 49,
+      "length": 5,
+      "kind": "PatientName",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 132,
+      "length": 5,
+      "kind": "RecordNumber",
+      "annotator": "claude-aligned"
+    },
+    {
+      "start": 197,
+      "length": 12,
+      "kind": "Phone",
+      "annotator": "claude-aligned"
+    }
+  ],
+  "annotation": {
+    "method": "Spans derived by aligning each identifier marked in the script to the recogniser's transcript (difflib over normalised words). Every alignment was read by Claude; corrections are in tools/corpus/reviews.json and decide which transcribed words belong to which identifier, never whether damaged words count. No person has reviewed these spans.",
+    "annotators": [
+      "claude-aligned"
+    ],
+    "humanReviewed": false,
+    "script": "Reporta Nayeli Huerta sobre Eusebio Garcilazo. Chebo no quiso comer y dice que le duele el estómago. Revisé su expediente, número siete siete tres uno cuatro, y el antibiótico nuevo empezó ayer. Le hablé a su hijo al seis cero dos, cinco cinco cinco, siete seis uno cero y no contestó.",
+    "tts": {
+      "engine": "System.Speech (SAPI)",
+      "voice": "Microsoft Sabina Desktop",
+      "rate": 0
+    },
+    "degradation": {
+      "condition": "clean",
+      "filter": "none; mono 16 kHz"
+    },
+    "asr": {
+      "model": "large-v3",
+      "engine": "faster-whisper 1.2.1",
+      "ctranslate2": "4.8.2",
+      "computeType": "float16",
+      "beamSize": 5,
+      "temperature": 0.0,
+      "conditionOnPreviousText": false,
+      "vad": false
+    },
+    "alignment": [
+      {
+        "kind": "StaffName",
+        "script": "Nayeli Huerta",
+        "start": 9,
+        "length": 14,
+        "transcribed": "a Jelly Huerta",
+        "flag": "reviewed",
+        "review": "'Reporta Nayeli' became 'Reportan a Jelly': the verb absorbed one sound of the name and stays unmarked; everything written in place of the name is marked."
+      },
+      {
+        "kind": "PatientName",
+        "script": "Eusebio Garcilazo",
+        "start": 30,
+        "length": 17,
+        "transcribed": "Eusebio Garcilaso",
+        "flag": "reviewed",
+        "review": "The recogniser rewrote 'Garcilazo. Chebo' as one block; the full name ends before the full stop."
+      },
+      {
+        "kind": "PatientName",
+        "script": "Chebo",
+        "start": 49,
+        "length": 5,
+        "transcribed": "Chevo",
+        "flag": "reviewed",
+        "review": "Same block: the nickname is the word after the full stop."
+      },
+      {
+        "kind": "RecordNumber",
+        "script": "siete siete tres uno cuatro",
+        "start": 132,
+        "length": 5,
+        "transcribed": "77314"
+      },
+      {
+        "kind": "Phone",
+        "script": "seis cero dos, cinco cinco cinco, siete seis uno cero",
+        "start": 197,
+        "length": 12,
+        "transcribed": "602-555-7610"
+      }
+    ]
+  }
+}

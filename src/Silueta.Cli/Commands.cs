@@ -308,6 +308,13 @@ public static class Commands
                 $"  {detection.Kind,-12} {detection.Match,-8} {detection.Confidence:0.00}  \"{detection.TextIn(transcript)}\"");
         }
 
+        // The demo is the shop window, and a shop window that shows only what worked is an advertisement.
+        // This build knows how often it fails and carries the figure, so the demo ends with it — printed
+        // from the embedded measurement, never typed here, so it cannot go stale while the page still sells.
+        output.WriteLine();
+        output.WriteLine("--- and how often this build is wrong ---");
+        output.WriteLine(PublishedLeakRate.Current?.Summary ?? RedactionManifest.NoMeasurement);
+
         return 0;
     }
 

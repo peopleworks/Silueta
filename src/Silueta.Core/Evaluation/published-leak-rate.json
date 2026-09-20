@@ -1,0 +1,55 @@
+{
+  "corpusId": "silueta-tts-asr",
+  "documents": 30,
+  "sources": {
+    "tts-asr/clean": 10,
+    "tts-asr/noisy-phone": 10,
+    "tts-asr/phone": 10
+  },
+  "measuredOn": "2026-09-19",
+  "engine": "0.1.0.0",
+  "lineage": "silueta-core/1",
+  "lineageFingerprint": "bdd1fddb5f83b212",
+  "policyFingerprint": "25fd6239682ded47",
+  "scope": "In scope: kinds the pattern pack has a rule for (Phone, Email, Url, IpAddress, Date, AgeOver89, RecordNumber, AccountNumber), plus the kinds on each document\u0027s roster. A rule that exists and fails stays in scope.",
+  "caveats": [
+    "30 of 30 documents were marked by one annotator: for those the number measures that annotator as much as the redactor, and agreement cannot be computed.",
+    "The corpus mixes sources. Read the result per source before reading it whole."
+  ],
+  "configurations": [
+    {
+      "name": "silueta",
+      "description": "roster matched by sound, plus the pattern pack",
+      "documents": 30,
+      "leaking": 28,
+      "leakingInScope": 24,
+      "recallInScope": 0.8338391502276176,
+      "pooledRecall": 0.7501706484641638
+    },
+    {
+      "name": "deny-list",
+      "description": "the same roster matched literally, plus the same pattern pack",
+      "documents": 30,
+      "leaking": 29,
+      "leakingInScope": 26,
+      "recallInScope": 0.7769347496206374,
+      "pooledRecall": 0.6989761092150171
+    }
+  ],
+  "thesis": {
+    "configuration": "silueta",
+    "baseline": "deny-list",
+    "recallDifference": {
+      "estimate": 0.05690440060698021,
+      "lower": 0.020798303073710143,
+      "upper": 0.09393470539580598
+    },
+    "leakRateDifference": {
+      "estimate": -0.06666666666666665,
+      "lower": -0.16666666666666674,
+      "upper": 0
+    },
+    "resamples": 1000,
+    "seed": 20260916
+  }
+}

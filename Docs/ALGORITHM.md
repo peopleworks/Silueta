@@ -293,6 +293,11 @@ Plus the four things that bind it to something:
   never ran" the same absent key.
 - **`keptKinds`.** A corpus redacted with `StaffName = Keep` produces counts identical to a transcript
   with no staff in it.
+- **`measuredLeakRate`.** How often the build that wrote the manifest is known to leave an identifier
+  behind — a property of the build, not of this document, and the sentence says so. Every other field
+  here says what ran; none of them said how often what ran is wrong, and this is the file a compliance
+  officer opens. Its default is the admission that there is no measurement, because a field left empty
+  reads as a run that did not leak. See §9.
 
 What is still missing, and worth saying: **a run cannot be reproduced from the manifest.** Invented names
 are minted at random, so the only way to reproduce one is to hold the vault — which must not travel. The
@@ -395,6 +400,16 @@ baseline that missed "SOFIA" for "Sofía" would be a straw man, and a thesis tha
 proven nothing. On the demo it finds none of the names at all, because every one of them was damaged by the
 recogniser; its recall equals the pattern pack's on its own. That is one document and it is not a result.
 It is the shape the result will have.
+
+**The number travels inside the build, not only on the page.** `tools/Silueta.Calibration` runs the
+evaluation over the committed corpus and writes two things in the same run: `published-leak-rate.json`,
+embedded in `Silueta.Core`, and the table in the README. Both, in one run, because a number is exactly the
+kind of rule this project keeps finding a second, disagreeing copy of — and the drift would be in the
+direction that flatters. `PublishedLeakRate.Current` reads the embedded copy: counts and dates, never
+percentages, so `LeakRateEstimate` stays the only place that knows how a rate and its Wilson interval are
+computed. From there the figure reaches the manifest, the caveat every MCP tool returns, and the last line
+of `silueta demo`, with no corpus, no file path and no network call. A build with no measurement embedded
+still builds, and says in those words that it has none rather than quoting somebody else's.
 
 What the code cannot do for you is the **motivated intruder test**: someone who knows the clients reads
 the redacted transcripts and tries to name them. For a small agency in one city, that test is the one that

@@ -277,9 +277,11 @@ leak rate with its interval when asked, and say what is known to survive. Instal
    dates keep only their year, ages above 89 become "90 or older". Postal codes are removed whole rather
    than kept to three digits — the rule allows three digits only where that area holds more than 20,000
    people, and the census table that decides which is which is not in this package yet.
-5. **Every run writes a manifest.** What was removed, by kind, by detector, under which policy and which
-   lineage, bound to the text it came from by a hash. An expert determination rests on the method being
-   written down.
+5. **Every run writes a manifest, and the manifest carries this build's failure rate.** What was removed,
+   by kind, by detector, under which policy and which lineage, bound to the text it came from by a hash —
+   plus the leak rate measured below, embedded in the assembly so it travels with the corpus and needs no
+   network call. An expert determination rests on the method being written down, and a page of counts with
+   no error rate beside them is the overclaim this library exists to argue against.
 6. **The vault decides the invented names, and remembers them.** One subject, one invented name, across
    every document in the corpus — and a re-identification code that is random rather than derived from
    the person, per 45 CFR § 164.514(c). No invented name is allowed to be one this pipeline would find
@@ -306,8 +308,8 @@ transcripts — scripts written for the purpose, spoken by Windows voices, degra
 transcribed by Whisper large-v3 — and it is reproduced by `silueta evaluate --gold corpus-synthetic/tts-asr`.
 A test runs that evaluation and fails if the table below stops matching it.
 
-<!-- leak-rate:start — PublishedNumberTests checks this block against a fresh evaluation -->
-| 30 documents · 16 Sep 2026 · engine 0.1.0 · lineage `silueta-core/1` | Silueta | The same roster, matched literally |
+<!-- leak-rate:start — written by tools/Silueta.Calibration; PublishedNumberTests checks it against a fresh evaluation -->
+| 30 documents · 19 Sep 2026 · engine 0.1.0 · lineage `silueta-core/1` | Silueta | The same roster, matched literally |
 | --- | --- | --- |
 | **Every kind marked** — could this corpus leave the building? | 93.3% of 30 transcripts (95% CI 78.7%–98.2%) | 96.7% of 30 transcripts (95% CI 83.3%–99.4%) |
 | **In scope** — the kinds this build has a way to find | 80.0% of 30 transcripts (95% CI 62.7%–90.5%) · recall 0.834 | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) · recall 0.777 |
@@ -436,6 +438,7 @@ claim than "PII redaction", and it is the one this repository can defend.
 | `SKILL.md` · `skill/` | The agent skill and how to install it. |
 | `corpus-synthetic/` | The gold corpus the published number is measured on. Synthetic, and nothing real is ever committed. |
 | `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |
+| `tools/Silueta.Calibration` | Re-measures this build against that corpus and writes both copies of the number: the JSON embedded in `Silueta.Core`, and the table above. |
 | `tests/Silueta.Core.Tests` | The tests — including the ones that hold this README's demo and numbers to the code. |
 | `Docs/` | `ALGORITHM.md`, every decision and what it costs; and the brand. |
 

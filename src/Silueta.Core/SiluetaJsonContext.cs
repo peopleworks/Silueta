@@ -139,6 +139,7 @@ public sealed class VaultFile
 [JsonSerializable(typeof(QuasiIdentifierVocabularyFile))]
 [JsonSerializable(typeof(GoldDocumentFile))]
 [JsonSerializable(typeof(EvaluationReport))]
+[JsonSerializable(typeof(PublishedLeakRate))]
 [JsonSerializable(typeof(LinkageReport))]
 [JsonSerializable(typeof(Dictionary<string, List<string>>))]
 public sealed partial class SiluetaJsonContext : JsonSerializerContext;

@@ -114,8 +114,10 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    identifying: 93.3% of 30 transcripts (95% CI 78.7%–98.2%). Counting only the kinds this build has a
    way to find: 80.0% of 30 transcripts (95% CI 62.7%–90.5%). If you are asked how good it is, give both
    numbers with their intervals, say the corpus is synthetic and was written by the matcher's author, and
-   never offer either as a guarantee for the user's own transcripts. Every tool result carries a `caveat`
-   field — pass it on.
+   never offer either as a guarantee for the user's own transcripts. You do not have to remember them:
+   the build carries its own measurement, so the `caveat` on every redaction result states it and every
+   manifest has it under `measuredLeakRate` (the two matching tools return no caveat at all). Pass that on rather than a figure from memory — and if it
+   ever says this build carries no measurement, say exactly that.
 4. **Name what survives, because it is predictable.** Nicknames (`Ellie` for Eleanor). Names nobody
    wrote down — a neighbour, a doctor mentioned once. People referred to only by relationship ("my
    daughter"). Names the recogniser damaged past the matcher's threshold: `Reyes` heard as `Rays`

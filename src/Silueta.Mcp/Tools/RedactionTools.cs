@@ -459,13 +459,24 @@ public static class RedactionTools
                 "Report this to the user rather than passing the text on.");
         }
 
-        notes.AddRange(new[]
-        {
-            "Silueta's leak rate is measured only on a small synthetic corpus (see its README), and on that " +
-            "corpus most transcripts still held something identifying, so this output is not verified to be " +
-            "de-identified. Names nobody wrote down — nicknames, a relative mentioned only by " +
-            "relationship, a doctor named once — are invisible to the roster matcher and survive.",
-        });
+        // The rate, in figures, from the measurement embedded in the build rather than from a sentence
+        // written here. This note used to say "most transcripts still held something identifying", which is
+        // the number restated from memory — the second copy of a rule, which in this project has always
+        // ended up disagreeing with the first. A model reads this field out loud to a user, so it is the one
+        // place where "most" is worth least.
+        notes.Add(
+            PublishedLeakRate.Current is { Shipped: not null } measured
+                ? $"Silueta's leak rate is measured only on a small synthetic corpus ({measured.CorpusId}, " +
+                  $"{measured.Documents} documents, measured {measured.MeasuredOn}): {measured.Shipped!.RateInScope} " +
+                  "still said something of a kind this build has a way to find, and " +
+                  $"{measured.Shipped!.Rate} still said something of any kind the annotators marked. This " +
+                  "output is not verified to be de-identified. Names nobody wrote down — nicknames, a " +
+                  "relative mentioned only by relationship, a doctor named once — are invisible to the " +
+                  "roster matcher and survive."
+                : "This build carries no measured leak rate at all, so nothing here says how often Silueta " +
+                  "leaves an identifier behind, and this output is not verified to be de-identified. Names " +
+                  "nobody wrote down — nicknames, a relative mentioned only by relationship, a doctor named " +
+                  "once — are invisible to the roster matcher and survive.");
 
         if (context.Known.Count == 0)
         {

@@ -10,4 +10,8 @@
     <Project Path="tests/Silueta.Core.Tests/Silueta.Core.Tests.csproj" />
   </Folder>
 
+  <Folder Name="/tools/">
+    <Project Path="tools/Silueta.Calibration/Silueta.Calibration.csproj" />
+  </Folder>
+
 </Solution>

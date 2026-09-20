@@ -98,6 +98,27 @@ public sealed class RedactionManifest
     /// <summary>Kinds the policy was told to leave alone. A corpus redacted with StaffName kept produces
     /// counts identical to a transcript with no staff in it; this is the difference.</summary>
     public List<string> KeptKinds { get; set; } = new();
+
+    /// <summary>
+    /// How often the build that produced this manifest is known to leave an identifier behind, measured on the
+    /// corpus named in the sentence — <b>a property of the build, never of this document</b>.
+    /// <para>
+    /// Every other field here says what ran. None of them says how often what ran is wrong, and this is the
+    /// file a compliance officer opens: a page of counts with no error rate is the overclaim this project
+    /// exists to argue against. See <see cref="PublishedLeakRate"/>.
+    /// </para>
+    /// <para>
+    /// The default is the admission, not an empty string. Three times already a required field in this library
+    /// defaulted to something harmless-looking and the harmless value was the defect — a roster entry with no
+    /// kind became a person, an empty JSON object parsed as a valid vault. A manifest whose leak rate is
+    /// missing reads as a run that did not leak, and of all the fields here that is the worst one to guess at.
+    /// </para>
+    /// </summary>
+    public string MeasuredLeakRate { get; set; } = NoMeasurement;
+
+    /// <inheritdoc cref="MeasuredLeakRate"/>
+    public const string NoMeasurement =
+        "No measured leak rate: this build carries no calibration, so nothing here says how often it leaves an identifier behind.";
 }
 
 /// <summary>The de-identified text, what was replaced, and the manifest of the run.</summary>
@@ -235,6 +256,8 @@ public sealed partial class SiluetaEngine
             ResidualSpans = residue.Count,
             InputSha256 = Digest(text),
             OutputSha256 = Digest(redacted),
+            // Left at its default — which says there is none — when this build has no measurement of its own.
+            MeasuredLeakRate = PublishedLeakRate.Current?.Summary ?? RedactionManifest.NoMeasurement,
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
                 .Select(kind => kind.ToString())

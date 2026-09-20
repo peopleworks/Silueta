@@ -24,6 +24,8 @@
     <ProjectReference Include="..\..\src\Silueta.Mcp\Silueta.Mcp.csproj" />
     <!-- The CLI decides what is written to disk and what is printed, which is a rule like any other. -->
     <ProjectReference Include="..\..\src\Silueta.Cli\Silueta.Cli.csproj" />
+    <!-- The calibration tool decides what the README's published block says, which is the same kind of rule. -->
+    <ProjectReference Include="..\..\tools\Silueta.Calibration\Silueta.Calibration.csproj" />
   </ItemGroup>
 
 </Project>

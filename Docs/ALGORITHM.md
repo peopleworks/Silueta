@@ -127,8 +127,29 @@ the text comes from outside, and so does the pack.
 ## 5. Resolution
 
 Detectors overlap on purpose — the family name inside an e-mail address, the given name inside the full
-name. The longest span wins, then the most confident. What survives is a set of spans that do not touch,
-in reading order, each carrying the id of the detector that found it.
+name. What survives is a set of spans that do not touch, in reading order, each carrying the id of the
+detector that spoke for it.
+
+**Overlapping candidates are united, not ranked and discarded.** Discarding was right for containment and
+wrong for everything else. With a roster holding `Ana Maria` and `Maria Perez`, the text `Ana Maria Perez`
+gives two candidates where neither contains the other; the longer one won, the other was thrown away
+whole, and the characters only it covered — a word of somebody's name — stayed in the transcript. A union
+cannot leave a character that a detector found and nothing covers, and that is written down as a test
+rather than as a habit.
+
+**Where a span runs and whose it is are two questions, and the honest answer to the second is sometimes
+nobody.** A united span keeps a subject when something covering the whole of it names that subject and
+nothing else covering it disagrees. That is every ordinary case, including the household where a mother
+and daughter share a surname: there the full name *contains* the surname, so the mention is the mother's
+and coreference survives. Where two people are called the same thing, or where two names cross, nothing in
+the run knows whose mention it is — so the span is replaced with a label instead of an invented name, and
+`ambiguousAttributions` in the manifest counts it. Losing the thread on one span is a cost; attributing a
+sentence to the wrong person is a different kind of thing.
+
+**And every tie is broken on the candidate's own content** — length, confidence, position, kind, subject,
+detector — never on the order the roster was written in. Two roster entries that produced the same span
+used to be separated by whichever the sort reached first, so reordering a roster changed whose life a
+sentence was about.
 
 **What a detection does not carry is the text it matched.** Offsets, kind, length, detector, confidence
 — nothing else. The result of a redaction is the object a caller is most likely to log, return from an

@@ -116,6 +116,14 @@ public sealed class RedactionManifest
     /// </summary>
     public string MeasuredLeakRate { get; set; } = NoMeasurement;
 
+    /// <summary>
+    /// Spans that were redacted without being attributed to anybody, because two candidates covering them
+    /// named different subjects or two names crossed. Each one is a place where the corpus loses the thread
+    /// between documents, and a run that quietly stopped attributing would otherwise look like a run with
+    /// fewer people in it.
+    /// </summary>
+    public int AmbiguousAttributions { get; set; }
+
     /// <inheritdoc cref="MeasuredLeakRate"/>
     public const string NoMeasurement =
         "No measured leak rate: this build carries no calibration, so nothing here says how often it leaves an identifier behind.";
@@ -191,7 +199,7 @@ public sealed partial class SiluetaEngine
             found.AddRange(detector.Detect(text, context));
         }
 
-        List<Detection> applied = Resolve(found, policy);
+        List<Detection> applied = Resolve(found, policy, out int ambiguous);
 
         // No invented name may be one this very run would detect, or the next pass over the output finds
         // the surrogate and replaces it again. The test is the detectors themselves rather than a second
@@ -258,6 +266,7 @@ public sealed partial class SiluetaEngine
             OutputSha256 = Digest(redacted),
             // Left at its default — which says there is none — when this build has no measurement of its own.
             MeasuredLeakRate = PublishedLeakRate.Current?.Summary ?? RedactionManifest.NoMeasurement,
+            AmbiguousAttributions = ambiguous,
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
                 .Select(kind => kind.ToString())
@@ -287,40 +296,147 @@ public sealed partial class SiluetaEngine
 
     /// <summary>
     /// Two detectors will find the same name, and a longer span usually contains a shorter one
-    /// ("Sofia Reyes" over "Sofia"). Longest wins, then the most confident; what survives is a set of
-    /// spans that do not touch, in reading order.
+    /// ("Sofia Reyes" over "Sofia"). What survives is a set of spans that do not touch, in reading order.
+    /// <para>
+    /// Candidates that overlap are <b>united</b>, not sorted and discarded. Discarding was right for
+    /// containment and wrong for everything else: with a roster holding <c>Ana Maria</c> and
+    /// <c>Maria Perez</c>, the text <c>Ana Maria Perez</c> produced two candidates where neither contains
+    /// the other, the longer one won, and the characters only the loser covered — a word of somebody's
+    /// name — stayed in the transcript. Uniting cannot leave a character that a detector found and nothing
+    /// covers, and there is a test that says exactly that.
+    /// </para>
+    /// <para>
+    /// Who the span is about is decided separately from where it runs, because those are different
+    /// questions and the honest answer to the second one is sometimes nobody. A span keeps a subject when
+    /// something that covers the whole of it names that subject and nothing covering it disagrees — which
+    /// is every ordinary case, including the household where a mother and daughter share a surname, since
+    /// there the full name contains the surname rather than crossing it. Where two people are called the
+    /// same thing, or where two names cross, no one can say whose mention it is: the span is replaced with
+    /// a label instead of an invented name, coreference is lost for it, and the manifest counts it. Losing
+    /// coreference on a span is a cost; attributing a sentence to the wrong person is a different kind of
+    /// thing entirely.
+    /// </para>
+    /// <para>
+    /// Every tie is broken on the candidate's own content — length, confidence, position, kind, subject —
+    /// and never on the order the roster was written in. Reordering a roster used to change whose life a
+    /// sentence was about.
+    /// </para>
     /// </summary>
-    private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy)
+    private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy) =>
+        Resolve(candidates, policy, out _);
+
+    /// <inheritdoc cref="Resolve(List{Detection}, SiluetaPolicy)"/>
+    /// <param name="ambiguous">How many surviving spans lost their subject because nothing could say whose
+    /// they were.</param>
+    private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy, out int ambiguous)
     {
         List<Detection> ordered = candidates
             .Where(d => d.Confidence >= policy.MinConfidence && policy.ActionFor(d.Kind) != RedactionAction.Keep)
-            .OrderByDescending(d => d.Length)
+            .OrderBy(d => d.Start)
+            .ThenByDescending(d => d.Length)
             .ThenByDescending(d => d.Confidence)
-            .ThenBy(d => d.Start)
+            .ThenBy(d => (int)d.Kind)
+            .ThenBy(d => d.SubjectId, StringComparer.Ordinal)
+            .ThenBy(d => d.DetectorId, StringComparer.Ordinal)
             .ToList();
 
+        ambiguous = 0;
         var accepted = new List<Detection>();
-        foreach (Detection candidate in ordered)
+
+        for (int i = 0; i < ordered.Count;)
         {
-            bool clashes = false;
-            foreach (Detection kept in accepted)
+            // One sweep: the component is everything reachable from here by overlap, which because the
+            // list is in reading order is a run of candidates that starts before the running end.
+            int start = ordered[i].Start;
+            int end = ordered[i].End;
+            int last = i;
+
+            while (last + 1 < ordered.Count && ordered[last + 1].Start < end)
             {
-                if (candidate.Overlaps(kept))
-                {
-                    clashes = true;
-                    break;
-                }
+                last++;
+                end = Math.Max(end, ordered[last].End);
             }
 
-            if (!clashes)
+            accepted.Add(Unite(ordered, i, last, start, end, ref ambiguous));
+            i = last + 1;
+        }
+
+        return accepted;
+    }
+
+    /// <summary>One component of overlapping candidates, as the single span that replaces them.</summary>
+    private static Detection Unite(List<Detection> ordered, int from, int to, int start, int end, ref int ambiguous)
+    {
+        Detection anchor = ordered[from];
+        for (int i = from + 1; i <= to; i++)
+        {
+            if (Precedes(ordered[i], anchor))
             {
-                accepted.Add(candidate);
+                anchor = ordered[i];
             }
         }
 
-        accepted.Sort(static (a, b) => a.Start.CompareTo(b.Start));
-        return accepted;
+        if (from == to)
+        {
+            return anchor;
+        }
+
+        // Only what covers the whole span gets a say in whose it is. A surname inside a full name is not a
+        // second opinion about the mention; a second person with the same full name is.
+        string? subject = null;
+        bool disagreement = false;
+        for (int i = from; i <= to; i++)
+        {
+            if (ordered[i].Start != start || ordered[i].End != end)
+            {
+                continue;
+            }
+
+            if (subject is null)
+            {
+                subject = ordered[i].SubjectId;
+            }
+            else if (!string.Equals(subject, ordered[i].SubjectId, StringComparison.Ordinal))
+            {
+                disagreement = true;
+            }
+        }
+
+        if (subject is null)
+        {
+            // Nothing covers the union: the names cross. Then the only attribution that can be trusted is
+            // one every candidate in the component already agrees on.
+            subject = ordered[from].SubjectId;
+            for (int i = from + 1; i <= to && !disagreement; i++)
+            {
+                disagreement = !string.Equals(subject, ordered[i].SubjectId, StringComparison.Ordinal);
+            }
+        }
+
+        if (disagreement || subject is not { Length: > 0 })
+        {
+            subject = string.Empty;
+            ambiguous++;
+        }
+
+        return new Detection(
+            start,
+            end - start,
+            anchor.Kind,
+            anchor.DetectorId,
+            anchor.Confidence,
+            subject,
+            anchor.Match);
     }
+
+    /// <summary>Which of two candidates speaks for a united span: the longest, then the most confident,
+    /// then the earliest — and after that, its own content, so that nothing depends on roster order.</summary>
+    private static bool Precedes(Detection candidate, Detection incumbent) =>
+        (candidate.Length, candidate.Confidence) != (incumbent.Length, incumbent.Confidence)
+            ? candidate.Length > incumbent.Length ||
+              (candidate.Length == incumbent.Length && candidate.Confidence > incumbent.Confidence)
+            : (candidate.Start, (int)candidate.Kind, candidate.SubjectId, candidate.DetectorId).CompareTo(
+                  (incumbent.Start, (int)incumbent.Kind, incumbent.SubjectId, incumbent.DetectorId)) < 0;
 
     /// <summary>The original text is read here, from the transcript the caller passed in, rather than
     /// carried on the detection: see <see cref="Detection"/> for why that matters.</summary>

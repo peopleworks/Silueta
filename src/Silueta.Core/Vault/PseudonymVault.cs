@@ -90,7 +90,7 @@ public sealed class PseudonymVault
     /// <param name="avoid">Values that must not be echoed back: the roster of the record being redacted.</param>
     [Obsolete(
         "This is the cheap test and it is not enough: sounding alike here means an identical phonetic " +
-        "key, while the matcher accepts a similarity of 0.84. Real surnames one edit from the pool " +
+        "key, while the matcher forgives a budget of edits on top. Real surnames one edit from the pool " +
         "(Aguiar/Aguilar, Quinteros/Quintero, Fuente/Fuentes) pass this check and are then found by the " +
         "very pipeline that wrote them. Pass the detectors themselves: SurrogateFor(id, wouldBeFound).")]
     public string SurrogateFor(string subjectId, IEnumerable<string>? avoid)

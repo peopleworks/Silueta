@@ -111,8 +111,8 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    may leave a building is a lawyer's decision, and an expert determination is a person signing a name.
 3. **The leak rate is measured on a synthetic corpus, and it is high.** On thirty synthetic home-care
    transcripts (Windows voices, phone-degraded audio, Whisper large-v3), this many still held something
-   identifying: 93.3% of 30 transcripts (95% CI 78.7%–98.2%). Counting only the kinds this build has a
-   way to find: 80.0% of 30 transcripts (95% CI 62.7%–90.5%). If you are asked how good it is, give both
+   identifying: 90.0% of 30 transcripts (95% CI 74.4%–96.5%). Counting only the kinds this build has a
+   way to find: 76.7% of 30 transcripts (95% CI 59.1%–88.2%). If you are asked how good it is, give both
    numbers with their intervals, say the corpus is synthetic and was written by the matcher's author, and
    never offer either as a guarantee for the user's own transcripts. You do not have to remember them:
    the build carries its own measurement, so the `caveat` on every redaction result states it and every
@@ -120,8 +120,10 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    ever says this build carries no measurement, say exactly that.
 4. **Name what survives, because it is predictable.** Nicknames (`Ellie` for Eleanor). Names nobody
    wrote down — a neighbour, a doctor mentioned once. People referred to only by relationship ("my
-   daughter"). Names the recogniser damaged past the matcher's threshold: `Reyes` heard as `Rays`
-   scores 0.40 against a threshold of 0.84, and that is a matcher failure, not a design decision.
+   daughter"). Names the recogniser damaged past what the matcher will forgive: `Reyes` heard as `Rays`
+   is three edits apart on a five-character key, where the budget is one, and that is a matcher failure
+   rather than a design decision. A name that is also an ordinary word cuts the other way — with `Rose` on
+   a roster, "roses from the garden" is redacted too.
 5. **No rule emits a postal code or a street address yet**, and numbers or dates spoken as words
    ("five five five, oh one four seven", "September eleventh") are not recognised at all. If the
    transcript has those, say they were not touched.

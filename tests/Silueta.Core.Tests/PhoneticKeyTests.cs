@@ -21,15 +21,19 @@ public class PhoneticKeyTests
     [Fact]
     public void Close_enough_survives_one_missing_letter()
     {
-        double ratio = Similarity.Ratio(PhoneticKey.Compute("Ellenor"), PhoneticKey.Compute("Eleanor"));
-        Assert.True(ratio >= 0.84, $"Ellenor/Eleanor scored {ratio:0.000}");
+        // Asked of the tolerance rather than of a number repeated here: what counts as close enough is one
+        // rule in one place, and a test carrying its own copy of the figure is the second copy.
+        Assert.True(
+            MatchTolerance.Default.Accepts(PhoneticKey.Compute("Ellenor"), PhoneticKey.Compute("Eleanor"), out int edits, out int budget),
+            $"Ellenor/Eleanor are {edits} edit(s) apart on a budget of {budget}");
     }
 
     [Fact]
     public void Different_names_stay_different()
     {
-        double ratio = Similarity.Ratio(PhoneticKey.Compute("Parkinson"), PhoneticKey.Compute("Patterson"));
-        Assert.True(ratio < 0.84, $"Parkinson/Patterson scored {ratio:0.000}");
+        Assert.False(
+            MatchTolerance.Default.Accepts(PhoneticKey.Compute("Parkinson"), PhoneticKey.Compute("Patterson"), out int edits, out int budget),
+            $"Parkinson/Patterson are {edits} edit(s) apart on a budget of {budget}");
     }
 
     [Fact]

@@ -36,7 +36,7 @@ public class SurrogateTests
         string[] roster = ["Sofía Reyes", "Eleanor Vasquez", "Yamilet Vasquez", "Cruz Salazar"];
 
         // The obsolete overload on purpose: this test is what that door does, and why it is not enough
-        // on its own — identical keys only, while the matcher accepts 0.84.
+        // on its own — identical keys only, while the matcher forgives a budget of edits on top.
 #pragma warning disable CS0618
         string surrogate = vault.SurrogateFor("patient-1", roster);
 #pragma warning restore CS0618
@@ -63,7 +63,7 @@ public class SurrogateTests
     public void No_surrogate_is_a_name_this_very_pipeline_would_detect(string real, string collides)
     {
         // Rejecting surrogates whose phonetic key *equals* a roster key is not enough, because the
-        // matcher does not require equality — it accepts a similarity of 0.84. Every name here is a
+        // matcher does not require equality — it forgives a budget of edits. Every name here is a
         // real Hispanic surname one edit from a name in the surrogate pool.
         //
         // The pool is shuffled when a name is minted, so a test that merely put "Aguiar" on the roster

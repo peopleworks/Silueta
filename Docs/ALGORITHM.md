@@ -68,8 +68,17 @@ in, the residue shows up in the leak rate, which is the honest place for it.
 | doubled letters collapsed | `Ellenor` / `Eleanor` |
 | apostrophes and hyphens dropped | `Na'vi` → `navi` |
 
-Then Levenshtein distance on the keys, with a threshold of 0.84 per word and an exact-match floor for keys
-shorter than four characters.
+Then Levenshtein distance on the keys, with a **budget of edits** per word read from the shorter key: none
+below four characters, one from four to seven, two from eight. It used to be a proportion — a similarity of
+at least 0.84 — and the comment beside it said that accepted one edit in a six-letter key. It did not: one
+edit in six is 0.833, and six letters is the length of an ordinary given name, so the layer that exists to
+absorb recogniser damage was dead in the middle of its own range. A proportion is the wrong shape anyway. A
+recogniser writes a wrong letter, or two; it does not write a wrong percentage, and scaling the allowance
+with length says a longer name may be mangled more when what a longer name really offers is more evidence
+that it is the right one. The budget is read from the shorter key so that a three-letter roster entry
+cannot inherit an allowance from whatever long word it met. `MatchTolerance` is the only place that knows
+this rule, its digest goes into the manifest, and `explain_name_match` quotes its numbers rather than
+working them out again.
 
 **One rule deliberately absent:** Spanish `ll` is *not* mapped to the y-sound. Doing it buys `Guillermo`
 ≈ `Giyermo` and costs `Ellenor` ≈ `Eleanor`, and English doubled letters are judged more common in this
@@ -77,12 +86,17 @@ corpus than Spanish *ll*. It is a trade, it is measurable, and nobody has measur
 would settle it does not exist yet.
 
 **What this key is known to get wrong.** `Reyes` and `Rays` — the same surname, as the agency writes it
-and as the recogniser heard it — have keys `reyes` and `rais`, three edits apart, a similarity of 0.40.
-The threshold is 0.84, so the roster does not find it. The threshold also refuses several pairs that are
-one edit apart, because one edit in a six-letter key scores 0.833: `Carmen`/`Carmin`, `Jimena`/`Gimena`,
-`Javier`/`Xavier`. And `j` and soft `g` are mapped to different symbols (`y` and `h`) although they are
-one sound in Spanish, which is what separates that second pair. These are measured numbers, not
-suspicions, and they are the first thing the corpus is for.
+and as the recogniser heard it — have keys `reyes` and `rais`, three edits apart on a five-character key
+that may spend one. The roster does not find it, and no budget that reached this far would still be a
+budget: it would reach most surnames. The pairs one edit apart — `Carmen`/`Carmin`, `Javier`/`Xavier`,
+`Jimena`/`Gimena` — are found now, and were not under the proportion.
+
+**What the budget cost, measured on the corpus and not guessed.** Recall in scope rose from 0.834 to 0.854
+and one transcript of the thirty stopped leaking; the literal baseline did not move, which is how a
+change in the matcher and only the matcher looks. Against that, five characters of new over-redaction, all
+of them one word: with `Rose` on the roster, "brought roses from the garden" became "brought Remy from the
+garden". That is the collision a budget buys, and the answer to it is a roster that can say which of its
+words are ordinary words — F2.4, not a smaller budget.
 
 **Why coarser than Double Metaphone.** A precise phonetic key still demands the right consonant, and ASR
 damage is not phonetically principled — it substitutes whole words (`shift` → `chief`). A coarse key plus

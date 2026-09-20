@@ -80,7 +80,8 @@ public class ShortKeyTests
     [Fact]
     public void A_brand_one_letter_from_a_spanish_word_is_still_matched_which_is_not_decided_here()
     {
-        // "Nvidia" against "envidia" scores 0.857 against a threshold of 0.84. Same open question.
+        // "Nvidia" against "envidia" is one edit on a six-character key, which the budget forgives. Same
+        // open question: whether a brand should be compared by sound at all.
         RedactionResult result = Redact("Le tiene envidia a su hermana.", "Nvidia", IdentifierKind.Organization);
 
         Assert.NotEmpty(result.Applied);

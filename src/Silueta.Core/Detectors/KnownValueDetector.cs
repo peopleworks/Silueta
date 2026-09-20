@@ -14,22 +14,28 @@ namespace Silueta.Core;
 /// dozen known values, so this is a few million key comparisons — milliseconds, and no model to load.
 /// </para>
 /// </summary>
-public sealed class KnownValueDetector : IDetector
+public sealed class KnownValueDetector : IDetector, IDetectorProvenance
 {
-    private readonly double _threshold;
-    private readonly int _minFuzzyLength;
+    private readonly MatchTolerance _tolerance;
 
-    /// <param name="threshold">Minimum phonetic-key similarity, per word, for a fuzzy match. 0.84 accepts
-    /// one edit in a six-letter key and two in a twelve-letter one.</param>
-    /// <param name="minFuzzyLength">Below this key length only an exact key match counts. Short names are
-    /// where fuzzy matching starts eating real words: "Ana" is two edits from "una".</param>
-    public KnownValueDetector(double threshold = 0.84, int minFuzzyLength = 4)
+    /// <param name="tolerance">How far two spellings may be apart and still be one name. Defaults to the
+    /// rule this build published its leak rate under; see <see cref="MatchTolerance"/> for why it counts
+    /// edits rather than a proportion.</param>
+    public KnownValueDetector(MatchTolerance? tolerance = null)
     {
-        _threshold = threshold;
-        _minFuzzyLength = minFuzzyLength;
+        _tolerance = tolerance ?? MatchTolerance.Default;
     }
 
     public string Id => "known-value";
+
+    /// <summary>The rule that decided what counted as the same name, digested for the manifest.</summary>
+    public string Fingerprint => _tolerance.Fingerprint;
+
+    /// <summary>One: the tolerance. This detector carries no pack of rules, and saying it has none would
+    /// read as a detector that failed to load one.</summary>
+    public int RulesLoaded => 1;
+
+    public IReadOnlyList<string> RulesSkipped => [];
 
     public IEnumerable<Detection> Detect(string text, DeidentificationContext context)
     {
@@ -149,7 +155,7 @@ public sealed class KnownValueDetector : IDetector
 
             if (string.Equals(found, wanted, StringComparison.Ordinal))
             {
-                bool shortAndNotAPerson = !person && wanted.Length < _minFuzzyLength;
+                bool shortAndNotAPerson = !person && wanted.Length < _tolerance.ExactBelow;
                 if ((shortAndNotAPerson || numeric) && !Folding.SameLetters(tokens[offset + k].Text, target.Words[k]))
                 {
                     return 0;
@@ -158,18 +164,15 @@ public sealed class KnownValueDetector : IDetector
                 continue;
             }
 
-            if (numeric || wanted.Length < _minFuzzyLength || found.Length < _minFuzzyLength)
+            if (numeric || !_tolerance.Accepts(found, wanted))
             {
                 return 0;
             }
 
-            double ratio = Similarity.Ratio(found, wanted);
-            if (ratio < _threshold)
-            {
-                return 0;
-            }
-
-            weakest = Math.Min(weakest, ratio);
+            // The confidence still says how close, in the same units it always did; what changed is who
+            // decides. A budget of one edit on a four-character key is 0.75, which is the least confident
+            // a match can now be and still be one, and it clears the policy's floor of 0.7.
+            weakest = Math.Min(weakest, Similarity.Ratio(found, wanted));
         }
 
         return weakest;

@@ -10,7 +10,7 @@ public enum MatchKind
     /// <summary>The text sounded like a known value: the ASR wrote it differently, we heard it the same.</summary>
     Phonetic,
 
-    /// <summary>Close enough to a known value under edit distance, above the configured threshold.</summary>
+    /// <summary>Close enough to a known value: within the tolerance's budget of edits, but not identical.</summary>
     Fuzzy,
 
     /// <summary>A pattern rule fired (phone, email, date…), with no known value involved.</summary>

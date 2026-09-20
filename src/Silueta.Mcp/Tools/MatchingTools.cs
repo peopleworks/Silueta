@@ -16,16 +16,17 @@ public static class MatchingTools
     [McpServerTool(Name = "explain_name_match", ReadOnly = true),
      Description("""
         Explains whether Silueta would treat two spellings as the same name, and why — the phonetic key
-        of each, the edit distance between the keys, the similarity ratio, and the threshold it was
-        compared against.
+        of each, the edit distance between the keys, and the budget of edits that distance was allowed
+        to spend.
 
         Use it when a name survived a redaction and you need to say what happened, or when adding
         someone to a roster and you want to know which recogniser mangles it will catch. Pass NAMES, not
         transcripts: two words, nothing identifying beyond what you already typed.
 
         Worked example: "Reyes" and "Rays" are the same surname, one as the agency writes it and one as
-        the recogniser heard it. Their keys are "reyes" and "rais" — three edits apart, ratio 0.40,
-        threshold 0.84. Silueta misses it, and that is a matcher failure rather than a design decision.
+        the recogniser heard it. Their keys are "reyes" and "rais" — three edits apart, where a
+        five-character key may spend one. Silueta misses it, and that is a matcher failure rather than a
+        design decision.
 
         Pass the kind of the first spelling. The answer depends on it: a company or product whose key is
         shorter than four characters must also be the same letters, because "Inc" and "ink" share a key and
@@ -35,9 +36,7 @@ public static class MatchingTools
     public static MatchExplanation ExplainNameMatch(
         [Description("One spelling, e.g. the name as the roster has it: \"Sofía Reyes\".")] string a,
         [Description("The other, e.g. as the recogniser wrote it: \"Sophia Rays\".")] string b,
-        [Description("What kind of identifier the first spelling is: \"PatientName\", \"Organization\", \"Product\"… A company or a product is held to a stricter rule for short words than a person. Default OtherName.")] string kind = "OtherName",
-        [Description("Similarity threshold per word. Silueta's default is 0.84.")] double threshold = 0.84,
-        [Description("Below this key length only an exact key match counts. Default 4.")] int minFuzzyLength = 4)
+        [Description("What kind of identifier the first spelling is: \"PatientName\", \"Organization\", \"Product\"… A company or a product is held to a stricter rule for short words than a person. Default OtherName.")] string kind = "OtherName")
     {
         ArgumentNullException.ThrowIfNull(a);
         ArgumentNullException.ThrowIfNull(b);
@@ -49,6 +48,7 @@ public static class MatchingTools
                 $"That kind is not one this build knows.{hint} Kinds: {string.Join(", ", Enum.GetNames<IdentifierKind>())}.");
         }
 
+        MatchTolerance tolerance = MatchTolerance.Default;
         bool person = parsedKind.IsPersonName();
         List<Token> left = Tokenizer.Tokenize(a);
         List<Token> right = Tokenizer.Tokenize(b);
@@ -67,25 +67,24 @@ public static class MatchingTools
                 verdict = "no key — one side has no letters, or the names have a different number of words";
             }
             else if (string.Equals(keyA, keyB, StringComparison.Ordinal)
-                && !person && keyA.Length < minFuzzyLength && !Folding.SameLetters(wordA, wordB))
+                && !person && keyA.Length < tolerance.ExactBelow && !Folding.SameLetters(wordA, wordB))
             {
-                verdict = $"same key, but for a company or product a key shorter than {minFuzzyLength} must also be " +
+                verdict = $"same key, but for a company or product a key shorter than {tolerance.ExactBelow} must also be " +
                     "the same letters — otherwise \"Inc\" would redact every \"ink\" — so this is a miss";
             }
             else if (string.Equals(keyA, keyB, StringComparison.Ordinal))
             {
                 verdict = "same key: heard as the same word";
             }
-            else if (keyA.Length < minFuzzyLength || keyB.Length < minFuzzyLength)
-            {
-                verdict = $"key shorter than {minFuzzyLength}: only an exact key match counts, so this is a miss";
-            }
             else
             {
-                double ratio = Similarity.Ratio(keyA, keyB);
-                verdict = ratio >= threshold
-                    ? $"close enough: {ratio:0.000} >= {threshold:0.00}"
-                    : $"too far: {ratio:0.000} < {threshold:0.00}";
+                // The numbers are the ones the tolerance decided on, not a second calculation of them.
+                bool close = tolerance.Accepts(keyA, keyB, out int edits, out int budget);
+                verdict = budget == 0
+                    ? $"a key of {Math.Min(keyA.Length, keyB.Length)} characters may spend no edits, and these are {edits} apart: a miss"
+                    : close
+                        ? $"close enough: {edits} edit(s) of a budget of {budget}"
+                        : $"too far: {edits} edit(s), and the budget is {budget}";
             }
 
             words.Add(new WordComparison(
@@ -103,7 +102,7 @@ public static class MatchingTools
         // company names must be the same letters) left the copy saying "Inc" and "ink" match. The words
         // above explain; this decides, and it cannot drift from what a redaction would do.
         var context = new DeidentificationContext("explain").AddValue(a, parsedKind, "explain-subject");
-        bool wouldMatch = right.Count > 0 && new KnownValueDetector(threshold, minFuzzyLength)
+        bool wouldMatch = right.Count > 0 && new KnownValueDetector(tolerance)
             .Detect(b, context)
             .Any(d => d.Start == right[0].Start && d.End == right[^1].End);
 
@@ -112,11 +111,14 @@ public static class MatchingTools
             b,
             wouldMatch,
             Math.Round(words.Count == 0 ? 0 : words.Min(w => w.Ratio), 3),
-            threshold,
+            tolerance.ToString(),
             words,
             "A name is matched word by word and scored by its weakest word: every part has to be " +
-            "recognisable. The key is deliberately coarser than a principled phonetic algorithm, " +
-            "because ASR damage is not phonetically principled — it substitutes whole words.");
+            "recognisable. Two keys are one word when they are within a budget of edits read from the " +
+            "shorter of them, rather than within a proportion of their length — a recogniser writes a " +
+            "wrong letter, not a wrong percentage. The key is deliberately coarser than a principled " +
+            "phonetic algorithm, because ASR damage is not phonetically principled: it substitutes whole " +
+            "words.");
     }
 
     [McpServerTool(Name = "list_pattern_rules", ReadOnly = true),
@@ -184,7 +186,9 @@ public sealed record MatchExplanation(
     string B,
     bool WouldMatch,
     double WeakestWordRatio,
-    double Threshold,
+
+    /// <summary>The rule the two spellings were held to, in words.</summary>
+    string Tolerance,
     IReadOnlyList<WordComparison> Words,
     string HowItWorks);
 

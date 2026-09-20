@@ -59,8 +59,8 @@ public class DigitMatchingTests
     [Fact]
     public void A_record_number_is_not_matched_by_a_near_miss()
     {
-        // 441729 and 441720 are two records. One edit in six characters is inside the fuzzy threshold that
-        // exists for damaged spelling, and applying it to a number redacts the wrong patient's file.
+        // 441729 and 441720 are two records. One edit in six characters is inside the budget that exists
+        // for damaged spelling, and spending it on a number redacts the wrong patient's file.
         var context = new DeidentificationContext("rec-1")
             .AddValue("441729", IdentifierKind.RecordNumber, "rec-a");
 

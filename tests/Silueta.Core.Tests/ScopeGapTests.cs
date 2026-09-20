@@ -55,7 +55,7 @@ public class ScopeGapTests
     public void A_short_form_of_a_company_is_not_found_by_the_long_one()
     {
         // A company is matched whole, in exactly as many words as the roster gave it. "Acme Corp" is not
-        // "Acme Corporation" to this matcher — Corp against Corporation scores 0.36 against a floor of 0.84,
+        // "Acme Corporation" to this matcher — Corp is seven edits from Corporation on a budget of two,
         // because abbreviation is truncation inside a word and not a sound substitution — and "Acme" alone
         // is not found at all. The fix today is a roster entry per form. When a later slice changes this,
         // the test fails, and the documents that tell people to add those entries have to change with it.

@@ -12,7 +12,7 @@ namespace Silueta.Core;
 /// </para>
 /// <para>
 /// So names are compared by sound, not by letters. The rules below collapse the confusions that actually
-/// happen between and within the two languages — b/v, s/z/c, y/j/ll, silent h, ph/f, qu/k — and leave
+/// happen between and within the two languages — b/v, s/z/c, y/j/soft g, silent h, ph/f, qu/k — and leave
 /// everything else alone. This is deliberately cruder than Double Metaphone: a coarse key with an edit
 /// distance on top catches more ASR damage than a precise key that still demands the right consonant.
 /// The cost is false positives, which is why <see cref="KnownValueDetector"/> only ever compares against
@@ -45,7 +45,10 @@ public static class PhoneticKey
             switch (c)
             {
                 case 'h':
-                    // Silent in Spanish, and the usual home of "Jose" vs "Hose". "ch" keeps its own sound.
+                    // Silent in Spanish: "Herrera" and "Errera" are one name. It is NOT the jota — "Hose"
+                    // keys to "ose" and "Jose" to "yose", which is a real difference in what the letters
+                    // do and is left alone. A comment here used to claim that pair; it never held.
+                    // "ch" keeps its own sound.
                     if (i > 0 && flat[i - 1] == 'c')
                     {
                         sb.Append('h');
@@ -104,12 +107,18 @@ public static class PhoneticKey
                     break;
 
                 case 'g':
-                    sb.Append(next is 'e' or 'i' ? 'h' : 'g');
+                    // Before e or i this is the jota, so it lands on the jota's symbol. It used to land on
+                    // 'h' while j landed on 'y', which wrote one Spanish sound as two different letters:
+                    // "Jimena" and "Gimena" are one name, a recogniser picks between those spellings by
+                    // guesswork, and the key charged an edit for the guess. A name that had also taken real
+                    // damage then had nothing left to pay with. Before a, o or u it is the hard g and stays.
+                    sb.Append(next is 'e' or 'i' ? 'y' : 'g');
                     break;
 
                 case 'j':
                     // Spanish jota and English j both end up here; so does the y of "Yamilet" below,
-                    // because a recogniser hearing "Jamileth" and "Yamilet" is hearing one name.
+                    // because a recogniser hearing "Jamileth" and "Yamilet" is hearing one name — and so
+                    // does soft g above, for the same reason one step further.
                     sb.Append('y');
                     break;
 

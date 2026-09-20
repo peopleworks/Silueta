@@ -64,7 +64,7 @@ in, the residue shows up in the leak rate, which is the honest place for it.
 | `qu` → `k`, `c` → `k` | `Quique` / `Kike` |
 | `j` → `y`, `y` before a vowel → `y`, otherwise `i` | `Jamileth` / `Yamilet`, `Navy` / `Navi` |
 | `h` silent unless it follows `c` | `Herrera` / `Errera` |
-| `g` before `e`/`i` → `h` | `Gilberto` / `Hilberto` |
+| `g` before `e`/`i` → `y`, the same symbol as `j` | `Jimena` / `Gimena` — one Spanish sound |
 | doubled letters collapsed | `Ellenor` / `Eleanor` |
 | apostrophes and hyphens dropped | `Na'vi` → `navi` |
 

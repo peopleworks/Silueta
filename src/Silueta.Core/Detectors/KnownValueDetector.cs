@@ -115,6 +115,15 @@ public sealed class KnownValueDetector : IDetector
     /// nothing changes here: whether a brand should be compared by sound at all ("Lyft" and "lift", "Nvidia"
     /// and "envidia") is a question for a corpus, not for this method.
     /// </para>
+    /// <para>
+    /// A word with a digit in it is compared letter for letter at every length, because it is a number or a
+    /// label and neither is heard through. Nothing in the key is a rule about digits, so on a number it
+    /// offers no tolerance worth having and two ways to be wrong: a near miss on a record number is another
+    /// patient's chart, and the collapsing of repeats made the account <c>1122334455</c> key to the
+    /// everyday <c>12345</c>, so a roster could quietly take a dose or an extension out of a clinical note.
+    /// Measured on the corpus: no change, neither way — the defect is real and this corpus does not contain
+    /// it.
+    /// </para>
     /// </summary>
     private double ScoreWindow(string[] keys, List<Token> tokens, int offset, Target target)
     {
@@ -131,9 +140,17 @@ public sealed class KnownValueDetector : IDetector
                 return 0;
             }
 
+            // A word with a digit in it is a number or a label, and neither is heard through. The phonetic
+            // key is a set of rules about letters, so on digits it offers no tolerance worth having and
+            // plenty of damage: a near miss on a record number is a different patient's chart, and a
+            // "phonetic" match on an account number is a figure removed from a clinical note for nothing.
+            // Checked on both sides, because either one carrying a digit is enough to make this a number.
+            bool numeric = HasDigit(target.Words[k]) || HasDigit(tokens[offset + k].Text);
+
             if (string.Equals(found, wanted, StringComparison.Ordinal))
             {
-                if (!person && wanted.Length < _minFuzzyLength && !Folding.SameLetters(tokens[offset + k].Text, target.Words[k]))
+                bool shortAndNotAPerson = !person && wanted.Length < _minFuzzyLength;
+                if ((shortAndNotAPerson || numeric) && !Folding.SameLetters(tokens[offset + k].Text, target.Words[k]))
                 {
                     return 0;
                 }
@@ -141,7 +158,7 @@ public sealed class KnownValueDetector : IDetector
                 continue;
             }
 
-            if (wanted.Length < _minFuzzyLength || found.Length < _minFuzzyLength)
+            if (numeric || wanted.Length < _minFuzzyLength || found.Length < _minFuzzyLength)
             {
                 return 0;
             }
@@ -156,6 +173,19 @@ public sealed class KnownValueDetector : IDetector
         }
 
         return weakest;
+    }
+
+    private static bool HasDigit(string word)
+    {
+        foreach (char c in word)
+        {
+            if (char.IsDigit(c))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static MatchKind Classify(string matched, string known, double score) => score >= 1.0

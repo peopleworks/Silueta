@@ -156,7 +156,17 @@ public static class PhoneticKey
 
     private static bool IsVowel(char c) => c is 'a' or 'e' or 'i' or 'o' or 'u';
 
-    /// <summary>Doubled letters are a spelling convention, not a sound: Ann and An, Sussan and Susan.</summary>
+    /// <summary>
+    /// Doubled letters are a spelling convention, not a sound: Ann and An, Sussan and Susan.
+    /// <para>
+    /// Digits are exempt, and the exemption is the whole point. A repeat in a word is a way of writing one
+    /// sound; a repeat in a number is another figure. Collapsing it made the key of the account
+    /// <c>1111</c> the single character <c>1</c>, and of <c>1122334455</c> the everyday <c>12345</c> — so a
+    /// roster that knew an account number could quietly redact a dose, a room or an extension. There is no
+    /// recogniser damage to absorb here either: a recogniser that mishears a digit writes a different
+    /// number, not a similar-sounding one.
+    /// </para>
+    /// </summary>
     private static string Collapse(string s)
     {
         if (s.Length < 2)
@@ -168,7 +178,7 @@ public static class PhoneticKey
         char previous = '\0';
         foreach (char c in s)
         {
-            if (c != previous)
+            if (c != previous || char.IsDigit(c))
             {
                 sb.Append(c);
             }

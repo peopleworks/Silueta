@@ -439,63 +439,9 @@ public static class RedactionTools
             ByDetector: manifest.ByDetector,
             ByMatch: manifest.ByMatch,
             RosterSize: context.Known.Count,
-            Caveat: Caveat(context, result));
+            Caveat: Caveats.Paragraph(context, result));
     }
 
-    /// <summary>
-    /// What the caller has to be told alongside the result, every time. The library's whole argument is
-    /// that it measures its own failure rate; until that number exists, saying so is the measurement.
-    /// </summary>
-    private static string Caveat(DeidentificationContext context, RedactionResult result)
-    {
-        var notes = new List<string>();
-
-        if (result.Residue.Count > 0)
-        {
-            notes.Add(
-                $"DO NOT EXPORT THIS TEXT. After redacting, Silueta read its own output back and still " +
-                $"found {result.Residue.Count} identifier(s) in it — an invented name collided with " +
-                "someone real in this record, or a replacement joined the words around it to spell one. " +
-                "Report this to the user rather than passing the text on.");
-        }
-
-        // The rate, in figures, from the measurement embedded in the build rather than from a sentence
-        // written here. This note used to say "most transcripts still held something identifying", which is
-        // the number restated from memory — the second copy of a rule, which in this project has always
-        // ended up disagreeing with the first. A model reads this field out loud to a user, so it is the one
-        // place where "most" is worth least.
-        notes.Add(
-            PublishedLeakRate.Current is { Shipped: not null } measured
-                ? $"Silueta's leak rate is measured only on a small synthetic corpus ({measured.CorpusId}, " +
-                  $"{measured.Documents} documents, measured {measured.MeasuredOn}): {measured.Shipped!.RateInScope} " +
-                  "still said something of a kind this build has a way to find, and " +
-                  $"{measured.Shipped!.Rate} still said something of any kind the annotators marked. This " +
-                  "output is not verified to be de-identified. Names nobody wrote down — nicknames, a " +
-                  "relative mentioned only by relationship, a doctor named once — are invisible to the " +
-                  "roster matcher and survive."
-                : "This build carries no measured leak rate at all, so nothing here says how often Silueta " +
-                  "leaves an identifier behind, and this output is not verified to be de-identified. Names " +
-                  "nobody wrote down — nicknames, a relative mentioned only by relationship, a doctor named " +
-                  "once — are invisible to the roster matcher and survive.");
-
-        if (context.Known.Count == 0)
-        {
-            notes.Add(
-                "No roster was given, so only the pattern rules ran: phone, e-mail, URL, IP, record " +
-                "numbers, dates and ages over 89. EVERY NAME IN THIS TRANSCRIPT SURVIVED.");
-        }
-
-        if (result.Applied.Count == 0)
-        {
-            notes.Add("Nothing was replaced. Check that the roster describes the people in this record.");
-        }
-
-        notes.Add(
-            "No rule emits a postal code or a street address yet, and numbers spoken as words " +
-            "(\"five five five, oh one four seven\") are not recognised.");
-
-        return string.Join(" ", notes);
-    }
 }
 
 /// <summary>

@@ -99,8 +99,40 @@ public class OverlapTests
         // Not an invented name: an invented name here would say the whole mention belongs to one of the
         // two, which is the thing nothing in the run knows.
         Assert.Equal(1, result.Manifest.AmbiguousAttributions);
-        Assert.Empty(Assert.Single(result.Applied).SubjectId);
+        Assert.Equal(string.Empty, Assert.Single(result.Applied).SubjectId);
         Assert.StartsWith("[", result.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Two_shape_rules_meeting_on_one_span_is_not_a_person_nobody_could_name()
+    {
+        // A pattern rule attributes nothing — a phone number belongs to no subject — so a union of two
+        // of them has lost no attribution and must not be counted as one. The counter said otherwise,
+        // and the demo page is where it showed: three people, four shapes, and a claim that the run had
+        // given up on somebody.
+        var context = new DeidentificationContext("rec-1");
+        RedactionResult result = new SiluetaEngine([PatternDetector.FromEmbeddedPack()])
+            .Redact("Call 602-555-0147 about the 3/14/2026 visit. She is 94 years old.", context);
+
+        Assert.NotEmpty(result.Applied);
+        Assert.Equal(0, result.Manifest.AmbiguousAttributions);
+    }
+
+    [Fact]
+    public void A_name_found_inside_an_email_address_is_not_a_lost_attribution()
+    {
+        // The other half of the same rule, and the one the demo page actually showed: the roster's
+        // "Yamilet" is found inside "jamileth.v@example.com", so a person's span sits inside an e-mail
+        // span that belongs to nobody. The e-mail becomes a label because that is what the policy says
+        // for an e-mail, not because the run could not say whose it was.
+        var context = new DeidentificationContext("rec-1")
+            .AddPerson("family-1", "Yamilet Vasquez", IdentifierKind.FamilyName);
+
+        RedactionResult result = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], new PseudonymVault())
+            .Redact("She would email jamileth.v@example.com about it.", context);
+
+        Assert.Contains("[EMAIL]", result.Text, StringComparison.Ordinal);
+        Assert.Equal(0, result.Manifest.AmbiguousAttributions);
     }
 
     [Fact]

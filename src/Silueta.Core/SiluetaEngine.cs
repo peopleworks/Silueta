@@ -357,7 +357,7 @@ public sealed partial class SiluetaEngine
                 end = Math.Max(end, ordered[last].End);
             }
 
-            accepted.Add(Unite(ordered, i, last, start, end, ref ambiguous));
+            accepted.Add(Unite(ordered, i, last, start, end, policy, ref ambiguous));
             i = last + 1;
         }
 
@@ -365,7 +365,8 @@ public sealed partial class SiluetaEngine
     }
 
     /// <summary>One component of overlapping candidates, as the single span that replaces them.</summary>
-    private static Detection Unite(List<Detection> ordered, int from, int to, int start, int end, ref int ambiguous)
+    private static Detection Unite(
+        List<Detection> ordered, int from, int to, int start, int end, SiluetaPolicy policy, ref int ambiguous)
     {
         Detection anchor = ordered[from];
         for (int i = from + 1; i <= to; i++)
@@ -415,8 +416,23 @@ public sealed partial class SiluetaEngine
 
         if (disagreement || subject is not { Length: > 0 })
         {
+            // Counted only where an invented name was actually lost: the span's kind is one the policy
+            // replaces with a surrogate, and somebody in the component had a subject to lose. A phone
+            // number belongs to no subject and becomes a label either way, so two shape rules meeting —
+            // or a name found inside an e-mail address — is not a person nobody could name. The counter
+            // said it was, and the demo page is where that showed: a transcript with three people, all
+            // three of them named in the output, reporting one lost attribution.
+            bool anyoneWasNamed = false;
+            for (int i = from; i <= to && !anyoneWasNamed; i++)
+            {
+                anyoneWasNamed = ordered[i].SubjectId is { Length: > 0 };
+            }
+
             subject = string.Empty;
-            ambiguous++;
+            if (anyoneWasNamed && policy.ActionFor(anchor.Kind) == RedactionAction.Surrogate)
+            {
+                ambiguous++;
+            }
         }
 
         return new Detection(

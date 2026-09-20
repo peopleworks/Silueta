@@ -1,0 +1,13 @@
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        @* No FocusOnNavigate: it exists so a screen reader lands somewhere sensible after a route
+           change, and there is one route here. It also drew a focus ring around the title for every
+           visitor who had not touched the keyboard. *@
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p>There is only one page here, and this is not it. <a href="">Back to the demo.</a></p>
+        </LayoutView>
+    </NotFound>
+</Router>

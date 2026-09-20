@@ -40,3 +40,7 @@ out/
 
 # Audio and intermediate files from the corpus generator: regenerable, and large.
 tools/corpus/work/
+
+# Screenshots and traces a browser automation tool drops in the working tree while somebody is looking
+# at the demo page. Regenerable, and none of it belongs in the history.
+.playwright-mcp/

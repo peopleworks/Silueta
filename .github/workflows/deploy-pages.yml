@@ -1,0 +1,88 @@
+# Publish the browser demo to GitHub Pages.
+#
+# For a privacy tool the demo is the argument: a page where you paste a transcript, watch it
+# de-identified, and can open the network tab to see that nothing was sent anywhere. That is only true
+# because the whole library is compiled into the WebAssembly the browser downloads — so this workflow
+# checks that the things which make it true actually shipped, rather than trusting the build.
+#
+# Enable it once in Settings → Pages → Source: "GitHub Actions". Until then this runs and deploys nothing.
+name: Deploy the demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish
+        run: dotnet publish src/Silueta.Web -c Release -o publish
+
+      # A project site lives at /<repo>/, so the base href has to say so or every asset 404s.
+      - name: Rewrite the base href
+        run: sed -i 's|<base href="/" />|<base href="/${{ github.event.repository.name }}/" />|g' publish/wwwroot/index.html
+
+      # Pages has no SPA fallback of its own; serving index.html as 404.html gives it one.
+      - name: SPA fallback
+        run: cp publish/wwwroot/index.html publish/wwwroot/404.html
+
+      # The page prints its own measured leak rate, which it reads from a resource embedded in
+      # Silueta.Core. Trimming for the browser is exactly where an embedded resource or a
+      # source-generated converter goes missing, and the failure is quiet: the page would still load and
+      # would simply say it has no measurement. A privacy tool whose demo silently drops its own error
+      # rate has spent the credibility the demo was built to earn, so the artifact is searched for it.
+      - name: The measured leak rate shipped with the demo
+        run: |
+          if ! grep -rqa "silueta-tts-asr" publish/wwwroot/_framework/; then
+            echo "::error::No published measurement in the artifact. The page would load and say it has none."
+            exit 1
+          fi
+          echo "The embedded measurement is in the artifact."
+
+      # The claim on the page is that nothing leaves the browser. These are the two ways that stops
+      # being true by accident: a stylesheet or script pulled from somebody else's domain, and an
+      # HttpClient someone adds later for a "small" feature.
+      - name: Nothing on the page is fetched from anywhere else
+        run: |
+          if grep -Eqi '(src|href)="https?://' publish/wwwroot/index.html; then
+            echo "::error::index.html loads something from another origin. The demo's whole claim is that it does not."
+            grep -Eni '(src|href)="https?://' publish/wwwroot/index.html
+            exit 1
+          fi
+          echo "Every asset on the page is served from the page."
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

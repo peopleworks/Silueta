@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- The demo is the argument, not a product: it is deployed to Pages, never published to NuGet. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.6" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Core, and nothing else. No HTTP client, no telemetry package, no font CDN: the page's whole
+         claim is that the transcript never leaves the browser, and a dependency that could contradict
+         it is not worth whatever it would add. -->
+    <ProjectReference Include="..\Silueta.Core\Silueta.Core.csproj" />
+  </ItemGroup>
+
+</Project>

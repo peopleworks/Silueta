@@ -22,6 +22,7 @@ chats. Built hardest for what a speech recogniser writes, where every name arriv
 [![MCP server](https://img.shields.io/badge/MCP-server-4E7C6B?style=flat-square)](#use-it-from-an-agent)
 [![Agent skill](https://img.shields.io/badge/agent-skill-4E7C6B?style=flat-square)](SKILL.md)
 [![Leak rate: measured, and high](https://img.shields.io/badge/leak%20rate-measured%2C%20and%20high-C0503F?style=flat-square)](#the-number)
+[![Try it in your browser](https://img.shields.io/badge/try%20it-in%20your%20browser-4E7C6B?style=flat-square)](https://peopleworks.github.io/Silueta/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![PeopleWorks](https://img.shields.io/badge/by-PeopleWorks-636f61?style=flat-square)](https://mvp.microsoft.com/en-US/mvp/profile/24060a02-dbc6-44ec-bca5-c213ff9835c5)
 
@@ -95,6 +96,13 @@ counted as failures, neither is a design decision, and the difference between th
 leak rate is for. That rate is [measured, and it is below](#the-number).
 
 ## Try it
+
+**[In your browser, with nothing uploaded →](https://peopleworks.github.io/Silueta/)** Paste a transcript,
+name the people it is about, and watch what happens to it. The page prints what was found and how, what
+survived, and this build's own measured failure rate beside the result. It is a Blazor WebAssembly page
+with no server behind it and no HTTP client in it: the library runs in the tab, so the transcript has
+nowhere to go, and the network tab is the proof. Use invented text anyway — it is a public page and
+somebody may be looking over your shoulder.
 
 ```bash
 dotnet run --project src/Silueta.Cli -- demo                  # the example above
@@ -447,6 +455,7 @@ claim than "PII redaction", and it is the one this repository can defend.
 | `corpus-synthetic/` | The gold corpus the published number is measured on. Synthetic, and nothing real is ever committed. |
 | `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |
 | `tools/Silueta.Calibration` | Re-measures this build against that corpus and writes both copies of the number: the JSON embedded in `Silueta.Core`, and the table above. |
+| `src/Silueta.Web` | The browser demo, deployed to GitHub Pages. One page, no server, no HTTP client. |
 | `tests/Silueta.Core.Tests` | The tests — including the ones that hold this README's demo and numbers to the code. |
 | `Docs/` | `ALGORITHM.md`, every decision and what it costs; and the brand. |
 

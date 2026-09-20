@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="t">
+  <title id="t">Silueta</title>
+  <!--
+    The same mark drawn for 16-32px: a shallower wave and a wider cut.
+    At a favicon's size the hole is the whole design, so it has to stay at least two pixels across and
+    leave at least that much sheet around it. The full-size mark (silueta.svg) closes up to a smudge
+    here, which is why this file exists instead of a transform on that one.
+  -->
+  <mask id="sheet-cut">
+    <path d="M12 7C21 4 33 11 41 7C46 5 52 7 53 11L53 53C52 57 46 59 41 57C33 53 21 60 12 57Z" fill="#fff"/>
+    <g transform="translate(32 32) scale(0.72) translate(-32 -32)">
+      <path d="M45 18C45 12 37 9 30 9C22 9 17 13 17 19C17 31 45 27 45 43C45 51 38 55 30 55C22 55 17 51 17 46"
+            fill="none" stroke="#000" stroke-width="12.5" stroke-linecap="round"/>
+    </g>
+  </mask>
+  <path d="M12 7C21 4 33 11 41 7C46 5 52 7 53 11L53 53C52 57 46 59 41 57C33 53 21 60 12 57Z"
+        fill="#0E1317" mask="url(#sheet-cut)"/>
+</svg>

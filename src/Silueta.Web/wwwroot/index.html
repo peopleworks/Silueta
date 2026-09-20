@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Silueta — de-identify a transcript, in your browser</title>
+    <meta name="description" content="Paste a conversation transcript and watch it de-identified in the browser. Nothing is uploaded: the whole library runs as WebAssembly, and it prints its own measured failure rate." />
+    <base href="/" />
+    <link rel="preload" id="webassembly" />
+    <!-- Self-hosted, all of it. A font or a stylesheet from a CDN is a request carrying a Referer, and
+         this page's entire claim is that nothing about your transcript leaves the machine. -->
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <!-- Filled in at publish time with the fingerprinted module names. Without it the loader asks for
+         an unfingerprinted dotnet.js and the page never starts. -->
+    <script type="importmap"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="booting">
+            <p>Loading the library into your browser…</p>
+            <p class="booting-why">It runs here, not on a server. That is the point, and it is why this takes a moment.</p>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        Something broke. <a href="." class="reload">Reload</a>
+        <span class="dismiss">🗙</span>
+    </div>
+
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+</body>
+
+</html>

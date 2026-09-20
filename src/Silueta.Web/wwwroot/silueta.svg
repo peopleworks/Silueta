@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="t">
+  <title id="t">Silueta</title>
+  <!--
+    The mark: a sheet of canvas with the S cut out of it.
+    A silhouette is what is left when the person is taken away, so the letter is the hole and not the
+    drawing. The wave along the top and bottom edges is what makes it cloth rather than a rectangle.
+    The cut is a real hole — the page shows through it — so this mark needs a flat background.
+    For a dark background use silueta-dark.svg; for 16-32px use favicon.svg, which is drawn thicker.
+  -->
+  <mask id="sheet-cut">
+    <path d="M11 9C21 4 33 13 42 8C48 5 52 6 54 10L54 54C52 59 48 60 42 57C33 52 21 61 11 56Z" fill="#fff"/>
+    <g transform="translate(32 32) scale(0.74) translate(-32 -32)">
+      <path d="M45 18C45 12 37 9 30 9C22 9 17 13 17 19C17 31 45 27 45 43C45 51 38 55 30 55C22 55 17 51 17 46"
+            fill="none" stroke="#000" stroke-width="10" stroke-linecap="round"/>
+    </g>
+  </mask>
+  <path d="M11 9C21 4 33 13 42 8C48 5 52 6 54 10L54 54C52 59 48 60 42 57C33 52 21 61 11 56Z"
+        fill="#0E1317" mask="url(#sheet-cut)"/>
+</svg>

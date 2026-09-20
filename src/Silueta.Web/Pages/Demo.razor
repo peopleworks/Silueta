@@ -1,0 +1,392 @@
+@page "/"
+@using System.Globalization
+
+<PageTitle>Silueta — de-identify a transcript, in your browser</PageTitle>
+
+<header class="hero">
+    <h1>What is left when the person is taken out</h1>
+    <p class="lede">
+        Silueta de-identifies conversation transcripts — the text a speech recogniser produces, not the text
+        somebody typed — so an organisation can put them in front of an AI it does not run. Paste one below
+        and watch it happen.
+    </p>
+    <p class="privacy">
+        <strong>Nothing you type leaves this page.</strong> The whole library is compiled into the
+        WebAssembly your browser already downloaded: the pattern rules, the word lists, the invented names
+        and the measured failure rate. There is no server to send a transcript to. Open the network tab and
+        check.
+    </p>
+</header>
+
+<section class="card input">
+    <div class="samples">
+        <span class="samples-label">Try one:</span>
+        @for (int i = 0; i < Samples.All.Count; i++)
+        {
+            int index = i;
+            <button class="@(_sample == index ? "chip chip-on" : "chip")" @onclick="() => LoadSample(index)">
+                @Samples.All[index].Title
+            </button>
+        }
+    </div>
+
+    @if (_sample is int chosen)
+    {
+        <p class="sample-why">@Samples.All[chosen].Why</p>
+    }
+
+    <label class="field-label" for="transcript">The transcript</label>
+    <textarea id="transcript" rows="7" spellcheck="false"
+              @bind="_text" @bind:event="oninput" @bind:after="Run"
+              placeholder="Paste a transcript here. Invented text only, please — this is a public demo page."></textarea>
+
+    <div class="roster">
+        <div class="roster-head">
+            <label class="field-label">Who this record is about</label>
+            <p class="hint">
+                The roster is the whole idea: an agency already knows its own people, and matching a list you
+                hold beats guessing which capitalised word is a name — it never deletes "Parkinson" by
+                mistake. Without a roster, only the shape rules fire and every name survives.
+            </p>
+        </div>
+
+        @foreach (RosterRow row in _roster)
+        {
+            <div class="roster-row">
+                <input placeholder="Name as you hold it, e.g. Eleanor Vasquez"
+                       @bind="row.Value" @bind:event="oninput" @bind:after="Run" />
+                <select @bind="row.Kind" @bind:after="Run">
+                    @foreach (string kind in Kinds)
+                    {
+                        <option value="@kind">@kind</option>
+                    }
+                </select>
+                <input class="subject" placeholder="subject id"
+                       @bind="row.SubjectId" @bind:event="oninput" @bind:after="Run" />
+                <button class="remove" title="Remove this entry" @onclick="() => Remove(row)">&times;</button>
+            </div>
+        }
+
+        <div class="roster-actions">
+            <button class="link" @onclick="AddRow">+ Add someone</button>
+            <button class="link" @onclick="Reset">Reset the invented names</button>
+        </div>
+    </div>
+</section>
+
+@if (_error is { Length: > 0 })
+{
+    <section class="card verdict bad"><p>@_error</p></section>
+}
+else if (_result is not null && _context is not null)
+{
+    <section class="verdict-row">
+        <div class="@(_result.Residue.Count == 0 ? "card verdict ok" : "card verdict bad")">
+            @if (_result.Residue.Count == 0)
+            {
+                <h2>This run holds</h2>
+                <p>
+                    Silueta read its own output back and found nothing it recognises.
+                    <strong>That is not proof of anything</strong> — a name it never knew is invisible here
+                    too. It is a self-consistency check, and the number below is the honest one.
+                </p>
+            }
+            else
+            {
+                <h2>Do not export this</h2>
+                <p>
+                    After redacting, the same pipeline still finds @_result.Residue.Count identifier(s) in its
+                    own output. An invented name collided with someone real here, or a replacement joined the
+                    words around it and spelled one.
+                </p>
+            }
+        </div>
+
+        <div class="card tiles">
+            <div class="tile">
+                <span class="n">@_result.Applied.Count</span>
+                <span class="k">spans replaced</span>
+            </div>
+            <div class="tile">
+                <span class="n">@_result.Manifest.Subjects</span>
+                <span class="k">people, each with one invented name</span>
+            </div>
+            <div class="tile @(HeardThrough > 0 ? "tile-lit" : null)">
+                <span class="n">@HeardThrough</span>
+                <span class="k">found only by sound, not by spelling</span>
+            </div>
+            @if (_result.Manifest.AmbiguousAttributions > 0)
+            {
+                <div class="tile tile-warn">
+                    <span class="n">@_result.Manifest.AmbiguousAttributions</span>
+                    <span class="k">labelled, because nobody could say whose they were</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="panes">
+        <div class="card pane">
+            <h2>As the recogniser wrote it</h2>
+            <p class="pane-hint">Highlighted is what Silueta found. What is not highlighted is what survives.</p>
+            <pre class="text">@((MarkupString)Highlight(_text, _result.Applied, residue: false))</pre>
+        </div>
+
+        <div class="card pane">
+            <h2>What leaves the building</h2>
+            <p class="pane-hint">
+                People become other invented people, so coreference survives and the analysis still works.
+                Shapes — a phone number, an address — become labels, because an invented phone number is
+                somebody's.
+            </p>
+            <pre class="text">@((MarkupString)Highlight(_result.Text, _result.Residue, residue: true))</pre>
+        </div>
+    </section>
+
+    <section class="card legend">
+        <h2>What it did, and how</h2>
+        <div class="legend-groups">
+            <div>
+                <h3>By kind</h3>
+                @if (_result.Manifest.ByKind.Count == 0) { <p class="none">Nothing.</p> }
+                <ul>
+                    @foreach ((string kind, int count) in _result.Manifest.ByKind.OrderByDescending(p => p.Value))
+                    {
+                        <li><span class="swatch @KindClass(kind)"></span>@kind <b>@count</b></li>
+                    }
+                </ul>
+            </div>
+            <div>
+                <h3>By how it matched</h3>
+                @if (_result.Manifest.ByMatch.Count == 0) { <p class="none">Nothing.</p> }
+                <ul>
+                    @foreach ((string match, int count) in _result.Manifest.ByMatch.OrderByDescending(p => p.Value))
+                    {
+                        <li>@MatchWords(match) <b>@count</b></li>
+                    }
+                </ul>
+            </div>
+            <div>
+                <h3>By detector</h3>
+                <ul>
+                    @foreach ((string detector, int count) in _result.Manifest.ByDetector.OrderByDescending(p => p.Value))
+                    {
+                        <li>@detector <b>@count</b></li>
+                    }
+                </ul>
+                <p class="rule">Tolerance: @MatchTolerance.Default.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="card survives">
+        <h2>Read this before you trust it</h2>
+        <ul class="caveats">
+            @foreach (string note in Caveats.For(_context, _result))
+            {
+                <li>@note</li>
+            }
+        </ul>
+
+        @if (Caveats.NotCoveredByAnyRule().Count > 0)
+        {
+            <p class="gap">
+                <strong>Kinds no rule in this build looks for:</strong>
+                @string.Join(", ", Caveats.NotCoveredByAnyRule()).
+                Any of those in your transcript survive whole, and the check above cannot see them either.
+            </p>
+        }
+    </section>
+}
+
+<section class="card number">
+    <h2>How often this build is wrong</h2>
+    @if (PublishedLeakRate.Current is { Shipped: { } shipped } measured)
+    {
+        <div class="rates">
+            <div class="rate">
+                <span class="n">@Percent(shipped.RateInScope.Rate)</span>
+                <span class="k">of transcripts still said something this build has a way to find</span>
+                <span class="ci">95% CI @Percent(shipped.RateInScope.Lower)–@Percent(shipped.RateInScope.Upper)</span>
+            </div>
+            <div class="rate">
+                <span class="n">@Percent(shipped.Rate.Rate)</span>
+                <span class="k">still said something of any kind the annotators marked</span>
+                <span class="ci">95% CI @Percent(shipped.Rate.Lower)–@Percent(shipped.Rate.Upper)</span>
+            </div>
+        </div>
+        <p class="provenance">
+            Measured on <b>@measured.CorpusId</b>, @measured.Documents documents, @measured.MeasuredOn,
+            engine @measured.Engine, lineage @measured.Lineage.
+            @if (measured.Thesis is { } thesis)
+            {
+                <text>
+                    Against the same roster matched letter for letter: recall @thesis.RecallDifference,
+                    leak rate @thesis.LeakRateDifference. That difference is what matching by sound is worth.
+                </text>
+            }
+        </p>
+        <ul class="corpus-caveats">
+            @foreach (string caveat in measured.Caveats)
+            {
+                <li>@caveat</li>
+            }
+            <li>
+                Synthetic transcripts, written by the author of the matcher and spoken by a computer. A
+                number from thirty invented documents is a floor to argue from, not a promise about yours.
+            </li>
+        </ul>
+    }
+    else
+    {
+        <p class="none">
+            This build carries no measured leak rate, so there is nothing here to quote. That is the honest
+            state of a fork that has not measured itself, and it is said out loud rather than left blank.
+        </p>
+    }
+</section>
+
+@code {
+    private static readonly string[] Kinds = [.. Enum.GetNames<IdentifierKind>().Order(StringComparer.Ordinal)];
+
+    private string _text = string.Empty;
+    private List<RosterRow> _roster = [];
+    private int? _sample;
+
+    private RedactionResult? _result;
+    private DeidentificationContext? _context;
+    private string? _error;
+
+    // One vault for the whole session, which is both the correct behaviour and the point: a subject keeps
+    // one invented name across a corpus, and that is what makes a dashboard possible afterwards. A fresh
+    // vault per keystroke would rename everybody as you typed.
+    private PseudonymVault _vault = new();
+
+    protected override void OnInitialized() => LoadSample(0);
+
+    private int HeardThrough =>
+        _result is null ? 0 :
+        _result.Manifest.ByMatch.GetValueOrDefault(nameof(MatchKind.Phonetic)) +
+        _result.Manifest.ByMatch.GetValueOrDefault(nameof(MatchKind.Fuzzy));
+
+    private void LoadSample(int index)
+    {
+        Sample sample = Samples.All[index];
+        _sample = index;
+        _text = sample.Text;
+        _roster = [.. sample.Roster.Select(r => new RosterRow { Value = r.Value, Kind = r.Kind, SubjectId = r.SubjectId })];
+        Reset();
+    }
+
+    private void AddRow()
+    {
+        _roster.Add(new RosterRow { SubjectId = $"subject-{_roster.Count + 1}" });
+        Run();
+    }
+
+    private void Remove(RosterRow row)
+    {
+        _roster.Remove(row);
+        Run();
+    }
+
+    private void Reset()
+    {
+        _vault = new PseudonymVault();
+        Run();
+    }
+
+    private void Run()
+    {
+        _error = null;
+        _result = null;
+        _context = null;
+
+        if (string.IsNullOrWhiteSpace(_text))
+        {
+            return;
+        }
+
+        try
+        {
+            // An opaque record id, because the manifest travels and a file name or a patient's name in it
+            // publishes an identifier through the one artefact meant to prove none were published. Here it
+            // is simply a constant: the page has no record to name.
+            var context = new DeidentificationContext("web-demo");
+            foreach (RosterRow row in _roster)
+            {
+                if (string.IsNullOrWhiteSpace(row.Value) || !IdentifierKindExtensions.TryParseName(row.Kind, out IdentifierKind kind))
+                {
+                    continue;
+                }
+
+                string subject = string.IsNullOrWhiteSpace(row.SubjectId) ? row.Value.Trim() : row.SubjectId.Trim();
+                context.AddPerson(subject, row.Value, kind);
+            }
+
+            _context = context;
+            _result = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], _vault).Redact(_text, context);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            // Never the transcript, and never the value that caused it: an exception message is one of the
+            // ways identified text escapes a process that was supposed to be removing it.
+            _error = $"That roster cannot be used: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// The text with every span wrapped in a mark. Offsets come from the detections, which is why nothing
+    /// here has to search for a value — and why the page never holds a list of what was found as text.
+    /// </summary>
+    private static string Highlight(string text, IReadOnlyList<Detection> spans, bool residue)
+    {
+        var sb = new System.Text.StringBuilder(text.Length + (spans.Count * 64));
+        int at = 0;
+
+        foreach (Detection span in spans.OrderBy(s => s.Start))
+        {
+            if (span.Start < at || span.End > text.Length)
+            {
+                continue;
+            }
+
+            sb.Append(Escape(text[at..span.Start]));
+            sb.Append("<mark class=\"")
+              .Append(residue ? "residue" : KindClass(span.Kind.ToString()))
+              .Append("\" title=\"")
+              .Append(Escape($"{span.Kind} · {MatchWords(span.Match.ToString())} · {span.DetectorId}"))
+              .Append("\">")
+              .Append(Escape(text[span.Start..span.End]))
+              .Append("</mark>");
+
+            at = span.End;
+        }
+
+        sb.Append(Escape(text[at..]));
+        return sb.ToString();
+    }
+
+    private static string Escape(string text) =>
+        text.Replace("&", "&amp;", StringComparison.Ordinal)
+            .Replace("<", "&lt;", StringComparison.Ordinal)
+            .Replace(">", "&gt;", StringComparison.Ordinal);
+
+    /// <summary>A colour per family of kind: people, the shapes, and everything else.</summary>
+    private static string KindClass(string kind) =>
+        IdentifierKindExtensions.TryParseName(kind, out IdentifierKind parsed) && parsed.IsPersonName() ? "k-person"
+            : kind is nameof(IdentifierKind.Organization) or nameof(IdentifierKind.Product) ? "k-org"
+            : "k-shape";
+
+    private static string MatchWords(string match) => match switch
+    {
+        nameof(MatchKind.Exact) => "the same letters",
+        nameof(MatchKind.Phonetic) => "the same sound",
+        nameof(MatchKind.Fuzzy) => "close enough by sound",
+        nameof(MatchKind.Pattern) => "by its shape",
+        _ => match,
+    };
+
+    private static string Percent(double value) =>
+        value.ToString("0.0%", CultureInfo.InvariantCulture);
+}

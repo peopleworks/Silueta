@@ -1,0 +1,219 @@
+/* Silueta's demo page.
+   The palette is the brand's: the dark canvas of the mark, the green that stands for something found,
+   the amber for something the run decided on its own, the red for something that survived. Self-hosted
+   and system fonts only — a stylesheet or a font fetched from a CDN is a request that leaves the
+   machine, and this page's whole claim is that nothing does. */
+
+:root {
+    --ink: #12191E;
+    --ink-soft: #2A353B;
+    --paper: #F7F8F7;
+    --card: #FFFFFF;
+    --line: #DCE1DE;
+    --muted: #5C6B70;
+    --green: #3E6656;
+    --green-soft: #D8E8DF;
+    --amber: #9A6B1F;
+    --amber-soft: #F6E7CA;
+    --red: #B23F2C;
+    --red-soft: #F7DDD7;
+    --stone: #8B989D;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgb(18 25 30 / 6%), 0 8px 24px rgb(18 25 30 / 6%);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --ink: #E7EAE6;
+        --ink-soft: #C6CEC9;
+        --paper: #0E1317;
+        --card: #171E24;
+        --line: #2A353B;
+        --muted: #8B989D;
+        --green: #7FB39D;
+        --green-soft: #1C2E27;
+        --amber: #E7B36A;
+        --amber-soft: #32281A;
+        --red: #E06C5A;
+        --red-soft: #35201C;
+        --shadow: none;
+    }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+.shell { max-width: 1120px; margin: 0 auto; padding: 0 20px 72px; }
+
+/* ---------- chrome ---------- */
+
+.masthead {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 22px 0 8px;
+}
+
+.masthead .mark { height: 34px; }
+/* Specificity, not order: `.masthead .mark` beats a bare `.dark-only`, so both marks used to render
+   one above the other. The switch is written at the same weight as the rule it has to beat. */
+.masthead .light-only { display: block; }
+.masthead .dark-only { display: none; }
+
+@media (prefers-color-scheme: dark) {
+    .masthead .light-only { display: none; }
+    .masthead .dark-only { display: block; }
+}
+
+.masthead nav { display: flex; gap: 18px; }
+.masthead nav a, .colophon a { color: var(--muted); text-decoration: none; border-bottom: 1px solid transparent; }
+.masthead nav a:hover, .colophon a:hover { color: var(--ink); border-bottom-color: var(--line); }
+
+.colophon { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+
+/* ---------- hero ---------- */
+
+.hero { padding: 28px 0 8px; max-width: 74ch; }
+.hero h1 { font-size: clamp(30px, 4.4vw, 46px); line-height: 1.12; letter-spacing: -0.02em; margin: 0 0 14px; }
+.lede { font-size: 19px; color: var(--ink-soft); margin: 0 0 16px; }
+
+.privacy {
+    margin: 0; padding: 14px 16px; font-size: 15px;
+    background: var(--green-soft); border-left: 3px solid var(--green);
+    border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* ---------- cards ---------- */
+
+.card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 22px; margin-top: 20px; box-shadow: var(--shadow);
+}
+
+.card h2 { font-size: 18px; margin: 0 0 6px; letter-spacing: -0.01em; }
+.card h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 10px; }
+.hint, .pane-hint, .sample-why { color: var(--muted); font-size: 14px; margin: 4px 0 0; }
+.none { color: var(--muted); font-style: italic; }
+
+/* ---------- input ---------- */
+
+.samples { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.samples-label { color: var(--muted); font-size: 14px; margin-right: 4px; }
+
+.chip {
+    font: inherit; font-size: 14px; cursor: pointer;
+    background: transparent; color: var(--ink-soft);
+    border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px;
+}
+.chip:hover { border-color: var(--stone); color: var(--ink); }
+.chip-on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+/* Specificity again: `.chip:hover` outranks `.chip-on`, so hovering the chosen chip painted its label
+   the same near-black as its background and the label vanished. */
+.chip-on:hover { color: var(--paper); border-color: var(--ink); }
+
+.field-label { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 18px 0 8px; }
+
+textarea, input, select {
+    font: inherit; color: var(--ink); background: var(--paper);
+    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%;
+}
+textarea { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 14px; line-height: 1.7; resize: vertical; }
+textarea:focus, input:focus, select:focus { outline: 2px solid var(--green); outline-offset: 1px; border-color: transparent; }
+
+.roster { margin-top: 10px; }
+.roster-head .field-label { margin-top: 0; }
+.roster-row { display: grid; grid-template-columns: 1fr 190px 150px 34px; gap: 8px; margin-top: 8px; }
+.roster-row .remove {
+    border: 1px solid var(--line); background: transparent; color: var(--muted);
+    border-radius: 10px; cursor: pointer; font-size: 18px; line-height: 1;
+}
+.roster-row .remove:hover { color: var(--red); border-color: var(--red); }
+
+.roster-actions { display: flex; gap: 18px; margin-top: 12px; }
+.link { background: none; border: none; padding: 0; font: inherit; font-size: 14px; color: var(--green); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.link:hover { color: var(--ink); }
+
+/* ---------- verdict and tiles ---------- */
+
+.verdict-row { display: grid; grid-template-columns: 1.15fr 1fr; gap: 20px; align-items: stretch; }
+.verdict-row > .card { margin-top: 20px; }
+
+.verdict.ok { border-left: 4px solid var(--green); }
+.verdict.ok h2 { color: var(--green); }
+.verdict.bad { border-left: 4px solid var(--red); background: var(--red-soft); }
+.verdict.bad h2 { color: var(--red); }
+.verdict p { margin: 0; font-size: 15px; color: var(--ink-soft); }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 14px; align-content: start; }
+.tile { display: flex; flex-direction: column; gap: 2px; }
+.tile .n { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
+.tile .k { font-size: 12.5px; color: var(--muted); }
+.tile-lit .n { color: var(--green); }
+.tile-warn .n { color: var(--amber); }
+
+/* ---------- the two panes ---------- */
+
+.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.panes > .card { margin-top: 20px; }
+
+pre.text {
+    margin: 14px 0 0; padding: 16px; background: var(--paper);
+    border: 1px solid var(--line); border-radius: 10px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px; line-height: 1.85; white-space: pre-wrap; word-break: break-word;
+}
+
+mark { padding: 1px 3px; border-radius: 4px; background: none; color: inherit; border-bottom: 2px solid; }
+mark.k-person { background: var(--green-soft); border-color: var(--green); }
+mark.k-shape { background: var(--amber-soft); border-color: var(--amber); }
+mark.k-org { background: var(--red-soft); border-color: var(--stone); }
+mark.residue { background: var(--red-soft); border-color: var(--red); font-weight: 600; }
+
+/* ---------- legend ---------- */
+
+.legend-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 24px; margin-top: 14px; }
+.legend-groups ul { list-style: none; margin: 0; padding: 0; }
+.legend-groups li { display: flex; align-items: center; gap: 8px; font-size: 14.5px; padding: 3px 0; }
+.legend-groups li b { margin-left: auto; font-variant-numeric: tabular-nums; }
+.swatch { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.swatch.k-person { background: var(--green); }
+.swatch.k-shape { background: var(--amber); }
+.swatch.k-org { background: var(--stone); }
+.rule { font-size: 13px; color: var(--muted); margin: 10px 0 0; }
+
+/* ---------- caveats and the number ---------- */
+
+.caveats, .corpus-caveats { margin: 12px 0 0; padding-left: 20px; }
+.caveats li, .corpus-caveats li { font-size: 14.5px; color: var(--ink-soft); padding: 4px 0; }
+.corpus-caveats li { color: var(--muted); font-size: 13.5px; }
+.gap { margin: 14px 0 0; font-size: 14.5px; color: var(--ink-soft); }
+
+.number { border-top: 3px solid var(--ink); }
+.rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 22px; margin-top: 14px; }
+.rate .n { display: block; font-size: 40px; font-weight: 650; letter-spacing: -0.03em; line-height: 1.05; }
+.rate .k { display: block; font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+.rate .ci { display: block; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.provenance { font-size: 13.5px; color: var(--muted); margin: 16px 0 0; }
+
+/* ---------- boot and errors ---------- */
+
+.booting { max-width: 1120px; margin: 0 auto; padding: 80px 20px; color: var(--muted); }
+.booting p { margin: 0 0 6px; }
+.booting-why { font-size: 14px; }
+
+#blazor-error-ui {
+    display: none; position: fixed; inset: auto 0 0 0; z-index: 1000;
+    background: var(--red-soft); color: var(--red); padding: 12px 20px; font-size: 14px;
+}
+#blazor-error-ui .dismiss { cursor: pointer; float: right; }
+
+@media (max-width: 900px) {
+    .panes, .verdict-row { grid-template-columns: 1fr; }
+    .roster-row { grid-template-columns: 1fr 1fr; }
+    .roster-row .remove { grid-column: 2; justify-self: end; width: 34px; }
+}

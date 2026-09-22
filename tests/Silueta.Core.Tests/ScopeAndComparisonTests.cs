@@ -16,7 +16,7 @@ namespace Silueta.Core.Tests;
 public class ScopeAndComparisonTests
 {
     private static GoldCorpus Synthetic() =>
-        GoldCorpus.Load(Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus-synthetic", "tts-asr"));
+        GoldCorpus.Load(Path.Combine(Repo.Root, "corpus-synthetic", "tts-asr"));
 
     [Fact]
     public void The_pattern_pack_says_which_kinds_it_has_rules_for()

@@ -1,7 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Silueta.Core ships for .NET 9 and .NET 10, so every test that exercises only Core runs on both.
+         The published leak rate is among them on purpose: if the library leaned on something the runtime
+         changes — culture, ordering, a regex engine — a different number on one runtime is where it shows. -->
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
@@ -20,12 +23,26 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Silueta.Core\Silueta.Core.csproj" />
+  </ItemGroup>
+
+  <!-- The programs built on Core target .NET 10 only, so their tests do too. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <!-- The MCP server is a privacy boundary, not a wrapper: its tools decide what reaches a model. -->
     <ProjectReference Include="..\..\src\Silueta.Mcp\Silueta.Mcp.csproj" />
     <!-- The CLI decides what is written to disk and what is printed, which is a rule like any other. -->
     <ProjectReference Include="..\..\src\Silueta.Cli\Silueta.Cli.csproj" />
     <!-- The calibration tool decides what the README's published block says, which is the same kind of rule. -->
     <ProjectReference Include="..\..\tools\Silueta.Calibration\Silueta.Calibration.csproj" />
+  </ItemGroup>
+
+  <!-- The only files left out on .NET 9, and each is here for one reason: it uses a type from a project that
+       exists only on .NET 10. NetTenOnlyTests holds this list to that rule, so a Core test cannot be parked
+       here to dodge a failure on the older runtime. -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <Compile Remove="CliTests.cs" />             <!-- Silueta.Cli -->
+    <Compile Remove="ExplainNameMatchTests.cs" /> <!-- Silueta.Mcp -->
+    <Compile Remove="McpBoundaryTests.cs" />      <!-- Silueta.Mcp -->
+    <Compile Remove="CalibratorTests.cs" />       <!-- Silueta.Calibration -->
   </ItemGroup>
 
 </Project>

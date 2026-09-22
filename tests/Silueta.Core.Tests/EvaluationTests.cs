@@ -15,7 +15,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public class EvaluationTests
 {
-    private static string CorpusRoot => Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus-synthetic");
+    private static string CorpusRoot => Path.Combine(Repo.Root, "corpus-synthetic");
 
     private static GoldCorpus Demo() => GoldCorpus.Load(Path.Combine(CorpusRoot, "readme-demo"));
 

@@ -1,37 +1,57 @@
-# Publish Silueta.Core (library) and Silueta.Cli (dotnet tool) to NuGet.org.
+# Publish Silueta.Core (library), Silueta.Cli (dotnet tool) and Silueta.Mcp (MCP server) to NuGet.org.
 #
 # No API key: this uses NuGet Trusted Publishing, which trades this workflow's OIDC token for a
 # short-lived key at run time. It requires a policy at nuget.org → Account → Trusted Publishing:
 #
 #   Package Owner: peopleworksservices · Repository Owner: peopleworks
-#   Repository: Silueta · Workflow File: nuget.yml
+#   Repository: Silueta · Workflow File: nuget.yml · Environment: nuget
 #
-# To ship a version: bump <Version> in both csproj files, merge, then publish a GitHub Release
-# tagged v<that version> (e.g. v0.1.0). Tests must pass before anything is pushed.
+# To ship a version: set the same <Version> in all three csproj files, merge, then publish a GitHub
+# Release tagged v<that version> (e.g. v0.1.0-preview.1). Published versions cannot be deleted.
+#
+# Two jobs, so that the approval means something. `build` tests, packs and checks the tag with no access
+# to NuGet at all. `publish` holds the only OIDC permission, runs in the `nuget` environment, and waits
+# there for Pedro to approve — after the tests have passed and the packages exist, so what he approves is
+# exactly what gets pushed. In one job, the environment would have held the job before it started, and
+# the approval would have been given before anything had been checked.
+#
+# The environment is the brake on collaborators: anyone with write access can publish a Release, and
+# none of them is a required reviewer. "Prevent self-review" is deliberately OFF while Pedro is the only
+# reviewer; with it on, he could not approve a release he published himself.
+#
+# There is no workflow_dispatch, on purpose. The only door to nuget.org is a Release with a v* tag. A
+# manual run would publish whatever version the csproj files happen to say, with no tag and no Release
+# behind it, and --skip-duplicate cannot un-publish a version that should never have existed.
 name: Publish NuGet
 
 on:
   release:
     types: [published]
-  workflow_dispatch:
 
 permissions:
   contents: read
-  id-token: write # required to obtain the OIDC token for trusted publishing
 
 jobs:
-  publish:
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref_name, 'v')
+  build:
+    name: Test, pack and check the tag
+    if: startsWith(github.ref_name, 'v')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
       - uses: actions/checkout@v7
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: "10.0.x"
+          # Both SDKs, because Silueta.Core ships for net9.0 and net10.0 and its tests run on each. The
+          # .NET 10 SDK alone would build the net9.0 target and then have no runtime to run its tests on.
+          dotnet-version: |
+            9.0.x
+            10.0.x
 
-      # A broken build must never reach NuGet — published versions cannot be deleted.
+      # A broken build must never reach NuGet — published versions cannot be deleted. This runs the
+      # library's tests on .NET 9 and on .NET 10: a package that claims both is tested on both.
       - name: Test
         run: dotnet test Silueta.slnx -c Release --nologo
 
@@ -42,6 +62,20 @@ jobs:
           dotnet pack src/Silueta.Mcp  -c Release -o out
           ls -1 out/
 
+      # The library says it is for .NET 9 and .NET 10. The package has to carry both, or a .NET 9 backend
+      # gets a restore error from a package whose README told it otherwise.
+      - name: The library carries both targets
+        run: |
+          core=$(ls out/Silueta.Core.*.nupkg)
+          listing=$(unzip -l "$core")
+          for tfm in net9.0 net10.0; do
+            if ! printf '%s' "$listing" | grep -q "lib/$tfm/Silueta.Core.dll"; then
+              echo "::error::$(basename "$core") has no lib/$tfm/. The README promises it."
+              exit 1
+            fi
+          done
+          echo "Silueta.Core carries lib/net9.0 and lib/net10.0."
+
       # Guards the classic footgun: tagging v0.2.0 while the csproj files still say 0.1.0.
       # --skip-duplicate would swallow that silently and report success.
       #
@@ -50,7 +84,6 @@ jobs:
       # csproj files and forgetting the third published the stale one, under a release that claims a
       # version it does not contain. Published versions cannot be deleted.
       - name: Check the release tag matches what we built
-        if: github.event_name == 'release'
         run: |
           want="${GITHUB_REF_NAME#v}"
           fail=0
@@ -73,7 +106,7 @@ jobs:
           fi
 
           if [ "$fail" -ne 0 ]; then
-            echo "Bump <Version> in every csproj to $want, or retag the release."
+            echo "Set <Version> in every csproj to $want, or retag the release."
             ls -1 out/
             exit 1
           fi
@@ -90,6 +123,37 @@ jobs:
 
           echo "Tag $GITHUB_REF_NAME matches the packages."
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: out/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish to NuGet (waits for approval)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # The brake. Required reviewer: Pedro. Deployment tags: v* only.
+    environment: nuget
+    permissions:
+      contents: read
+      id-token: write # the OIDC token for trusted publishing, and only this job can ask for one
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: out/
+
+      # Only for `dotnet nuget push`. Pinned rather than taken from whatever the runner image happens to
+      # carry, because this is the one step that cannot be run twice.
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: "10.0.x"
+
       - name: NuGet login (trusted publishing)
         id: login
         uses: NuGet/login@v1
@@ -100,6 +164,7 @@ jobs:
       # symbol server on its own whenever one sits next to the package.
       - name: Push to NuGet
         run: |
+          ls -1 out/
           dotnet nuget push "out/*.nupkg" \
             --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" \
             --source https://api.nuget.org/v3/index.json \

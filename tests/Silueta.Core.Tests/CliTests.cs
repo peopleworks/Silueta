@@ -208,7 +208,7 @@ public sealed class CliTests : IDisposable
     [Fact]
     public void Evaluate_prints_the_caveats_before_any_rate_and_writes_a_report_with_no_values_in_it()
     {
-        string gold = System.IO.Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus-synthetic", "readme-demo");
+        string gold = System.IO.Path.Combine(Repo.Root, "corpus-synthetic", "readme-demo");
         string report = Path("report.json");
 
         Assert.Equal(0, Commands.Evaluate(Commands.ParseOptions(["--gold", gold, "--out", report]), _output, _error));

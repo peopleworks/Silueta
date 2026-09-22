@@ -25,7 +25,7 @@ public sealed class GoldCorpusTests : IDisposable
     {
         // Structure only — no rates. The corpus was frozen in a commit before it was ever evaluated, and
         // this test holds its shape so a later edit to a gold file shows up as a failure, not as a number.
-        GoldCorpus corpus = GoldCorpus.Load(Path.Combine(McpToolDocumentationTests.RepoRoot, "corpus-synthetic"));
+        GoldCorpus corpus = GoldCorpus.Load(Path.Combine(Repo.Root, "corpus-synthetic"));
 
         Assert.Equal(31, corpus.Documents.Count);
         Assert.Equal(30, corpus.Documents.Count(d => d.Source.StartsWith("tts-asr/", StringComparison.Ordinal)));

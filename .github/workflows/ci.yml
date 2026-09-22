@@ -29,7 +29,11 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: "10.0.x"
+          # Both SDKs, because Silueta.Core ships for net9.0 and net10.0 and its tests run on each. The
+          # .NET 10 SDK alone would build the net9.0 target and then have no runtime to run its tests on.
+          dotnet-version: |
+            9.0.x
+            10.0.x
 
       - name: Build
         run: dotnet build Silueta.slnx -c Release --nologo

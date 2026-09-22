@@ -1,7 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <!-- Two targets, and only here. The library is what other people's backends depend on, and the first
+         one to ask for it runs .NET 9 — which leaves support on 10 November 2026, so this is a bridge,
+         not a promise. The CLI, the MCP server, the web demo and the calibration tool stay on net10.0:
+         they are programs somebody runs, not dependencies somebody builds against. -->
+    <TargetFrameworks>net9.0;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>

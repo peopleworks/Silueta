@@ -16,7 +16,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public class PublishedNumberTests
 {
-    private static readonly string Root = McpToolDocumentationTests.RepoRoot;
+    private static readonly string Root = Repo.Root;
 
     private static EvaluationReport Evaluate() => Evaluation.Run(
         GoldCorpus.Load(Path.Combine(Root, "corpus-synthetic", "tts-asr")),

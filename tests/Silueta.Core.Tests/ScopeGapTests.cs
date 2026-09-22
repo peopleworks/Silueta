@@ -17,7 +17,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public class ScopeGapTests
 {
-    private static string RepoRoot => McpToolDocumentationTests.RepoRoot;
+    private static string RepoRoot => Repo.Root;
 
     [Fact]
     public void The_business_kinds_exist_and_the_built_in_lineage_invents_no_company_names()

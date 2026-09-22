@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using Silueta.Calibration;
 using Silueta.Core;
 
 namespace Silueta.Core.Tests;
@@ -23,7 +22,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public class PublishedLeakRateTests
 {
-    private static readonly string Root = McpToolDocumentationTests.RepoRoot;
+    private static readonly string Root = Repo.Root;
 
     private static EvaluationReport Evaluate() => Evaluation.Run(
         GoldCorpus.Load(Path.Combine(Root, "corpus-synthetic", "tts-asr")),
@@ -84,29 +83,6 @@ public class PublishedLeakRateTests
         Assert.True(
             block.Contains($"{published.Documents} documents", StringComparison.Ordinal),
             "The README's published block does not carry the size of the corpus the embedded measurement used.");
-    }
-
-    [Fact]
-    public void The_README_block_is_what_the_tool_that_writes_it_renders_today()
-    {
-        PublishedLeakRate published = Assert.IsType<PublishedLeakRate>(PublishedLeakRate.Current);
-        string readme = File.ReadAllText(Path.Combine(Root, "README.md"));
-
-        string? block = Calibrator.ReadBlock(readme, "leak-rate");
-        Assert.NotNull(block);
-
-        // Not "contains each number" — that is the other test, and it passes over a block somebody edited by
-        // hand into a different shape. This one says the page is the tool's output, so the generator stays
-        // the single place that decides how the published measurement is written.
-        Assert.Equal(Calibrator.RenderTable(Evaluate(), published), block);
-    }
-
-    [Fact]
-    public void Publishing_into_a_page_with_no_markers_refuses_instead_of_appending()
-    {
-        // The alternative is a tool that writes the number somewhere nobody reads and reports success.
-        Assert.Throws<InvalidOperationException>(
-            () => Calibrator.ReplaceBlock("# A README with no markers in it\n", "leak-rate", "| x |"));
     }
 
     [Fact]

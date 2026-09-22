@@ -17,7 +17,7 @@ chats. Built hardest for what a speech recogniser writes, where every name arriv
 
 [![CI](https://github.com/peopleworks/Silueta/actions/workflows/ci.yml/badge.svg)](https://github.com/peopleworks/Silueta/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/peopleworks/Silueta/actions/workflows/codeql.yml/badge.svg)](https://github.com/peopleworks/Silueta/actions/workflows/codeql.yml)
-[![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![Core: .NET 9 and 10](https://img.shields.io/badge/core-.NET%209%20%C2%B7%2010-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#which-net)
 [![Core: zero dependencies](https://img.shields.io/badge/core-zero%20dependencies-39454E?style=flat-square)](src/Silueta.Core)
 [![MCP server](https://img.shields.io/badge/MCP-server-4E7C6B?style=flat-square)](#use-it-from-an-agent)
 [![Agent skill](https://img.shields.io/badge/agent-skill-4E7C6B?style=flat-square)](SKILL.md)
@@ -103,6 +103,11 @@ survived, and this build's own measured failure rate beside the result. It is a 
 with no server behind it and no HTTP client in it: the library runs in the tab, so the transcript has
 nowhere to go, and the network tab is the proof. Use invented text anyway — it is a public page and
 somebody may be looking over your shoulder.
+
+<a id="which-net"></a>**Which .NET.** The library, `Silueta.Core`, targets **.NET 9 and .NET 10**, so a backend on
+either can reference it directly. The tools built on it — the `silueta` command line, the MCP server and the
+browser demo — need **.NET 10**. .NET 9 leaves Microsoft's support on 10 November 2026; the net9.0 build is
+there as a bridge for the first backend that asked for it, not as a long-term commitment.
 
 ```bash
 dotnet run --project src/Silueta.Cli -- demo                  # the example above
@@ -448,9 +453,9 @@ claim than "PII redaction", and it is the one this repository can defend.
 
 | Path | What it is |
 | --- | --- |
-| `src/Silueta.Core` | The engine: detectors, lineage, policy, vault, manifest, and the evaluation — leak rate, linkage report. No dependencies. |
-| `src/Silueta.Cli` | `silueta demo`, `silueta redact` and `silueta evaluate`, shipped as a dotnet tool. |
-| `src/Silueta.Mcp` | The MCP server: four tools, the main one taking a path. |
+| `src/Silueta.Core` | The engine: detectors, lineage, policy, vault, manifest, and the evaluation — leak rate, linkage report. No dependencies. .NET 9 and .NET 10. |
+| `src/Silueta.Cli` | `silueta demo`, `silueta redact` and `silueta evaluate`, shipped as a dotnet tool. .NET 10. |
+| `src/Silueta.Mcp` | The MCP server: four tools, the main one taking a path. .NET 10. |
 | `SKILL.md` · `skill/` | The agent skill and how to install it. |
 | `corpus-synthetic/` | The gold corpus the published number is measured on. Synthetic, and nothing real is ever committed. |
 | `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |
@@ -488,7 +493,7 @@ MIT — see [LICENSE](LICENSE).
 Created by **Pedro Hernández — PeopleWorks**,
 [Microsoft MVP for .NET](https://mvp.microsoft.com/en-US/mvp/profile/24060a02-dbc6-44ec-bca5-c213ff9835c5)
 
-Built with [.NET 10](https://dotnet.microsoft.com/) · [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) ·
+Built with [.NET 10](https://dotnet.microsoft.com/), the library also for .NET 9 · [MCP C# SDK](https://github.com/modelcontextprotocol/csharp-sdk) ·
 [faster-whisper](https://github.com/SYSTRAN/faster-whisper) for the evaluation corpus
 
 **PeopleWorks AI tools** — [Signs of AI](https://github.com/peopleworks/SignsofAI) reads what an AI wrote ·

@@ -19,9 +19,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public partial class McpToolDocumentationTests
 {
-    /// <summary>Internal rather than private: other guards read the same documents, and two copies of
-    /// "walk up until you see the solution file" is two things to get wrong.</summary>
-    internal static readonly string RepoRoot = FindRepoRoot();
+    private static readonly string RepoRoot = Repo.Root;
 
     private static readonly IReadOnlyList<string> Tools = ReadToolNames();
 
@@ -140,17 +138,6 @@ public partial class McpToolDocumentationTests
         return found;
     }
 
-    private static string FindRepoRoot()
-    {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Silueta.slnx")))
-        {
-            directory = directory.Parent;
-        }
-
-        Assert.NotNull(directory);
-        return directory!.FullName;
-    }
 
     [GeneratedRegex(@"`(?<name>[a-z][a-z0-9]*_[a-z0-9_]+)`")]
     private static partial Regex BacktickedIdentifier();

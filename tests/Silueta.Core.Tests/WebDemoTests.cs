@@ -19,7 +19,7 @@ namespace Silueta.Core.Tests;
 /// </summary>
 public class WebDemoTests
 {
-    private static readonly string Web = Path.Combine(McpToolDocumentationTests.RepoRoot, "src", "Silueta.Web");
+    private static readonly string Web = Path.Combine(Repo.Root, "src", "Silueta.Web");
 
     private static IEnumerable<string> SourceFiles() =>
         Directory.EnumerateFiles(Web, "*.*", SearchOption.AllDirectories)

@@ -26,8 +26,11 @@ roster*.json
 # that IS committed lives in corpus-synthetic/, named so nobody drops real transcripts beside it by habit.
 # (It first went into corpus/ and this rule silently kept it out of two commits, one of which said it was in.)
 
-# …except the made-up ones that document the format.
+# …except the made-up ones that document the format — examples/roster.example.json among them.
 !**/*.example.json
+
+# Screenshots and snapshots a browser tool leaves behind while the demo is being checked.
+.playwright-mcp/
 
 # The working desk: state, pending work, committee briefs and the audits they produce. Working notes
 # name unfinished work and unfixed defects, and none of that is ready for a stranger to read as if it

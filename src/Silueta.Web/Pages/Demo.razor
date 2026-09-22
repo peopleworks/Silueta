@@ -1,5 +1,6 @@
 @page "/"
 @using System.Globalization
+@using System.Text.Json.Nodes
 
 <PageTitle>Silueta — de-identify a transcript, in your browser</PageTitle>
 
@@ -71,6 +72,29 @@
         <div class="roster-actions">
             <button class="link" @onclick="AddRow">+ Add someone</button>
             <button class="link" @onclick="Reset">Reset the invented names</button>
+        </div>
+    </div>
+
+    <div class="roster">
+        <div class="roster-head">
+            <label class="field-label">What your organisation would configure</label>
+            <p class="hint">
+                Both of these are a file you write — a <em>lineage</em> — not a setting compiled into the
+                library, and the same two exist for any country. The towns are its <code>values</code>
+                section: a town named alone is invisible to the rules, and the list is how the organisation
+                that serves it says so. The policy is one of its <code>policies</code>: Safe Harbor is the
+                floor, and a policy of your own keeps what your analysis is made of and says so in the
+                report. Start from <code>silueta lineage &gt; mine.json</code>.
+            </p>
+        </div>
+
+        <div class="roster-row config-row">
+            <input placeholder="The towns you serve, comma separated — try Prescott"
+                   @bind="_towns" @bind:event="oninput" @bind:after="Run" />
+            <select @bind="_policy" @bind:after="Run">
+                <option value="safe-harbor">Policy: Safe Harbor</option>
+                <option value="statistics">Policy: statistics (keeps dates, towns, ZIPs)</option>
+            </select>
         </div>
     </div>
 </section>
@@ -180,6 +204,49 @@ else if (_result is not null && _context is not null)
         </div>
     </section>
 
+    <section class="card legend">
+        <h2>What the manifest says</h2>
+        <p class="pane-hint">
+            Every run writes one, and it travels with the corpus. This is the part a compliance reader
+            opens: which rules ran, under which name, and what they were told to keep.
+        </p>
+        <div class="legend-groups">
+            <div>
+                <h3>Policy</h3>
+                <ul>
+                    <li>@_result.Manifest.Policy <b>@_result.Manifest.PolicyVersion</b></li>
+                    <li class="rule">@_result.Manifest.PolicyFingerprint</li>
+                </ul>
+                @if (_result.Manifest.DeparturesFromSafeHarbor.Count > 0)
+                {
+                    <p class="gap"><strong>Departures from Safe Harbor:</strong></p>
+                    <ul>
+                        @foreach (string departure in _result.Manifest.DeparturesFromSafeHarbor)
+                        {
+                            <li>@departure</li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div>
+                <h3>Lineage</h3>
+                <ul>
+                    <li>@_result.Manifest.Lineage <b>@_result.Manifest.LineageVersion</b></li>
+                    <li class="rule">@_result.Manifest.LineageFingerprint</li>
+                    <li>@_result.Manifest.KeptKinds.Count kind(s) kept: @string.Join(", ", _result.Manifest.KeptKinds)</li>
+                </ul>
+            </div>
+            <div>
+                <h3>What decided a place and an age</h3>
+                <ul>
+                    <li>Postal codes: @_result.Manifest.PostalCodeTable</li>
+                    <li>Age reference: @_result.Manifest.AgeReference</li>
+                    <li>Relatives named in the text: @_result.Manifest.RelativesRule</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
     <section class="card survives">
         <h2>Read this before you trust it</h2>
         <ul class="caveats">
@@ -254,6 +321,12 @@ else if (_result is not null && _context is not null)
     private List<RosterRow> _roster = [];
     private int? _sample;
 
+    // What an organisation configures, as this page lets a visitor configure it: the towns its lineage
+    // lists under "values", and which of its policies runs. Empty and Safe Harbor is the library as it
+    // ships, and then the page runs the built-in lineage rather than one of its own making.
+    private string _towns = string.Empty;
+    private string _policy = "safe-harbor";
+
     private RedactionResult? _result;
     private DeidentificationContext? _context;
     private string? _error;
@@ -326,7 +399,9 @@ else if (_result is not null && _context is not null)
             }
 
             _context = context;
-            _result = new SiluetaEngine([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()], _vault).Redact(_text, context);
+
+            SiluetaLineage lineage = Configured();
+            _result = SiluetaEngine.FromLineage(lineage, _vault).Redact(_text, context, lineage.Policy(_policy));
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
@@ -334,6 +409,54 @@ else if (_result is not null && _context is not null)
             // ways identified text escapes a process that was supposed to be removing it.
             _error = $"That roster cannot be used: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// The lineage the two fields above describe, built from the one this library ships with — which is what
+    /// <c>silueta lineage</c> prints, so a visitor can leave with the file the page just ran.
+    /// <para>
+    /// Untouched, it <em>is</em> the built-in lineage: the page does not put its own name on the library's
+    /// rules. The moment a town or another policy is asked for, it is a lineage of this page's making and
+    /// says so, name, version and fingerprint, in the panel below the result.
+    /// </para>
+    /// </summary>
+    private SiluetaLineage Configured()
+    {
+        string[] towns = _towns.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (towns.Length == 0 && _policy == SiluetaPolicy.SafeHarbor.Name)
+        {
+            return SiluetaLineage.Default;
+        }
+
+        JsonNode lineage = JsonNode.Parse(SiluetaLineage.DefaultJson)!;
+        lineage["lineage"] = "demo-clinic";
+        lineage["version"] = "1";
+
+        if (towns.Length > 0)
+        {
+            lineage["values"] = new JsonObject
+            {
+                [nameof(IdentifierKind.City)] = new JsonArray([.. towns.Select(town => JsonValue.Create(town))]),
+            };
+        }
+
+        // One policy, named and versioned like any other organisation's, so the departures the report lists
+        // are read from the same place a real file would put them.
+        lineage["policies"] = new JsonObject
+        {
+            ["statistics"] = new JsonObject
+            {
+                ["version"] = "1",
+                ["actions"] = new JsonObject
+                {
+                    [nameof(IdentifierKind.Date)] = nameof(RedactionAction.Keep),
+                    [nameof(IdentifierKind.City)] = nameof(RedactionAction.Keep),
+                    [nameof(IdentifierKind.PostalCode)] = nameof(RedactionAction.Keep),
+                },
+            },
+        };
+
+        return SiluetaLineage.FromJson(lineage.ToJsonString());
     }
 
     /// <summary>

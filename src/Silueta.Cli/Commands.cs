@@ -338,6 +338,43 @@ public static class Commands
         return 0;
     }
 
+    /// <summary>
+    /// Prints the built-in lineage, which is the file to start your own from: <c>silueta lineage &gt;
+    /// mine.json</c>. Writing one from a blank page means rediscovering which keys exist and which pools are
+    /// required, and this one is known to load.
+    /// </summary>
+    public static int Lineage(TextWriter output)
+    {
+        output.Write(SiluetaLineage.DefaultJson);
+        return 0;
+    }
+
+    /// <summary>
+    /// The word lists a pattern rule can name between double braces, and how many words each holds. What a
+    /// rule may say instead of spelling a country into every regular expression — and, for an organisation
+    /// writing its own, what is already there before it adds one.
+    /// </summary>
+    public static int Lists(TextWriter output)
+    {
+        output.WriteLine("Word lists a pattern rule can name, written as {{name}} inside a regex:");
+        output.WriteLine();
+
+        foreach (string name in PatternLists.Names.Order(StringComparer.Ordinal))
+        {
+            // The count, not the words: the lists are data in the repository, and printing every street
+            // suffix of the United States into a terminal helps nobody.
+            int words = PatternLists.Expand("{{" + name + "}}").Split('|').Length;
+            output.WriteLine(("  {{" + name + "}}").PadRight(26) + words.ToString(System.Globalization.CultureInfo.InvariantCulture) + " words");
+        }
+
+        output.WriteLine();
+        output.WriteLine("Each comes from a published standard, cited in the file it lives in:");
+        output.WriteLine("src/Silueta.Core/Detectors/Packs/lists.core.json. A lineage adds its own under");
+        output.WriteLine("\"lists\", and its rules name those the same way \u2014 start from \"silueta lineage\".");
+
+        return 0;
+    }
+
     public static int Unknown(string command, TextWriter output, TextWriter error)
     {
         error.WriteLine($"Unknown command '{command}'.");
@@ -390,6 +427,17 @@ public static class Commands
                   --policy   A policy the lineage defines, by name. Without it, Safe
                              Harbor. A policy that keeps what Safe Harbor removes is
                              written into the manifest, departure by departure.
+
+              silueta lineage
+
+                  Prints the lineage this build ships with — the word lists, the labels, the
+                  generalisations — as the file to start your own from:
+                  silueta lineage > mine.json, then edit it and pass it with --lineage.
+
+              silueta lists
+
+                  The word lists a pattern rule can name, as {{us-state}} or {{month-es}},
+                  and how many words each holds. A lineage brings its own the same way.
 
               silueta evaluate --gold <directory> [--out <report.json>] [--lineage <file>]
 

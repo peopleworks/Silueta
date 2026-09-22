@@ -135,6 +135,10 @@ textarea:focus, input:focus, select:focus { outline: 2px solid var(--green); out
 .roster-row .remove:hover { color: var(--red); border-color: var(--red); }
 
 .roster-actions { display: flex; gap: 18px; margin-top: 12px; }
+
+/* The two fields an organisation would put in its own lineage: wider than a roster row's, because
+   both of them hold a sentence rather than a name. */
+.config-row { grid-template-columns: 1fr 320px; }
 .link { background: none; border: none; padding: 0; font: inherit; font-size: 14px; color: var(--green); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { color: var(--ink); }
 

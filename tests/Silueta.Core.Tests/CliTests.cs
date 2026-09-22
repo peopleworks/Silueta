@@ -286,4 +286,34 @@ public sealed class CliTests : IDisposable
         Assert.Equal(2, Redact("--in", input));
         Assert.DoesNotContain("Ana-Perez", _output.ToString(), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void The_lineage_it_prints_is_one_it_can_read_back()
+    {
+        // "silueta lineage > mine.json" is the whole workflow for writing one, so what it prints has to load
+        // — and has to be the file that ran, comments and all, rather than a re-serialisation of it.
+        Assert.Equal(0, Commands.Lineage(_output));
+
+        string printed = _output.ToString();
+        SiluetaLineage read = SiluetaLineage.FromJson(printed);
+
+        Assert.Equal(SiluetaLineage.Default.Fingerprint, read.Fingerprint);
+        Assert.Contains("_pools", printed, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_lists_it_prints_are_the_names_a_rule_can_write()
+    {
+        Assert.Equal(0, Commands.Lists(_output));
+
+        string printed = _output.ToString();
+        foreach (string name in PatternLists.Names)
+        {
+            Assert.Contains($"{{{{{name}}}}}", printed, StringComparison.Ordinal);
+        }
+
+        // The names and their sizes, never the words: a terminal full of American street suffixes helps
+        // nobody, and the file they live in is in the repository.
+        Assert.DoesNotContain("Arizona", printed, StringComparison.Ordinal);
+    }
 }

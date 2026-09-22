@@ -18,5 +18,7 @@ return command switch
     "redact" => Commands.Redact(options, Console.Out, Console.Error),
     "evaluate" => Commands.Evaluate(options, Console.Out, Console.Error),
     "demo" => Commands.Demo(Console.Out),
+    "lineage" => Commands.Lineage(Console.Out),
+    "lists" => Commands.Lists(Console.Out),
     _ => Commands.Unknown(command, Console.Out, Console.Error),
 };

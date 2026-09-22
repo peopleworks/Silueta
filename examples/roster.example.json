@@ -1,0 +1,7 @@
+[
+  { "value": "Eleanor Vasquez", "kind": "PatientName", "subjectId": "patient-1" },
+  { "value": "Yamilet Vasquez", "kind": "FamilyName",  "subjectId": "family-1" },
+  { "value": "Sofía Reyes",     "kind": "StaffName",   "subjectId": "staff-1" },
+  { "value": "Banner Health",   "kind": "Organization", "subjectId": "org-1" },
+  { "value": "602-555-0147",    "kind": "Phone",       "subjectId": "patient-1" }
+]

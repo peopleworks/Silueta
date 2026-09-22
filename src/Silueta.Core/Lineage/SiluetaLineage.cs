@@ -60,6 +60,18 @@ public sealed partial class SiluetaLineage
     /// had, as data rather than as code.</summary>
     public static SiluetaLineage Default => Builtin.Value;
 
+    /// <summary>
+    /// The built-in lineage exactly as it ships, comments and all — the file to start your own from.
+    /// <para>
+    /// Writing a lineage from a blank page means rediscovering which keys exist and which pools are
+    /// required; this hands over the one that is known to load, with the notes that say why each part is the
+    /// way it is. <c>silueta lineage &gt; mine.json</c> is the whole workflow.
+    /// </para>
+    /// </summary>
+    public static string DefaultJson => BuiltinJson.Value;
+
+    private static readonly Lazy<string> BuiltinJson = new(ReadBuiltinJson);
+
     /// <summary>Identity. Goes in the manifest, so a corpus says which lineage produced it.</summary>
     public string Name { get; }
 
@@ -609,14 +621,16 @@ public sealed partial class SiluetaLineage
         return cleaned;
     }
 
-    private static SiluetaLineage LoadBuiltin()
+    private static SiluetaLineage LoadBuiltin() => FromJson(DefaultJson);
+
+    private static string ReadBuiltinJson()
     {
         const string resource = "Silueta.Core.Lineage.Lineages.lineage.core.json";
         using Stream? stream = typeof(SiluetaLineage).Assembly.GetManifestResourceStream(resource)
             ?? throw new InvalidOperationException("The built-in lineage is not embedded in this build.");
 
         using var reader = new StreamReader(stream);
-        return FromJson(reader.ReadToEnd());
+        return reader.ReadToEnd();
     }
 
     private string ComputeFingerprint()

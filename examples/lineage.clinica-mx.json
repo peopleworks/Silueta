@@ -1,0 +1,84 @@
+{
+  "_about": [
+    "A clinic in Mexico, in Spanish: labels in the language of the note, the towns it serves, and a policy",
+    "of its own that keeps what its analysis is made of. Copy it, change the words, pass it with --lineage.",
+    "Start instead from the file this library ships with: silueta lineage > mine.json."
+  ],
+
+  "lineage": "clinica-ejemplo-mx",
+  "version": "1",
+  "language": "es-MX",
+
+  "_pools": [
+    "The names an invented person is drawn from. Every one has to read as either gender, because picking",
+    "by gender means inferring the gender of a real person from their name. Digits are refused here.",
+    "A company pool is optional and is yours alone: an invented company is very likely a real one."
+  ],
+  "pools": {
+    "given": ["Ale", "Ariel", "Cruz", "Guadalupe", "Noa", "Noel", "Quinn", "Remy", "Sol", "Yael"],
+    "family": ["Aguilar", "Bravo", "Duarte", "Fuentes", "Herrera", "Ibarra", "Medina", "Ochoa", "Prado", "Salazar"]
+  },
+
+  "labels": {
+    "PatientName": "[PACIENTE]",
+    "FamilyName": "[FAMILIAR]",
+    "StaffName": "[PERSONAL]",
+    "OtherName": "[NOMBRE]",
+    "Phone": "[TELÉFONO]",
+    "Email": "[CORREO]",
+    "Address": "[DOMICILIO]",
+    "City": "[CIUDAD]",
+    "State": "[ESTADO]",
+    "PostalCode": "[CP]",
+    "Date": "[FECHA]",
+    "AgeOver89": "[90+]",
+    "RecordNumber": "[EXPEDIENTE]",
+    "AccountNumber": "[CUENTA]",
+    "Organization": "[ORGANIZACIÓN]",
+    "Product": "[PRODUCTO]",
+    "ClientName": "[CLIENTE]"
+  },
+
+  "generalizations": {
+    "AgeOver89": "90 o más"
+  },
+
+  "_values": [
+    "What identifies in every record this clinic redacts: the towns it serves. A town named alone —",
+    "\"llamó desde Nogales\" — is invisible to the rules, because only a state after it makes it a place.",
+    "A town whose name is also a word is removed wherever that word appears; that trade is the author's."
+  ],
+  "values": {
+    "City": ["Hermosillo", "Nogales", "Guaymas", "Ciudad Obregón", "Navojoa"],
+    "Organization": ["Clínica del Valle", "Seguros del Noroeste"]
+  },
+
+  "_policies": [
+    "Safe Harbor runs when no policy is asked for, whatever is written here. A policy is a set of",
+    "departures from it, and every one of them is listed in the manifest and in the caveat of every report.",
+    "Under HIPAA a policy that keeps what Safe Harbor removes needs an expert determination."
+  ],
+  "policies": {
+    "estadistica": {
+      "version": "1",
+      "actions": {
+        "Date": "Keep",
+        "City": "Keep",
+        "PostalCode": "Keep"
+      }
+    }
+  },
+
+  "_patterns": [
+    "Rules of this clinic's own. Declaring any of these REPLACES the pack this library ships with, so a",
+    "lineage that brings one rule has to bring the ones it still wants. A rule may name a word list —",
+    "{{month-es}}, {{vialidad-mx}} — instead of spelling it out; run silueta lists to see them."
+  ],
+  "patterns": [
+    { "id": "expediente-mx", "kind": "RecordNumber", "regex": "\\bEXP-\\d{6}\\b", "confidence": 0.95 },
+    { "id": "curp", "kind": "AccountNumber", "regex": "\\b[A-Z]{4}\\d{6}[HM][A-Z]{5}[A-Z0-9]\\d\\b", "confidence": 0.95 },
+    { "id": "telefono-mx", "kind": "Phone", "regex": "(?<!\\d)(?:\\+?52[ -]?)?(?:\\(\\d{2,3}\\)|\\d{2,3})[ -]?\\d{3,4}[ -]?\\d{4}(?!\\d)", "confidence": 0.9 },
+    { "id": "fecha-es", "kind": "Date", "regex": "\\b\\d{1,2}\\s+de\\s+{{month-es}}(?:\\s+de\\s+\\d{4})?\\b", "confidence": 0.9 },
+    { "id": "vialidad-mx", "kind": "Address", "regex": "\\b{{vialidad-mx}}\\.?\\s+(?-i:(?:(?:de|del|la|las|los|el)\\s+)*\\p{Lu}\\p{Ll}+(?:\\s+(?:(?:de|del|la|las|los|el|y)\\s+)*\\p{Lu}\\p{Ll}+){0,3})(?:\\s*(?:#|no\\.|n[úu]m(?:ero)?\\.?)?\\s*\\d{1,5}[A-Za-z]?\\b)?", "confidence": 0.9 }
+  ]
+}

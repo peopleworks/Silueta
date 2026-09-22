@@ -15,12 +15,18 @@
 De-identification for the text an organisation wants analysed: calls, home visits, shift notes, support
 chats. Built hardest for what a speech recogniser writes, where every name arrives misspelled.
 
+[![Silueta.Core on NuGet](https://img.shields.io/nuget/vpre/Silueta.Core?style=flat-square&label=Silueta.Core&color=004880&logo=nuget)](https://www.nuget.org/packages/Silueta.Core)
+[![Silueta.Cli on NuGet](https://img.shields.io/nuget/vpre/Silueta.Cli?style=flat-square&label=Silueta.Cli&color=004880&logo=nuget)](https://www.nuget.org/packages/Silueta.Cli)
+[![Silueta.Mcp on NuGet](https://img.shields.io/nuget/vpre/Silueta.Mcp?style=flat-square&label=Silueta.Mcp&color=004880&logo=nuget)](https://www.nuget.org/packages/Silueta.Mcp)
+
 [![CI](https://github.com/peopleworks/Silueta/actions/workflows/ci.yml/badge.svg)](https://github.com/peopleworks/Silueta/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/peopleworks/Silueta/actions/workflows/codeql.yml/badge.svg)](https://github.com/peopleworks/Silueta/actions/workflows/codeql.yml)
+[![Demo](https://github.com/peopleworks/Silueta/actions/workflows/deploy-pages.yml/badge.svg)](https://peopleworks.github.io/Silueta/)
 [![Core: .NET 9 and 10](https://img.shields.io/badge/core-.NET%209%20%C2%B7%2010-512BD4?style=flat-square&logo=dotnet&logoColor=white)](#which-net)
 [![Core: zero dependencies](https://img.shields.io/badge/core-zero%20dependencies-39454E?style=flat-square)](src/Silueta.Core)
 [![MCP server](https://img.shields.io/badge/MCP-server-4E7C6B?style=flat-square)](#use-it-from-an-agent)
 [![Agent skill](https://img.shields.io/badge/agent-skill-4E7C6B?style=flat-square)](SKILL.md)
+[![HIPAA Safe Harbor: the 18 identifiers](https://img.shields.io/badge/Safe%20Harbor-18%20identifiers-4E7C6B?style=flat-square)](#how-it-works)
 [![Leak rate: measured, and high](https://img.shields.io/badge/leak%20rate-measured%2C%20and%20high-C0503F?style=flat-square)](#the-number)
 [![Try it in your browser](https://img.shields.io/badge/try%20it-in%20your%20browser-4E7C6B?style=flat-square)](https://peopleworks.github.io/Silueta/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -94,6 +100,57 @@ against `elie` scores 0.29, and nothing in the roster or the rules knows that El
 One is a matcher that needs work; the other is a category the library does not handle yet. Both are
 counted as failures, neither is a design decision, and the difference between them is exactly what a
 leak rate is for. That rate is [measured, and it is below](#the-number).
+
+
+### A second one: places, a date of birth, an address said out loud
+
+```
+Discharge summary. Date of birth: 3/14/1931. Eleanor Vasquez moved to 412 West Palm Lane,
+Mesa, AZ 85201, and her sister still lives in Prescott. The nurse, Sofía Reyes, said the
+pharmacy on Cactus Road delivers on Tuesdays and that her e-mail is
+eleanor dot vasquez at example dot com. Blood pressure 138 over 82, pain 4 out of 10.
+```
+
+<!-- places-output:start — SecondExampleTests runs this and fails if the block stops matching -->
+```
+Discharge summary. Date of birth: 90 or older. Ale Espinal moved to [ADDRESS],
+[CITY], AZ 852XX, and her sister still lives in Prescott. The nurse, Yael Bravo, said the
+pharmacy on [ADDRESS] delivers on Tuesdays and that her e-mail is
+[EMAIL]. Blood pressure 138 over 82, pain 4 out of 10.
+```
+<!-- places-output:end -->
+
+Line by line, because every one of those is a rule with a reason:
+
+- **The street address goes, and so does the town before the state.** Safe Harbor removes "all geographic
+  subdivisions smaller than a state", and `Mesa, AZ` is one. `Arizona` stays: the state is the one place
+  the standard allows.
+- **The ZIP keeps three digits, and only where it may.** `85201` becomes `852XX` because the 2020 census
+  counts more than 20,000 people behind `852`. A prefix with fewer — or one the census has no area for at
+  all — becomes `000XX`.
+- **A date of birth that makes somebody 90 is an age, not a year.** The year of a date is allowed; the year
+  that says how old someone is, is not. Which day decided that is written in the manifest.
+- **The e-mail address was dictated, and is found anyway** — "eleanor dot vasquez at example dot com" is
+  what a recogniser writes when somebody says an address out loud.
+- **The blood pressure, the pain score and Tuesday are untouched.** They are what the analysis is made of.
+  A redactor that takes them is not safer, it is useless.
+- **`Prescott` survives, and that is the honest part.** A town named on its own has nothing to anchor it —
+  and a rule that took every capitalised word would take every name with it. The town list an organisation
+  brings in its lineage is what finds it:
+
+<!-- places-values-output:start — the same run, with "values": { "City": ["Prescott"] } -->
+```
+Discharge summary. Date of birth: 90 or older. Ale Espinal moved to [ADDRESS],
+[CITY], AZ 852XX, and her sister still lives in [CITY]. The nurse, Yael Bravo, said the
+pharmacy on [ADDRESS] delivers on Tuesdays and that her e-mail is
+[EMAIL]. Blood pressure 138 over 82, pain 4 out of 10.
+```
+<!-- places-values-output:end -->
+
+The two invented names are pre-assigned here so the block can be checked; a real run mints them and keeps
+them in the vault. And under a policy that keeps places — `"City": "Keep"`, `"PostalCode": "Keep"` — the
+town and the ZIP stay whole, the manifest lists all three departures from Safe Harbor, and every report
+says so in its caveat. [Your own policy](#your-own-policy-what-you-keep) is below.
 
 ## Try it
 
@@ -205,6 +262,17 @@ identifier, and the pattern rules to run.
 
 ```bash
 silueta redact --in visita.txt --record r-042 --lineage clinica-navi.json ...
+```
+
+**Three files to copy rather than write** are in [`examples/`](examples/): a roster, a whole lineage for a
+clinic in Mexico (labels in Spanish, the towns it serves, a policy of its own, rules for a Mexican record
+number and CURP), and one for Colombia, which is the interesting case — the rules that ship know nothing
+about it, so it brings its own word lists and its own rules name them. A test runs every file in that
+folder through the loader, so an example that rots stops the build.
+
+```bash
+silueta lineage > mine.json   # the lineage this build ships with, as a starting point
+silueta lists                 # the word lists a rule can name, as {{us-state}} or {{month-es}}
 ```
 
 For the MCP server it is the environment variable `SILUETA_LINEAGE`, deliberately and not a tool
@@ -503,6 +571,53 @@ three digits of a ZIP, is compiled in with its census table instead of written i
 Safe Harbor is: a file that could rewrite the table could keep every prefix under a manifest that says
 safe-harbor.
 
+### Everything there is to configure
+
+One page, so nothing has to be discovered by reading source. Every key is optional except a lineage's own
+`lineage` and `version`; leave a section out and the build's own is used.
+
+**The lineage** — `--lineage <file>` on the command line, `SILUETA_LINEAGE` for the MCP server, and
+`SiluetaLineage.Load(path)` from code. `silueta lineage > mine.json` prints the one that ships, to start from.
+
+| Key | What it holds | If you leave it out |
+| --- | --- | --- |
+| `pools` | `given`, `family`, and optionally `company`, `product`, `companySuffix`, `productSuffix` — the names an invented person or company is drawn from | The library's twenty-one given and twenty-two family names; no company or product names at all, so those kinds are labelled |
+| `labels` | kind → the text that replaces it: `"Phone": "[TELÉFONO]"` | `[PHONE]`, `[PATIENT]`, … in English; a kind with no label becomes `[REMOVED]` |
+| `generalizations` | kind → the wider value: `"AgeOver89": "90 o más"` | `90 or older`. A postal code is not yours to write: the census decides what it keeps, and an entry for it is skipped and reported |
+| `patterns` | your own rules: `{ "id", "kind", "regex", "confidence" }` | The built-in pack. Declaring any **replaces** it, so bring the ones you still want |
+| `lists` | word lists your rules name as `{{departamento-co}}` | Only the built-in lists, which your rules may name too |
+| `values` | kind → values that identify in every record you redact: the towns you serve, the insurers you bill. Never a person | Nothing. A town named alone is not found |
+| `policies` | name → `{ "version", "minConfidence", "actions" }`, each a set of departures from Safe Harbor | Only `safe-harbor`, which is compiled in and always available |
+
+**The policy** — `--policy <name>`, `SILUETA_POLICY`, or `lineage.Policy(name)`. An action per kind:
+
+| Action | What it does |
+| --- | --- |
+| `Label` | `[PHONE]` — honest, and unreadable in quantity |
+| `Surrogate` | a consistent invented name per subject, so coreference survives; falls back to the label when the lineage brings no pool, and says so in the manifest |
+| `YearOnly` | keeps the year of a date and nothing finer |
+| `Generalize` | `94 years old` → `90 or older`; `85004` → `850XX` or `000XX` |
+| `Keep` | leaves it. Safe Harbor itself keeps one kind, `State` |
+
+**The run** — what a caller passes for each record:
+
+| | What it is for |
+| --- | --- |
+| `--record` / `DeidentificationContext(recordId)` | An opaque id for the record. Required, and refused if it names anybody on the roster |
+| `--context` / `AddPerson`, `AddValue` | The roster: who this record is about, each with an opaque `subjectId` |
+| `RecordedOn` | The day the record is of. One rule needs it: a birth year is an identifier only when it makes the person 90 |
+| `--vault` / `PseudonymVault` | Where invented names live, so one subject keeps one name across a corpus. Never leaves the agency |
+| `SiluetaEngine.FindRelativesNamedInText` | The rule that finds "my daughter Linda" when nobody listed Linda. On by default |
+
+**What comes back** — the manifest, which travels with the corpus:
+
+`policy` / `policyVersion` / `policyFingerprint` · `lineage` / `lineageVersion` / `lineageFingerprint` ·
+`departuresFromSafeHarbor` · `keptKinds` · `byKind`, `byDetector`, `byMatch` · `detectorFingerprints`,
+`detectorRulesLoaded`, `detectorRulesSkipped` · `lineageKeysSkipped` · `postalCodeTable` · `ageReference`,
+`birthYearRule` · `relativesRule` · `unrosteredPeople` · `ambiguousAttributions` · `surrogatesUnavailable` ·
+`residualSpans` · `inputSha256`, `outputSha256` · `measuredLeakRate`. Each one is there because something
+it describes was once invisible; [§8 of the algorithm](Docs/ALGORITHM.md) says which.
+
 ### Taking it somewhere else
 
 Silueta was written for a home-care agency in Phoenix, and the rules that ship say so: the states, the ZIP
@@ -585,8 +700,9 @@ claim than "PII redaction", and it is the one this repository can defend.
 | Path | What it is |
 | --- | --- |
 | `src/Silueta.Core` | The engine: detectors, lineage, policy, vault, manifest, and the evaluation — leak rate, linkage report. No dependencies. .NET 9 and .NET 10. |
-| `src/Silueta.Cli` | `silueta demo`, `silueta redact` and `silueta evaluate`, shipped as a dotnet tool. .NET 10. |
+| `src/Silueta.Cli` | `silueta demo`, `silueta redact`, `silueta evaluate`, `silueta lineage`, `silueta lists`, shipped as a dotnet tool. .NET 10. |
 | `src/Silueta.Mcp` | The MCP server: four tools, the main one taking a path. .NET 10. |
+| `examples/` | Files to copy: a roster, and whole lineages for a clinic in Mexico and one in Colombia. A test loads every one of them. |
 | `SKILL.md` · `skill/` | The agent skill and how to install it. |
 | `corpus-synthetic/` | The gold corpus the published number is measured on. Synthetic, and nothing real is ever committed. |
 | `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |

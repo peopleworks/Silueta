@@ -69,6 +69,70 @@ public sealed class McpBoundaryTests : IDisposable
     }
 
     [Fact]
+    public void The_policy_is_the_operators_decision_too_and_it_is_read_from_the_environment()
+    {
+        // A model that could pick the policy could pick the one that keeps everything, and the manifest would
+        // name it honestly while the text went out identified. So the choice sits beside the lineage's: in the
+        // environment whoever set the server up controls, and nowhere a tool call can reach.
+        string lineage = Write("lineage.json", """
+            {
+              "lineage": "clinica", "version": "1", "language": "es-MX",
+              "pools": { "given": ["Ale", "Noa"], "family": ["Bravo", "Toledo"] },
+              "policies": { "statistics": { "version": "1", "actions": { "Date": "Keep" } } }
+            }
+            """);
+        Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, lineage);
+        Environment.SetEnvironmentVariable(RedactionTools.PolicyVariable, "statistics");
+
+        try
+        {
+            RedactionReport report = RedactionTools.RedactText("La cita es el 3/14/2026.", "r-1");
+
+            Assert.Contains("3/14/2026", report.RedactedText!, StringComparison.Ordinal);
+            Assert.StartsWith("statistics/1", report.Policy, StringComparison.Ordinal);
+            Assert.Contains("not Safe Harbor", report.Caveat, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.LineageVariable, null);
+            Environment.SetEnvironmentVariable(RedactionTools.PolicyVariable, null);
+        }
+    }
+
+    [Fact]
+    public void No_tool_takes_a_policy_as_an_argument()
+    {
+        // The structural half of the rule above. A parameter named anything like "policy" on any tool would be
+        // a model choosing what gets removed.
+        foreach (System.Reflection.MethodInfo tool in typeof(RedactionTools).GetMethods()
+                     .Concat(typeof(MatchingTools).GetMethods())
+                     .Where(m => m.GetCustomAttributes(typeof(ModelContextProtocol.Server.McpServerToolAttribute), false).Length > 0))
+        {
+            Assert.DoesNotContain(tool.GetParameters(), p => p.Name!.Contains("policy", StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    [Fact]
+    public void A_policy_the_lineage_does_not_have_stops_the_run_instead_of_falling_back()
+    {
+        // Falling back to Safe Harbor would be the safe direction for the text and the wrong one for the
+        // operator: they asked for a policy by name, and a corpus redacted under a different one than they think
+        // is a corpus they will describe wrongly.
+        Environment.SetEnvironmentVariable(RedactionTools.PolicyVariable, "research");
+
+        try
+        {
+            ModelContextProtocol.McpException refused = Assert.Throws<ModelContextProtocol.McpException>(
+                () => RedactionTools.RedactText("Nothing here.", "r-1"));
+            Assert.Contains("safe-harbor", refused.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.PolicyVariable, null);
+        }
+    }
+
+    [Fact]
     public void A_vault_pointed_at_by_the_lineage_variable_is_refused_like_any_other_vault()
     {
         var vault = new PseudonymVault().Assign("patient-1", "Ale Espinal");

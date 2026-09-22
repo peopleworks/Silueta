@@ -37,6 +37,18 @@ public static class Caveats
                 "Report this rather than passing the text on.");
         }
 
+        if (result.Manifest.DeparturesFromSafeHarbor.Count > 0)
+        {
+            // Second, straight after a refusal to export if there is one, because it changes what every other
+            // sentence here means: the measured leak rate was taken under Safe Harbor, and this run was not.
+            notes.Add(
+                $"This run used the policy '{result.Manifest.Policy}' (version {result.Manifest.PolicyVersion}), " +
+                $"not Safe Harbor. It departs from it in: {string.Join("; ", result.Manifest.DeparturesFromSafeHarbor)}. " +
+                "Under HIPAA, text redacted this way is not de-identified unless a qualified expert determines it " +
+                "is (an expert determination, 45 CFR § 164.514(b)(1)); outside HIPAA it is the organisation's own " +
+                "risk assessment. The measured leak rate below was taken under Safe Harbor.");
+        }
+
         notes.Add(MeasuredRate);
 
         if (context.Known.Count == 0)

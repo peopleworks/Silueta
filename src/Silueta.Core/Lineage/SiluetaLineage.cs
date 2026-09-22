@@ -36,6 +36,7 @@ public sealed class SiluetaLineage
         IReadOnlyDictionary<IdentifierKind, string> labels,
         IReadOnlyDictionary<IdentifierKind, string> generalizations,
         IReadOnlyList<PatternRule> patterns,
+        IReadOnlyDictionary<string, SiluetaPolicy> policies,
         IReadOnlyList<string> skipped)
     {
         Name = name;
@@ -45,6 +46,7 @@ public sealed class SiluetaLineage
         Labels = labels;
         Generalizations = generalizations;
         Patterns = patterns;
+        Policies = policies;
         Skipped = skipped;
         Fingerprint = ComputeFingerprint();
     }
@@ -73,6 +75,44 @@ public sealed class SiluetaLineage
     /// A lineage that brings rules <em>replaces</em> that pack rather than adding to it: two sources for
     /// one rule is two rules that will disagree.</summary>
     public IReadOnlyList<PatternRule> Patterns { get; }
+
+    /// <summary>
+    /// The policies this organisation wrote, by name — not including Safe Harbor, which is compiled in once and
+    /// is always available as "safe-harbor".
+    /// <para>
+    /// Pedro, 22 September 2026: dates, ages, diagnoses, measurements, state and city are statistics and must
+    /// not be lost; what matters is not knowing whose they are — and that is what "los diccionarios y la
+    /// configuración dinámica" were for. So an organisation can say, in its own file, what it keeps. Each
+    /// policy is a set of departures from Safe Harbor rather than a table from nothing: a kind it does not name
+    /// keeps Safe Harbor's action, so a file that forgets a kind removes more, not less. And the engine writes
+    /// every departure into the manifest, so the file is not needed to see what a corpus was redacted under.
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<string, SiluetaPolicy> Policies { get; }
+
+    /// <summary>Every policy this lineage can run, Safe Harbor first.</summary>
+    public IReadOnlyList<string> PolicyNames =>
+        [SiluetaPolicy.SafeHarbor.Name, .. Policies.Keys.Order(StringComparer.Ordinal)];
+
+    /// <summary>
+    /// A policy by name. Asking for one the lineage does not have is an error rather than a fall-back to Safe
+    /// Harbor: falling back is the safe direction for the text and the wrong one for the operator, who would
+    /// then describe a corpus as redacted under a policy it was not.
+    /// </summary>
+    public SiluetaPolicy Policy(string name)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+
+        if (string.Equals(name, SiluetaPolicy.SafeHarbor.Name, StringComparison.Ordinal))
+        {
+            return SiluetaPolicy.SafeHarbor;
+        }
+
+        return Policies.TryGetValue(name, out SiluetaPolicy? policy)
+            ? policy
+            : throw new InvalidOperationException(
+                $"The lineage '{Name}' has no policy called '{name}'. It has: {string.Join(", ", PolicyNames)}.");
+    }
 
     /// <summary>Keys naming a kind this build does not know, kept so "no such kind" and "nothing to
     /// replace" are not the same silence.</summary>
@@ -117,6 +157,7 @@ public sealed class SiluetaLineage
             Parse(file.Labels, skipped),
             Parse(file.Generalizations, skipped),
             file.Patterns ?? [],
+            ReadPolicies(file.Policies, skipped),
             skipped);
     }
 
@@ -140,6 +181,78 @@ public sealed class SiluetaLineage
     /// a kind with no wider form still has to be removed, not kept.</summary>
     public string GeneralizationFor(IdentifierKind kind) =>
         Generalizations.TryGetValue(kind, out string? wider) ? wider : LabelFor(kind);
+
+    /// <summary>
+    /// The organisation's policies, each built on Safe Harbor. Strict about what it cannot interpret and lenient
+    /// only where leniency removes more: an action it does not know is refused — "Kepp" could have meant Keep,
+    /// and guessing is how a date goes out — while a kind it does not know is skipped and written down, and that
+    /// kind keeps Safe Harbor's action, which is the safe way to fall.
+    /// </summary>
+    private static IReadOnlyDictionary<string, SiluetaPolicy> ReadPolicies(
+        Dictionary<string, PolicyFile>? entries, List<string> skipped)
+    {
+        if (entries is null || entries.Count == 0)
+        {
+            return FrozenDictionary<string, SiluetaPolicy>.Empty;
+        }
+
+        var policies = new Dictionary<string, SiluetaPolicy>(StringComparer.Ordinal);
+        foreach ((string rawName, PolicyFile file) in entries)
+        {
+            string name = rawName.Trim();
+            if (string.Equals(name, SiluetaPolicy.SafeHarbor.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                // The one name a file may not use. A policy that called itself "safe-harbor" while keeping dates
+                // would put that name on every manifest over rules that are not it — the failure the immutable
+                // policy was built to prevent, reached by editing a text file instead of a dictionary.
+                throw new InvalidOperationException(
+                    "\"safe-harbor\" is reserved for the table compiled into this build. A policy that departs " +
+                    "from it needs a name of its own, so no manifest can carry Safe Harbor's name over other rules.");
+            }
+
+            if (name.Length == 0 || file is null || string.IsNullOrWhiteSpace(file.Version))
+            {
+                throw new InvalidOperationException(
+                    $"The policy '{name}' needs a name and a version: the manifest records both, and a policy " +
+                    "without them cannot be told apart from the next edit of itself.");
+            }
+
+            var actions = new Dictionary<IdentifierKind, RedactionAction>(SiluetaPolicy.SafeHarbor.Actions);
+            foreach ((string key, string value) in file.Actions ?? [])
+            {
+                if (!IdentifierKindExtensions.TryParseName(key, out IdentifierKind kind))
+                {
+                    skipped.Add($"policies.{name}.{key}");
+                    continue;
+                }
+
+                // By name and only by name, the way kinds are read (E5): Enum.TryParse also accepts "4" and
+                // "Label, Keep" — which for this enum is Keep — and a policy file is the last place to learn that.
+                RedactionAction? parsed = Enum.GetValues<RedactionAction>()
+                    .Select(a => (RedactionAction?)a)
+                    .FirstOrDefault(a => string.Equals(a.ToString(), value?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+                if (parsed is not { } action)
+                {
+                    throw new InvalidOperationException(
+                        $"The policy '{name}' asks for '{value}' for {key}, which this build does not know. " +
+                        $"Actions: {string.Join(", ", Enum.GetNames<RedactionAction>())}.");
+                }
+
+                actions[kind] = action;
+            }
+
+            policies[name] = new SiluetaPolicy
+            {
+                Name = name,
+                Version = file.Version.Trim(),
+                MinConfidence = file.MinConfidence ?? SiluetaPolicy.SafeHarbor.MinConfidence,
+                Actions = actions,
+            };
+        }
+
+        return policies.ToFrozenDictionary(StringComparer.Ordinal);
+    }
 
     private static IReadOnlyDictionary<IdentifierKind, string> Parse(
         Dictionary<string, string>? entries, List<string> skipped)
@@ -387,6 +500,13 @@ public sealed class SiluetaLineage
             canonical.Append("rule\t").Append(rule.Id).Append('\t').Append(rule.Kind).Append('\t')
                 .Append(rule.Regex).Append('\t')
                 .Append(rule.Confidence.ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        }
+
+        // Only when there are any, so that a lineage with no policies — the built-in one among them — digests to
+        // exactly what it did before policies existed, and every manifest already written still matches.
+        foreach ((string name, SiluetaPolicy policy) in Policies.OrderBy(p => p.Key, StringComparer.Ordinal))
+        {
+            canonical.Append("policy\t").Append(name).Append('\t').Append(policy.Fingerprint).Append('\n');
         }
 
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())).AsSpan(0, 8));

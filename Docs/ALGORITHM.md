@@ -294,6 +294,30 @@ Three constraints on what it may mint:
   gender of a real person from their name, which is a guess the library has no business making, and a
   wrong guess writes *her son Marta* into a clinical note.
 
+## 6a. Whose rules: policies as data
+
+Safe Harbor is a floor, and a strict one for analysis: only the year of a date, no place smaller than a
+state. Pedro's principle for this library is that dates, ages, diagnoses, measurements and places are the
+statistics an analysis is made of, and what matters is not knowing whose they are — so an organisation can
+write, in its lineage, a policy of its own under a name of its own.
+
+Three rules keep that from becoming a way to weaken a corpus quietly:
+
+- **Safe Harbor lives in code, once.** It is the default everywhere and needs no file. A copy of its table
+  in the embedded lineage would have been the second copy of a rule, and the name `safe-harbor` is reserved
+  so that no file can put it on a manifest over other rules — the same failure the immutable policy was
+  built against, reached by editing a text file instead of a dictionary. Its fingerprint did not change.
+- **A policy is a set of departures, not a table.** A kind it does not name keeps Safe Harbor's action, so
+  a forgotten kind removes more. Actions are read by name only — `Enum.TryParse` would have read `"4"` and
+  `"Label, Keep"` as `Keep`, the lesson E5 taught for kinds — and one it does not know stops the load.
+- **The departures travel.** The manifest lists each one (`departuresFromSafeHarbor`), the caveat every report
+  carries repeats them with the HIPAA consequence, and the lineage's fingerprint covers its policies — but
+  only when it has some, so every lineage written before this, the built-in one included, digests exactly as
+  it did.
+
+The policy is chosen by name, by the operator: `--policy` on the command line, `SILUETA_POLICY` for the MCP
+server, where a model that could choose would choose the policy that keeps everything.
+
 ## 6b. Reading the output back
 
 After replacing, the same detectors run over the finished text. What they find is the run's **residue**,

@@ -50,6 +50,49 @@ public sealed class CliTests : IDisposable
     private int Redact(params string[] arguments) =>
         Commands.Redact(Commands.ParseOptions(arguments), _output, _error);
 
+    [Fact]
+    public void A_policy_is_chosen_by_name_from_the_lineage()
+    {
+        string lineage = Write("lineage.json", """
+            {
+              "lineage": "clinica", "version": "1", "language": "es-MX",
+              "pools": { "given": ["Ale", "Noa"], "family": ["Bravo", "Toledo"] },
+              "policies": { "statistics": { "version": "1", "actions": { "Date": "Keep" } } }
+            }
+            """);
+        string text = Write("t.txt", "La cita es el 3/14/2026.");
+        string manifest = Path("m.json");
+
+        Assert.Equal(0, Redact("--in", text, "--lineage", lineage, "--policy", "statistics", "--record", "r-1", "--manifest", manifest));
+        Assert.Contains("3/14/2026", _output.ToString(), StringComparison.Ordinal);
+        Assert.Contains("\"policy\": \"statistics\"", File.ReadAllText(manifest), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Without_a_policy_the_command_line_runs_safe_harbor_whatever_the_lineage_offers()
+    {
+        string lineage = Write("lineage.json", """
+            {
+              "lineage": "clinica", "version": "1", "language": "es-MX",
+              "pools": { "given": ["Ale", "Noa"], "family": ["Bravo", "Toledo"] },
+              "policies": { "statistics": { "version": "1", "actions": { "Date": "Keep" } } }
+            }
+            """);
+        string text = Write("t.txt", "La cita es el 3/14/2026.");
+
+        Assert.Equal(0, Redact("--in", text, "--lineage", lineage, "--record", "r-1"));
+        Assert.DoesNotContain("3/14/2026", _output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_policy_the_lineage_does_not_have_is_refused_with_the_ones_it_does()
+    {
+        string text = Write("t.txt", "Nothing here.");
+
+        Assert.Equal(2, Redact("--in", text, "--policy", "research", "--record", "r-1"));
+        Assert.Contains("safe-harbor", _error.ToString(), StringComparison.Ordinal);
+    }
+
     /// <summary>Runs the two records of <see cref="ResidueTests"/> through the command line: the second
     /// one is the record whose invented name is a real person in its own roster.</summary>
     private string ResidueRun(string outFlag, string outPath)

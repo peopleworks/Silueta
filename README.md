@@ -232,6 +232,42 @@ What is worth knowing before you write one:
 - **Patterns replace the built-in pack, they do not extend it.** Two sources for one rule is two rules
   that will eventually disagree.
 
+### Your own policy: what you keep
+
+Dates, ages, diagnoses, measurements and places are what an analysis is made of, and what matters is not
+knowing whose they are. Safe Harbor removes more of them than many organisations need — it keeps only the
+year of a date, and no place smaller than a state. So a lineage can also name **policies of its own**, each
+a set of departures from Safe Harbor:
+
+```jsonc
+"policies": {
+  "statistics": {
+    "version": "1",
+    "actions": { "Date": "Keep" }        // Label, Surrogate, YearOnly, Generalize or Keep
+  }
+}
+```
+
+```bash
+silueta redact --in visita.txt --record r-042 --lineage clinica.json --policy statistics ...
+```
+
+For the MCP server it is `SILUETA_POLICY`, beside `SILUETA_LINEAGE` and for a sharper version of the same
+reason: a model that could pick the policy could pick the one that keeps everything.
+
+- **Safe Harbor is always there, and only once.** It is compiled in as the legal floor and runs when no
+  policy is asked for, whatever the lineage offers. The name `safe-harbor` is reserved: a file that could
+  call itself that while keeping dates would put the name on every manifest over rules that are not it.
+- **A kind your policy does not name keeps Safe Harbor's action.** A policy is what you change, not a table
+  from nothing, so a file that forgets a kind removes more rather than less. An action the build does not
+  know stops the load instead of being guessed at; a kind it does not know is skipped and reported.
+- **Every departure goes into the manifest** — `"Date: Keep (Safe Harbor: YearOnly)"` — and into the
+  caveats every report carries, so a reader holding the corpus does not need your lineage to see what was
+  kept.
+- **Under HIPAA, a policy that keeps what Safe Harbor removes is not de-identification** unless a qualified
+  expert determines it is (45 CFR § 164.514(b)(1)). Outside HIPAA it is your own risk assessment. The
+  published leak rate below is measured under Safe Harbor.
+
 ## Use it from an agent
 
 Silueta ships as an **MCP server** and as an **agent skill**, and the two exist for one reason worth

@@ -60,6 +60,21 @@ public sealed class LineageFile
 
     /// <summary>Present means these rules REPLACE the pack compiled into the build.</summary>
     public List<PatternRule>? Patterns { get; set; }
+
+    /// <summary>Named policies this organisation redacts under, as departures from Safe Harbor. The name
+    /// "safe-harbor" is reserved for the table compiled into the build.</summary>
+    public Dictionary<string, PolicyFile>? Policies { get; set; }
+}
+
+/// <summary>One named policy as it sits in a lineage: a version, and the kinds it treats differently from Safe
+/// Harbor. Kinds it does not name keep Safe Harbor's action.</summary>
+public sealed class PolicyFile
+{
+    public string Version { get; set; } = string.Empty;
+
+    public double? MinConfidence { get; set; }
+
+    public Dictionary<string, string>? Actions { get; set; }
 }
 
 /// <summary>A gold document as it sits on disk. Validated by <see cref="GoldCorpus"/>, not trusted.</summary>

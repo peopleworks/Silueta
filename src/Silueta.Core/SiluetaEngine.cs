@@ -139,6 +139,14 @@ public sealed class RedactionManifest
     /// </summary>
     public string RelativesRule { get; set; } = "off";
 
+    /// <summary>
+    /// Every way the policy that ran differs from Safe Harbor — "Date: Keep (Safe Harbor: YearOnly)" — and empty
+    /// when it is Safe Harbor. The policy name says what the organisation called its rules; this says what they
+    /// were, so a compliance reader holding the manifest does not also need the lineage file to see that a
+    /// corpus kept its dates.
+    /// </summary>
+    public List<string> DeparturesFromSafeHarbor { get; set; } = new();
+
     /// <inheritdoc cref="MeasuredLeakRate"/>
     public const string NoMeasurement =
         "No measured leak rate: this build carries no calibration, so nothing here says how often it leaves an identifier behind.";
@@ -312,6 +320,7 @@ public sealed partial class SiluetaEngine
             MeasuredLeakRate = PublishedLeakRate.Current?.Summary ?? RedactionManifest.NoMeasurement,
             AmbiguousAttributions = ambiguous,
             UnrosteredPeople = unrostered,
+            DeparturesFromSafeHarbor = [.. DeparturesFromSafeHarbor(policy)],
             RelativesRule = FindRelativesNamedInText ? RelativesInText.Fingerprint(QuasiIdentifierVocabulary.Default) : "off",
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
@@ -370,6 +379,33 @@ public sealed partial class SiluetaEngine
     /// </summary>
     private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy) =>
         Resolve(candidates, policy, out _);
+
+    /// <summary>How a policy differs from Safe Harbor, one line per difference, in a stable order.</summary>
+    private static IEnumerable<string> DeparturesFromSafeHarbor(SiluetaPolicy policy)
+    {
+        SiluetaPolicy floor = SiluetaPolicy.SafeHarbor;
+        if (ReferenceEquals(policy, floor))
+        {
+            return [];
+        }
+
+        var lines = new List<string>();
+        foreach (IdentifierKind kind in Enum.GetValues<IdentifierKind>())
+        {
+            if (policy.ActionFor(kind) != floor.ActionFor(kind))
+            {
+                lines.Add($"{kind}: {policy.ActionFor(kind)} (Safe Harbor: {floor.ActionFor(kind)})");
+            }
+        }
+
+        if (policy.MinConfidence != floor.MinConfidence)
+        {
+            lines.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+                $"minConfidence: {policy.MinConfidence:R} (Safe Harbor: {floor.MinConfidence:R})"));
+        }
+
+        return lines.Order(StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// The caller's roster plus every relative the transcript names that the roster does not already find, each

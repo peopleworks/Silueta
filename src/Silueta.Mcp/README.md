@@ -58,6 +58,11 @@ calling a tool is not that person.
   decision by whoever set this server up: a model that can choose the word lists can choose a lineage
   whose "labels" leave everything where it is, and the report would still say the run succeeded. The
   lineage's name and fingerprint come back in every report, so the model can say which one ran;
+- the policy — what each kind becomes — is `SILUETA_POLICY`, one of the lineage's named policies, and Safe
+  Harbor when unset. Also an environment variable and not a parameter, for a sharper reason: a model that
+  could pick the policy could pick the one that keeps everything. A name the lineage does not define stops
+  the run instead of falling back, and a policy that is not Safe Harbor says so, departure by departure, in
+  the report's caveat;
 - the redacted text is **withheld**, with the reason in a `withheld` field, when no roster was given
   (no name could be found and every name survived), when nothing was replaced, or when the run left
   residue. `outputPath` still writes a clean result to disk without it entering the context.

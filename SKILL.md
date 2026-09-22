@@ -57,7 +57,9 @@ The server only touches one directory: set `SILUETA_ROOT` to the folder holding 
 there. The word lists and the labels it replaces with are the **lineage**, set by whoever started the
 server (`SILUETA_LINEAGE`) and never by you. Every report names it and carries its fingerprint: when you
 say what ran, say which lineage ran, because two corpora redacted under different word lists are not the
-same corpus. It refuses to read a vault, and it **withholds the redacted text** — returning a `withheld` reason
+same corpus. The same goes for the **policy** (`SILUETA_POLICY`): Safe Harbor unless the operator chose
+another, and never your choice. If the report's policy is not `safe-harbor`, its caveat lists what that
+policy keeps — say so, and never describe the result as Safe Harbor de-identified. It refuses to read a vault, and it **withholds the redacted text** — returning a `withheld` reason
 instead — when no roster was given, when nothing was replaced, or when the run left residue. Read the
 reason out to the user; do not go looking for another route to the same text, because every other route
 puts it in your context.

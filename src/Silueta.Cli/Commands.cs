@@ -108,6 +108,26 @@ public static class Commands
             }
         }
 
+        // The policy, by name from the lineage, and Safe Harbor when none is asked for. A lineage offering a
+        // looser policy does not make it the default: keeping dates is something an operator says out loud.
+        SiluetaPolicy policy;
+        try
+        {
+            policy = lineage.Policy(options.TryGetValue("policy", out string? policyName) ? policyName : SiluetaPolicy.SafeHarbor.Name);
+        }
+        catch (InvalidOperationException ex)
+        {
+            error.WriteLine(ex.Message);
+            return 2;
+        }
+
+        if (!ReferenceEquals(policy, SiluetaPolicy.SafeHarbor))
+        {
+            error.WriteLine(
+                $"warning: redacting under '{policy.Name}/{policy.Version}', not Safe Harbor. The manifest lists " +
+                "every departure; under HIPAA the result is not de-identified without an expert determination.");
+        }
+
         // The vault is read before the run and written after it. It used to be created empty every time and
         // then overwrite --vault, so the second transcript of a corpus silently discarded the first one's
         // assignments — the same person became two people, and neither could be traced back.
@@ -117,7 +137,7 @@ public static class Commands
             : PseudonymVault.LoadOrCreate(vaultPath, lineage.Pools);
 
         var engine = SiluetaEngine.FromLineage(lineage, vault);
-        RedactionResult result = engine.Redact(text, context);
+        RedactionResult result = engine.Redact(text, context, policy);
 
         // The vault is written FIRST, before any redacted artefact exists. It is the only thing that can
         // undo the work and the only thing with no second copy: a run that wrote the redacted transcript and
@@ -357,7 +377,7 @@ public static class Commands
 
               silueta redact --in <transcript.txt> [--context <roster.json>]
                              [--out <file>] [--manifest <file>] [--vault <file>]
-                             [--lineage <file>] [--record <id>]
+                             [--lineage <file>] [--policy <name>] [--record <id>]
 
                   --context  JSON array of { "value", "kind", "subjectId" }, the people this
                              record is about. Without it, only pattern rules fire.
@@ -367,6 +387,9 @@ public static class Commands
                              language. Without it, the lists this library ships with. Its
                              fingerprint goes in the manifest, so a corpus says which
                              lineage produced it.
+                  --policy   A policy the lineage defines, by name. Without it, Safe
+                             Harbor. A policy that keeps what Safe Harbor removes is
+                             written into the manifest, departure by departure.
 
               silueta evaluate --gold <directory> [--out <report.json>] [--lineage <file>]
 

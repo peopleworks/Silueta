@@ -161,6 +161,15 @@ public static class RedactionTools
     /// </summary>
     public const string LineageVariable = "SILUETA_LINEAGE";
 
+    /// <summary>
+    /// Which of the lineage's policies this server redacts under; Safe Harbor when unset. An environment variable
+    /// for the same reason as <see cref="LineageVariable"/>, and a sharper one: a model that could pick the policy
+    /// could pick the one that keeps everything, and the manifest would name it honestly while the text went out
+    /// identified. A name the lineage does not define stops the run rather than falling back — the operator asked
+    /// for a policy by name and would otherwise describe the corpus wrongly.
+    /// </summary>
+    public const string PolicyVariable = "SILUETA_POLICY";
+
     private static string Root =>
         Path.GetFullPath(Environment.GetEnvironmentVariable(RootVariable) is { Length: > 0 } configured
             ? configured
@@ -267,9 +276,20 @@ public static class RedactionTools
     /// </summary>
     private static RedactionResult Run(SiluetaEngine engine, string text, DeidentificationContext context)
     {
+        SiluetaPolicy policy;
         try
         {
-            return engine.Redact(text, context);
+            policy = engine.Lineage.Policy(
+                Environment.GetEnvironmentVariable(PolicyVariable) is { Length: > 0 } named ? named : SiluetaPolicy.SafeHarbor.Name);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new McpException($"{PolicyVariable}: {ex.Message}");
+        }
+
+        try
+        {
+            return engine.Redact(text, context, policy);
         }
         catch (ArgumentException ex)
         {

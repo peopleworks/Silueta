@@ -7,7 +7,7 @@
     "tts-asr/phone": 10
   },
   "measuredOn": "2026-09-22",
-  "engine": "0.2.0.0",
+  "engine": "0.3.0.0",
   "lineage": "silueta-core/2",
   "lineageFingerprint": "0d2728ee31c404eb",
   "policyFingerprint": "f8a3e4af18df78a5",

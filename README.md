@@ -465,7 +465,7 @@ transcribed by Whisper large-v3 — and it is reproduced by `silueta evaluate --
 A test runs that evaluation and fails if the table below stops matching it.
 
 <!-- leak-rate:start — written by tools/Silueta.Calibration; PublishedNumberTests checks it against a fresh evaluation -->
-| 30 documents · 22 Sep 2026 · engine 0.2.0 · lineage `silueta-core/2` | Silueta | The same roster, matched literally |
+| 30 documents · 22 Sep 2026 · engine 0.3.0 · lineage `silueta-core/2` | Silueta | The same roster, matched literally |
 | --- | --- | --- |
 | **Every kind marked** — could this corpus leave the building? | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) | 93.3% of 30 transcripts (95% CI 78.7%–98.2%) |
 | **In scope** — the kinds this build has a way to find | 83.3% of 30 transcripts (95% CI 66.4%–92.7%) · recall 0.831 | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) · recall 0.764 |

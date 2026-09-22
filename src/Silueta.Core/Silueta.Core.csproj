@@ -14,7 +14,7 @@
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 
     <PackageId>Silueta.Core</PackageId>
-    <Version>0.3.0-preview.1</Version>
+    <Version>0.3.0-preview.2</Version>
     <Authors>Pedro Hernández (PeopleWorks)</Authors>
     <Company>PeopleWorks</Company>
     <Description>De-identification for conversation transcripts, so they can be analysed by an AI without carrying the people in them. Built for text that came out of a speech recogniser: it matches the identifiers you already know through ASR spelling damage, replaces names with consistent invented names under a HIPAA Safe Harbor policy, and measures its own leak rate. No external dependencies.</Description>

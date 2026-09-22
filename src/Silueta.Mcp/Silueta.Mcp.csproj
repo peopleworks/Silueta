@@ -14,7 +14,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>silueta-mcp</ToolCommandName>
     <PackageId>Silueta.Mcp</PackageId>
-    <Version>0.3.0-preview.1</Version>
+    <Version>0.3.0-preview.2</Version>
     <Authors>Pedro Hernández (PeopleWorks)</Authors>
     <Company>PeopleWorks</Company>
     <Description>Model Context Protocol (MCP) server for Silueta. De-identifies conversation transcripts by file path, so a transcript can be analysed without the identified text ever passing through a model's context; also explains why the phonetic matcher did or did not match two names, and lists the pattern rules. Runs entirely on the machine and never re-identifies.</Description>

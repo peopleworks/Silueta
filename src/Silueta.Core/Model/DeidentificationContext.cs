@@ -37,6 +37,17 @@ public sealed class DeidentificationContext
 
     public IReadOnlyList<KnownIdentifier> Known => _known;
 
+    /// <summary>
+    /// The same record and roster, as a new context the engine can add to without touching the caller's. The
+    /// relatives a transcript names are added to the roster of one run; they are not the caller's to keep.
+    /// </summary>
+    internal DeidentificationContext Copy()
+    {
+        var copy = new DeidentificationContext(RecordId);
+        copy._known.AddRange(_known);
+        return copy;
+    }
+
     public DeidentificationContext AddValue(string value, IdentifierKind kind, string subjectId)
     {
         if (!string.IsNullOrWhiteSpace(value))

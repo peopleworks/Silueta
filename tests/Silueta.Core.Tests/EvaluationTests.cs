@@ -56,8 +56,13 @@ public class EvaluationTests
         DeidScore denyList = report.Configurations.Single(c => c.Name == "deny-list").Documents.Single().Score;
 
         Assert.True(denyList.ByKind[IdentifierKind.PatientName].Covered < silueta.ByKind[IdentifierKind.PatientName].Covered);
-        Assert.Equal(0, denyList.ByKind[IdentifierKind.FamilyName].Covered);
         Assert.True(denyList.MissedCharacters > silueta.MissedCharacters);
+
+        // "Her daughter Jamileth" is the one damaged name the literal baseline now covers — not by matching the
+        // roster's "Yamilet", which it still cannot, but through the relationship rule, which both configurations
+        // run so that the difference between them stays the value of matching by sound and nothing else. In the
+        // baseline she becomes a label, a relative nobody listed; Silueta recognises her as the listed one.
+        Assert.Equal(silueta.ByKind[IdentifierKind.FamilyName].Covered, denyList.ByKind[IdentifierKind.FamilyName].Covered);
     }
 
     [Fact]

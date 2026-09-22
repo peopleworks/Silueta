@@ -73,7 +73,7 @@ public static class Samples
 
         new Sample(
             "No roster at all",
-            "The honest worst case. Only the shape rules fire — phone, e-mail, date, age over 89 — and every single name walks straight through.",
+            "The honest worst case. Only the shape rules fire — phone, e-mail, date, age over 89 — and one more: a person named right after a relationship, so \"her sister Rose\" is caught with nobody on the roster. Every other name walks straight through.",
             """
             Evening shift. Kevin Brooks with Mae Thompson. Her sister Rose visited.
             Call 602-555-0147 or write to kevin.brooks@example.com about the 3/14/2026 review.

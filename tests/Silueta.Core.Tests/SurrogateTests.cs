@@ -179,7 +179,7 @@ public class SurrogateTests
         // The real test of idempotence, and the one that catches a surrogate that sounds like a roster
         // name: feed the output back in. A de-identified corpus that keeps moving when it is reprocessed
         // is a corpus nobody can reproduce.
-        const string text = "Ellenor Vasques slept well. Her daughter Jamileth called. Sophia signed it.";
+        const string text = "Ellenor Vasques slept well. Jamileth, her daughter, called. Sophia signed it.";
         var engine = SiluetaEngine.CreateDefault();
 
         RedactionResult first = engine.Redact(text, Roster());
@@ -187,6 +187,31 @@ public class SurrogateTests
 
         Assert.Equal(first.Text, second.Text);
         Assert.Empty(second.Applied);
+    }
+
+    [Fact]
+    public void The_one_exception_an_invented_name_right_after_a_relationship_is_labelled_on_a_second_pass()
+    {
+        // Written down because it is a promise with an exception, and the exception is chosen. "Her daughter
+        // Jamileth" becomes "Her daughter Noa" on the first pass — Noa is the invented name of a listed relative.
+        // Fed back in, "Her daughter Noa" is a relationship and a name nobody listed, which is exactly what the
+        // relationship rule exists to catch, so Noa becomes [FAMILY].
+        //
+        // The alternative was to skip names that are already invented. Then a later visit where the patient's
+        // son is really called Noa — and Noa is also the patient's invented name — would leave the son's real
+        // name in the text, silently. Not skipping fails the other way: here an invented name is lost, not a
+        // real one exposed; and in that collision the read-back finds Noa and the run refuses to export, which
+        // is what this library already does with any invented name that meets someone real.
+        const string text = "Ellenor Vasques slept well. Her daughter Jamileth called.";
+        var engine = SiluetaEngine.CreateDefault();
+
+        RedactionResult first = engine.Redact(text, Roster());
+        RedactionResult second = engine.Redact(first.Text, Roster());
+
+        Assert.Empty(first.Residue);
+        Assert.Empty(second.Residue);
+        Assert.Contains("Her daughter [FAMILY] called.", second.Text, StringComparison.Ordinal);
+        Assert.Equal(1, second.Manifest.UnrosteredPeople);
     }
 
     [Fact]

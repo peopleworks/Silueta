@@ -124,6 +124,21 @@ public sealed class RedactionManifest
     /// </summary>
     public int AmbiguousAttributions { get; set; }
 
+    /// <summary>
+    /// People the transcript named through a relationship — "my daughter Linda" — who were not on the roster.
+    /// Every mention of them was replaced with a label rather than an invented name, because nobody gave them a
+    /// subject and the run will not invent one from the text. So they are de-identified, and they cannot be
+    /// followed across the corpus; this is how many people that happened to.
+    /// </summary>
+    public int UnrosteredPeople { get; set; }
+
+    /// <summary>
+    /// The rule that looked for those people and the words it read — "kinship/1" and a digest — or <c>off</c>.
+    /// A rule that decides what gets found belongs in the manifest for the same reason the matcher's tolerance
+    /// does: two corpora searched differently must not look alike.
+    /// </summary>
+    public string RelativesRule { get; set; } = "off";
+
     /// <inheritdoc cref="MeasuredLeakRate"/>
     public const string NoMeasurement =
         "No measured leak rate: this build carries no calibration, so nothing here says how often it leaves an identifier behind.";
@@ -184,6 +199,28 @@ public sealed partial class SiluetaEngine
 
     public PseudonymVault Vault { get; }
 
+    /// <summary>
+    /// Whether the run also looks for people the transcript names through a relationship — "my daughter Linda",
+    /// "su hija Lucía" — and treats them as on the roster for that one run. On by default: a privacy tool that
+    /// has to be asked before it stops leaking a relative is set the wrong way round.
+    /// <para>
+    /// What it does with them is the whole design. A name the caller's roster already finds is left to the
+    /// roster: a listed relative keeps her subject and her invented name. A name it does not find is added to
+    /// this run's roster with <b>no subject</b>, so the matcher finds every mention of it — "Linda said she would
+    /// call" two sentences later, and "Lynda" through recogniser damage — and each becomes a label. Nobody is
+    /// invented: the agency never listed this person, and a subject minted from the text would put a derivative
+    /// of a real name into the vault's keys. Coreference is lost for them, and the manifest counts them.
+    /// </para>
+    /// <para>
+    /// It is not a detector, and that matters twice. A detector that fired on the word after "daughter" would
+    /// catch only that one mention, and a document that still says Linda once still leaks. And it would fire on
+    /// this pipeline's own output — "my daughter Chris" is a relationship and a name — so the run that reads its
+    /// output back would report its own invented names as residue. Read back against the roster instead, the
+    /// output is searched for Linda, which is the only question that matters.
+    /// </para>
+    /// </summary>
+    public bool FindRelativesNamedInText { get; init; } = true;
+
     /// <summary>What this engine replaces with, and what it draws invented names from.</summary>
     public SiluetaLineage Lineage { get; }
 
@@ -193,10 +230,17 @@ public sealed partial class SiluetaEngine
         ArgumentNullException.ThrowIfNull(context);
         policy ??= SiluetaPolicy.SafeHarbor;
 
+        // The caller's roster, plus the people this transcript names through a relationship and the roster does
+        // not already know. Everything below — detection, the choice of invented names, the read-back — runs
+        // against this, so a relative found here is searched for everywhere the roster is.
+        (DeidentificationContext roster, int unrostered) = FindRelativesNamedInText
+            ? WithRelativesNamedIn(text, context)
+            : (context, 0);
+
         var found = new List<Detection>();
         foreach (IDetector detector in _detectors)
         {
-            found.AddRange(detector.Detect(text, context));
+            found.AddRange(detector.Detect(text, roster));
         }
 
         List<Detection> applied = Resolve(found, policy, out int ambiguous);
@@ -205,7 +249,7 @@ public sealed partial class SiluetaEngine
         // the surrogate and replaces it again. The test is the detectors themselves rather than a second
         // copy of their threshold, because two copies of a rule are two rules that will disagree.
         bool WouldBeFound(string candidate) =>
-            _detectors.Any(detector => detector.Detect(candidate, context).Any());
+            _detectors.Any(detector => detector.Detect(candidate, roster).Any());
 
         // The record id and every subject id travel: one in the manifest that ships with the corpus, the
         // others as the keys of the vault. Both are documented as needing to be opaque, and that rule
@@ -243,7 +287,7 @@ public sealed partial class SiluetaEngine
         // Read our own output back. Costs one more detection pass over a text of the same size, which is
         // a fair price for the only check that asks whether the work actually held.
         List<Detection> residue = Resolve(
-            _detectors.SelectMany(detector => detector.Detect(redacted, context)).ToList(),
+            _detectors.SelectMany(detector => detector.Detect(redacted, roster)).ToList(),
             policy);
 
         var manifest = new RedactionManifest
@@ -267,6 +311,8 @@ public sealed partial class SiluetaEngine
             // Left at its default — which says there is none — when this build has no measurement of its own.
             MeasuredLeakRate = PublishedLeakRate.Current?.Summary ?? RedactionManifest.NoMeasurement,
             AmbiguousAttributions = ambiguous,
+            UnrosteredPeople = unrostered,
+            RelativesRule = FindRelativesNamedInText ? RelativesInText.Fingerprint(QuasiIdentifierVocabulary.Default) : "off",
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
                 .Select(kind => kind.ToString())
@@ -324,6 +370,56 @@ public sealed partial class SiluetaEngine
     /// </summary>
     private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy) =>
         Resolve(candidates, policy, out _);
+
+    /// <summary>
+    /// The caller's roster plus every relative the transcript names that the roster does not already find, each
+    /// with no subject. Returns the caller's own context untouched when there is nobody to add.
+    /// </summary>
+    private (DeidentificationContext Roster, int Added) WithRelativesNamedIn(string text, DeidentificationContext context)
+    {
+        IReadOnlyList<NamedRelative> named = RelativesInText.NamedIn(text);
+        if (named.Count == 0)
+        {
+            return (context, 0);
+        }
+
+        // Whether a name is already somebody's is asked of the detectors themselves, as the invented-name check
+        // is, so that "already on the roster" cannot mean one thing here and another in the matcher.
+        bool Known(string candidate, DeidentificationContext against) =>
+            _detectors.Any(detector => detector.Detect(candidate, against).Any());
+
+        DeidentificationContext roster = context.Copy();
+        int added = 0;
+
+        foreach (NamedRelative relative in named)
+        {
+            // A listed person referred to by a relationship — "her daughter Jamileth" for the Yamilet on the
+            // roster — is the roster's. And a name found twice ("my daughter Linda ... my daughter Linda") is one
+            // person, which the roster built so far already answers.
+            if (Known(relative.GivenName, context) || Known(relative.GivenName, roster))
+            {
+                continue;
+            }
+
+            roster.AddValue(relative.Name, relative.Kind, string.Empty);
+            if (relative.Surname is { } surname)
+            {
+                roster.AddValue(relative.GivenName, relative.Kind, string.Empty);
+
+                // The surname alone only when nobody listed already carries it. "Linda Pryor" is unlisted and
+                // "Pryor" is the patient: registering the unlisted surname too would put a second, subjectless
+                // claim on every "Mr. Pryor" in the file.
+                if (!Known(surname, context))
+                {
+                    roster.AddValue(surname, relative.Kind, string.Empty);
+                }
+            }
+
+            added++;
+        }
+
+        return added == 0 ? (context, 0) : (roster, added);
+    }
 
     /// <inheritdoc cref="Resolve(List{Detection}, SiluetaPolicy)"/>
     /// <param name="ambiguous">How many surviving spans lost their subject because nothing could say whose
@@ -383,7 +479,12 @@ public sealed partial class SiluetaEngine
         }
 
         // Only what covers the whole span gets a say in whose it is. A surname inside a full name is not a
-        // second opinion about the mention; a second person with the same full name is.
+        // second opinion about the mention; a second person with the same full name is. And a candidate that
+        // covers the span but names nobody abstains rather than disagrees: a relative the transcript named and
+        // nobody listed — "my daughter Linda Pryor", around the patient's own "Pryor" — owns the span without
+        // having a subject, and that is not a conflict about whose it is. Counting it as one made every such
+        // mention look like a run that had given up on somebody.
+        bool covered = false;
         string? subject = null;
         bool disagreement = false;
         for (int i = from; i <= to; i++)
@@ -393,17 +494,30 @@ public sealed partial class SiluetaEngine
                 continue;
             }
 
+            covered = true;
+            if (ordered[i].SubjectId is not { Length: > 0 } opinion)
+            {
+                continue;
+            }
+
             if (subject is null)
             {
-                subject = ordered[i].SubjectId;
+                subject = opinion;
             }
-            else if (!string.Equals(subject, ordered[i].SubjectId, StringComparison.Ordinal))
+            else if (!string.Equals(subject, opinion, StringComparison.Ordinal))
             {
                 disagreement = true;
             }
         }
 
-        if (subject is null)
+        if (covered && subject is null)
+        {
+            // Covered, and nobody covering it named anyone: the span is unattributed because it never had an
+            // owner the run knew, not because an owner was lost. A label, and nothing to count.
+            return new Detection(start, end - start, anchor.Kind, anchor.DetectorId, anchor.Confidence, string.Empty, anchor.Match);
+        }
+
+        if (!covered)
         {
             // Nothing covers the union: the names cross. Then the only attribution that can be trusted is
             // one every candidate in the component already agrees on.

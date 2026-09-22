@@ -21,7 +21,13 @@ public sealed class EvaluationConfiguration
         lineage => [new KnownValueDetector(), lineage.CreatePatternDetector()]);
 
     /// <summary>The first baseline: the same roster matched literally, plus the same pattern pack. The distance
-    /// between this and <see cref="Silueta"/> is what the phonetic matching is worth.</summary>
+    /// between this and <see cref="Silueta"/> is what the phonetic matching is worth.
+    /// <para>
+    /// Both run the rule for people named through a relationship ("my daughter Linda"), because it is part of the
+    /// engine rather than of either matcher. Giving it to Silueta alone would have folded it into the difference
+    /// the README labels "what matching by sound is worth", and that difference would then have been measuring
+    /// two things under the name of one.
+    /// </para></summary>
     public static EvaluationConfiguration DenyList { get; } = new(
         "deny-list", "the same roster matched literally, plus the same pattern pack",
         lineage => [new DenyListDetector(), lineage.CreatePatternDetector()]);

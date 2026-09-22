@@ -6,7 +6,7 @@
     "tts-asr/noisy-phone": 10,
     "tts-asr/phone": 10
   },
-  "measuredOn": "2026-09-19",
+  "measuredOn": "2026-09-22",
   "engine": "0.1.0.0",
   "lineage": "silueta-core/1",
   "lineageFingerprint": "bdd1fddb5f83b212",
@@ -32,17 +32,17 @@
       "documents": 30,
       "leaking": 29,
       "leakingInScope": 26,
-      "recallInScope": 0.7769347496206374,
-      "pooledRecall": 0.6989761092150171
+      "recallInScope": 0.7814871016691958,
+      "pooledRecall": 0.7030716723549488
     }
   ],
   "thesis": {
     "configuration": "silueta",
     "baseline": "deny-list",
     "recallDifference": {
-      "estimate": 0.0773899848254932,
-      "lower": 0.04134289909610427,
-      "upper": 0.11833462853285291
+      "estimate": 0.07283763277693478,
+      "lower": 0.036965343139400746,
+      "upper": 0.11331931621841337
     },
     "leakRateDifference": {
       "estimate": -0.09999999999999998,

@@ -51,6 +51,35 @@ two lists would eventually disagree about one kind.
 invisible to this detector. That residue is what a model-backed detector is for, and until one is plugged
 in, the residue shows up in the leak rate, which is the honest place for it.
 
+**The first rule for that residue: a person the transcript names through a relationship.** "My daughter
+Linda brought pie" came back with Linda in it, in a partner's test with their own data: the roster held the
+patient and the nurse, and nobody lists a patient's daughter. F2.7 had named this on 11 September, before
+the corpus existed, with its own order — relationship rules first, measure, and only then decide whether a
+model is needed. The rule is built from that text, the kinship words already embedded for the linkage report
+(committed before the corpus was frozen), and the partner's sentence; the corpus was not read to shape it.
+
+Its shape is narrow on purpose: a relationship word, then one or two title-cased words, with nothing between
+them but a space or a comma. It refuses a word with no lower-case letter ("I", or the `FAMILY` this pipeline
+writes), a word with a digit, a title ("Doctor Reyes" is F2.7's third item), a relationship that ends with
+its sentence, and a capitalised relationship word with no possessive ("Daughter Linda called"). It does not
+hear "Linda, my daughter" or "la hija de la señora Pérez", and tests say so.
+
+**It adds to the roster; it is not a detector.** A name the caller's roster already finds is the roster's —
+a listed relative keeps her subject and her invented name. Anything else is added to that run's roster with
+no subject, so the matcher finds every mention of it, not only the one after "daughter": "Linda said she
+would call" two sentences later is the same leak, and a document that still says Linda once still leaks.
+Nobody is invented, because the agency never listed this person and a subject minted from the text would put
+a derivative of a real name into the vault's keys; each mention becomes a label, coreference is lost for
+them, and the manifest counts them in `unrosteredPeople` and names the rule in `relativesRule`. A relative
+who shares a listed person's surname is registered without that surname on its own, so "Mr. Pryor" stays
+the patient's. It runs in the literal baseline too, so the comparison between the two stays a comparison of
+matching methods.
+
+**What it cost to measure:** nothing moved for Silueta — every relative this corpus names that way is
+already on a roster — and the baseline's recall on relatives rose, which narrowed the value of matching by
+sound from +0.077 to +0.073. A rule that moves nothing on the corpus it was not shaped on, and fixes the case
+it was written for, is a result; not having looked at the corpus is what makes it one.
+
 ## 3. Sound, not letters
 
 `PhoneticKey` reduces a word to a coarse spelling of how it sounds, shared by Spanish and English:
@@ -270,6 +299,18 @@ Three constraints on what it may mint:
 After replacing, the same detectors run over the finished text. What they find is the run's **residue**,
 it goes in the manifest, and anything but zero means the transcript must not be exported — the CLI exits
 non-zero and the MCP tools say so in their own result.
+
+The read-back runs against the run's roster, which includes the relatives the transcript named, so the
+output is searched for "Linda" and not for whatever stands after "daughter". That is also why the
+relationship rule is not a detector: one that fired on position would find the pipeline's own invented
+names ("my daughter Chris") and report every one as residue.
+
+**Idempotence has one chosen exception.** An invented name standing right after a relationship — "her
+daughter Noa", where Noa was invented for a listed relative — is, on a second pass, a relationship and a name
+nobody listed, and becomes a label. Skipping names the vault already invented would keep the second pass
+still, and would leave a real son called Noa in the text, silently, the day a patient's invented name happens
+to be his. Not skipping loses an invented name instead of exposing a real one, and in that collision the
+read-back finds Noa and the run refuses to export.
 
 This exists because every other rule in this library is enforced at the moment something is *chosen*, and
 a rule enforced at choosing time is not the same as a rule that holds at emitting time:

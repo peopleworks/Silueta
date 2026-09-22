@@ -41,14 +41,30 @@ public static class Caveats
 
         if (context.Known.Count == 0)
         {
-            notes.Add(
-                "No roster was given, so only the pattern rules ran: phone, e-mail, URL, IP, record " +
-                "numbers, dates and ages over 89. EVERY NAME IN THIS TRANSCRIPT SURVIVED.");
+            // Two sentences, because the rule that finds relatives by their relationship runs without a roster
+            // too, and "every name survived" would no longer be true of "my daughter Linda" — while being
+            // exactly as true as it ever was of everybody else.
+            notes.Add(result.Manifest.RelativesRule == "off"
+                ? "No roster was given, so only the pattern rules ran: phone, e-mail, URL, IP, record " +
+                  "numbers, dates and ages over 89. EVERY NAME IN THIS TRANSCRIPT SURVIVED."
+                : "No roster was given, so only the pattern rules ran — phone, e-mail, URL, IP, record " +
+                  "numbers, dates and ages over 89 — and the rule for people named through a relationship " +
+                  "(\"my daughter Linda\"). EVERY OTHER NAME IN THIS TRANSCRIPT SURVIVED.");
         }
 
         if (result.Applied.Count == 0)
         {
             notes.Add("Nothing was replaced. Check that the roster describes the people in this record.");
+        }
+
+        if (result.Manifest.UnrosteredPeople > 0)
+        {
+            notes.Add(
+                $"{result.Manifest.UnrosteredPeople} person(s) were named in the transcript only through a " +
+                "relationship (\"my daughter Linda\") and were not on the roster. Every mention of them was " +
+                "replaced with a label rather than an invented name, because nobody gave them a subject: they are " +
+                "de-identified, and they cannot be followed across the corpus. A relative named any other way " +
+                "(\"Linda, my daughter\") is not found by this rule.");
         }
 
         if (result.Manifest.AmbiguousAttributions > 0)
@@ -82,12 +98,12 @@ public static class Caveats
               "still said something of a kind this build has a way to find, and " +
               $"{measured.Shipped!.Rate} still said something of any kind the annotators marked. This " +
               "output is not verified to be de-identified. Names nobody wrote down — nicknames, a " +
-              "relative mentioned only by relationship, a doctor named once — are invisible to the " +
-              "roster matcher and survive."
+              "neighbour, a doctor named once, a relative named any way but straight after the " +
+              "relationship — are invisible to the roster matcher and survive."
             : "This build carries no measured leak rate at all, so nothing here says how often Silueta " +
               "leaves an identifier behind, and this output is not verified to be de-identified. Names " +
-              "nobody wrote down — nicknames, a relative mentioned only by relationship, a doctor named " +
-              "once — are invisible to the roster matcher and survive.";
+              "nobody wrote down — nicknames, a neighbour, a doctor named once, a relative named any way " +
+              "but straight after the relationship — are invisible to the roster matcher and survive.";
 
     /// <summary>
     /// The kinds this build has no way to find at all: no pattern rule, and nothing a roster can hold for

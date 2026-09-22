@@ -33,7 +33,8 @@ public static class RedactionTools
         Needs a roster: a JSON array of { "value", "kind", "subjectId" } naming who this record is about
         (the patient, the family, the staff on shift). Silueta matches those through the spelling damage
         a speech recogniser leaves behind. Without a roster only the pattern rules fire (phone, e-mail,
-        dates, ages over 89) and every name survives.
+        dates, ages over 89), plus the rule for a person named right after a relationship ("my daughter
+        Linda"), and every other name survives.
 
         Pass vaultPath on every run of one corpus, or each transcript invents different names for the
         same people. The vault is the only thing that can undo the work: it stays with the agency, and
@@ -110,7 +111,7 @@ public static class RedactionTools
         string text,
         [Description("An opaque id for this record. Not a name, not a file name.")]
         string recordId,
-        [Description("Roster entries as \"Value|Kind|SubjectId\", e.g. \"Eleanor Vasquez|PatientName|patient-1\". Empty = pattern rules only, and every name survives.")]
+        [Description("Roster entries as \"Value|Kind|SubjectId\", e.g. \"Eleanor Vasquez|PatientName|patient-1\". Empty = pattern rules only, plus people named right after a relationship (\"my daughter Linda\"); every other name survives.")]
         string[]? roster = null)
     {
         ArgumentNullException.ThrowIfNull(text);

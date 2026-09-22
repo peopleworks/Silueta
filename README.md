@@ -307,8 +307,10 @@ leak rate with its interval when asked, and say what is known to survive. Instal
 6. **The vault decides the invented names, and remembers them.** One subject, one invented name, across
    every document in the corpus — and a re-identification code that is random rather than derived from
    the person, per 45 CFR § 164.514(c). No invented name is allowed to be one this pipeline would find
-   again, so running a redacted document through again changes nothing. The vault never travels with the
-   data.
+   again, so running a redacted document through again changes nothing — with one chosen exception: an
+   invented name standing right after a relationship ("her daughter Noa") is labelled on a second pass,
+   because nothing in the text can tell it from a real relative nobody listed, and the other way round
+   would leave a real name in the text. The vault never travels with the data.
 7. **Every run reads its own output back.** After replacing, the same detectors run over the result. If
    they still find anything, the run is reported as unsafe to export and nothing is written. Every other
    rule here is enforced when something is *chosen*, and a rule enforced at choosing time is not the same
@@ -331,11 +333,11 @@ transcribed by Whisper large-v3 — and it is reproduced by `silueta evaluate --
 A test runs that evaluation and fails if the table below stops matching it.
 
 <!-- leak-rate:start — written by tools/Silueta.Calibration; PublishedNumberTests checks it against a fresh evaluation -->
-| 30 documents · 19 Sep 2026 · engine 0.1.0 · lineage `silueta-core/1` | Silueta | The same roster, matched literally |
+| 30 documents · 22 Sep 2026 · engine 0.1.0 · lineage `silueta-core/1` | Silueta | The same roster, matched literally |
 | --- | --- | --- |
 | **Every kind marked** — could this corpus leave the building? | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) | 96.7% of 30 transcripts (95% CI 83.3%–99.4%) |
-| **In scope** — the kinds this build has a way to find | 76.7% of 30 transcripts (95% CI 59.1%–88.2%) · recall 0.854 | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) · recall 0.777 |
-| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.077 [+0.041, +0.118] · leak rate -0.100 [-0.233, 0.000] | — |
+| **In scope** — the kinds this build has a way to find | 76.7% of 30 transcripts (95% CI 59.1%–88.2%) · recall 0.854 | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) · recall 0.781 |
+| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.073 [+0.037, +0.113] · leak rate -0.100 [-0.233, 0.000] | — |
 <!-- leak-rate:end -->
 
 **The first row answers whether this corpus could be shared, and the answer is no.** Almost every
@@ -349,17 +351,26 @@ that miss what a recogniser writes for dictated numbers — a record number read
 "96", an e-mail address as "tuan.nguyen at example.com".
 
 **The third row is the thesis, and it is small.** Matching the roster by sound instead of letter for letter
-covers about eight more of every hundred characters in scope, and the interval excludes zero, so it is not
+covers about seven more of every hundred characters in scope, and the interval excludes zero, so it is not
 noise. Whether that changes how many transcripts leak, thirty documents cannot say: that interval reaches
 zero.
 
-**These numbers moved once since they were first published, and the reason is written down.** The matcher
+**These numbers moved twice since they were first published, and the reasons are written down.** The matcher
 used to accept a pair of spellings when their keys were 0.84 similar; it now allows a budget of edits read
 from the shorter key — none below four characters, one to seven, two above. One edit in a six-letter key
 scores 0.833, so the old rule was refusing single-letter damage to names of exactly the length most given
 names are. In scope the rate went from 80.0% to 76.7% and recall from 0.834 to 0.854, and the literal
 baseline did not move, which is what a change to the matcher and only the matcher looks like. It was not
 free: with `Rose` on a roster, "brought roses from the garden" is now redacted too.
+
+The second time only the baseline moved. A person the transcript names right after a relationship — "my
+daughter Linda" — is now found even when nobody listed her, and replaced with a label because nobody gave
+her a subject. On this corpus it changed nothing for Silueta: every relative named that way is already on a
+roster, and Silueta already heard them. It did reach the literal baseline, which could not recognise those
+relatives through the recogniser's damage and now catches them by their relationship instead — both run the
+rule, so the third row still measures matching by sound and nothing else, and it narrowed from +0.077 to
++0.073. The case that motivated it came from outside this corpus: "My daughter Linda brought pie", in a test
+with a partner's own data.
 
 What this corpus is, so the numbers are not read as more than they are:
 

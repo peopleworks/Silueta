@@ -119,8 +119,9 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    manifest has it under `measuredLeakRate` (the two matching tools return no caveat at all). Pass that on rather than a figure from memory — and if it
    ever says this build carries no measurement, say exactly that.
 4. **Name what survives, because it is predictable.** Nicknames (`Ellie` for Eleanor). Names nobody
-   wrote down — a neighbour, a doctor mentioned once. People referred to only by relationship ("my
-   daughter"). Names the recogniser damaged past what the matcher will forgive: `Reyes` heard as `Rays`
+   wrote down — a neighbour, a doctor mentioned once. A relative named any way other than straight after
+   the relationship: "my daughter Linda" is found even when nobody listed Linda, and becomes a label because
+   nobody gave her a subject; "Linda, my daughter" is not found. Names the recogniser damaged past what the matcher will forgive: `Reyes` heard as `Rays`
    is three edits apart on a five-character key, where the budget is one, and that is a matcher failure
    rather than a design decision. A name that is also an ordinary word cuts the other way — with `Rose` on
    a roster, "roses from the garden" is redacted too.

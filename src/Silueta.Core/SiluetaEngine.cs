@@ -254,6 +254,10 @@ public sealed partial class SiluetaEngine
             ? WithRelativesNamedIn(text, context)
             : (context, 0);
 
+        // And the values the lineage says identify in every record — the cities the organisation serves. After
+        // the relatives, so that a daughter named Florence in a lineage that lists Florence stays a relative.
+        roster = WithLineageValues(roster);
+
         var found = new List<Detection>();
         foreach (IDetector detector in _detectors)
         {
@@ -417,6 +421,27 @@ public sealed partial class SiluetaEngine
         }
 
         return lines.Order(StringComparer.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The roster plus the lineage's <see cref="SiluetaLineage.Values"/>, each with no subject. The
+    /// roster passed in is returned untouched when the lineage has none.</summary>
+    private DeidentificationContext WithLineageValues(DeidentificationContext roster)
+    {
+        if (Lineage.Values.Count == 0)
+        {
+            return roster;
+        }
+
+        DeidentificationContext widened = roster.Copy();
+        foreach ((IdentifierKind kind, IReadOnlyList<string> values) in Lineage.Values)
+        {
+            foreach (string value in values)
+            {
+                widened.AddValue(value, kind, string.Empty);
+            }
+        }
+
+        return widened;
     }
 
     /// <summary>

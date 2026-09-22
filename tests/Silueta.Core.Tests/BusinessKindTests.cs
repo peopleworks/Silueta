@@ -66,6 +66,8 @@ public class BusinessKindTests
     [InlineData(IdentifierKind.Organization)]
     [InlineData(IdentifierKind.Product)]
     [InlineData(IdentifierKind.ClientName)]
+    [InlineData(IdentifierKind.City)]
+    [InlineData(IdentifierKind.State)]
     public void The_policy_names_every_new_kind_so_its_fingerprint_describes_the_rule_that_ran(IdentifierKind kind)
     {
         // ActionFor falls back to Label for a kind missing from the table, and the fingerprint walks the
@@ -75,12 +77,21 @@ public class BusinessKindTests
     }
 
     [Fact]
+    public void Safe_harbor_names_every_kind_there_is()
+    {
+        // The same reason as above, for whatever kind comes next: a kind added to the enum without a row here
+        // is redacted under the fallback, which the fingerprint does not describe.
+        Assert.All(Enum.GetValues<IdentifierKind>(), kind => Assert.True(SiluetaPolicy.SafeHarbor.Actions.ContainsKey(kind), $"SafeHarbor does not name {kind}."));
+    }
+
+    [Fact]
     public void Removing_more_than_Safe_Harbor_asks_is_a_new_version_of_the_policy()
     {
         // The name stays true — Safe Harbor is a floor, and removing a product name keeps nothing the
         // standard names — but the rules are not the rules a corpus labelled safe-harbor/0.1 was
-        // redacted under, and that has to be readable without comparing hex.
-        Assert.Equal("0.2", SiluetaPolicy.SafeHarbor.Version);
+        // redacted under, and that has to be readable without comparing hex. 0.3 added the city, which goes,
+        // and the state, which stays: a corpus labelled 0.2 kept its cities because nothing looked for them.
+        Assert.Equal("0.3", SiluetaPolicy.SafeHarbor.Version);
     }
 
     private static SiluetaLineage WithCompanies(string companyPools) => SiluetaLineage.FromJson($$"""

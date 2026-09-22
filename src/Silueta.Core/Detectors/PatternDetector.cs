@@ -61,7 +61,11 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
 
         foreach (PatternRule rule in rules)
         {
-            if (string.IsNullOrWhiteSpace(rule.Regex) || !IdentifierKindExtensions.TryParseName(rule.Kind, out IdentifierKind kind))
+            // A rule naming a list this build does not have ({{us-county}}) is a rule written for a newer
+            // build too, and falls the same way.
+            if (string.IsNullOrWhiteSpace(rule.Regex) ||
+                !IdentifierKindExtensions.TryParseName(rule.Kind, out IdentifierKind kind) ||
+                !PatternLists.TryExpand(rule.Regex, out string pattern))
             {
                 // A pack naming a kind we do not know is a pack written against a newer version, so the
                 // rule is skipped rather than crashing the run — but it is written down, because silence
@@ -70,7 +74,7 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
                 continue;
             }
 
-            _rules.Add((rule, new Regex(rule.Regex, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, limit), kind));
+            _rules.Add((rule, new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, limit), kind));
         }
     }
 
@@ -87,18 +91,19 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
 
     /// <summary>
     /// A digest of the loaded rules: id, kind, pattern and confidence, sorted. Over the patterns
-    /// themselves rather than the pack's file name, because a pack is a file anyone can edit.
+    /// themselves rather than the pack's file name, because a pack is a file anyone can edit — and over each
+    /// pattern as it ran, with its lists spelled out, because a list that changes changes what the rule finds.
     /// </summary>
     public string Fingerprint
     {
         get
         {
             var canonical = new StringBuilder("silueta-pack/1\n");
-            foreach ((PatternRule rule, _, IdentifierKind kind) in _rules.OrderBy(r => r.Rule.Id, StringComparer.Ordinal))
+            foreach ((PatternRule rule, Regex regex, IdentifierKind kind) in _rules.OrderBy(r => r.Rule.Id, StringComparer.Ordinal))
             {
                 canonical.Append(rule.Id).Append('\t')
                     .Append(kind).Append('\t')
-                    .Append(rule.Regex).Append('\t')
+                    .Append(regex.ToString()).Append('\t')
                     .Append(rule.Confidence.ToString("R", CultureInfo.InvariantCulture))
                     .Append('\n');
             }

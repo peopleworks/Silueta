@@ -64,6 +64,10 @@ public sealed class LineageFile
     /// <summary>Named policies this organisation redacts under, as departures from Safe Harbor. The name
     /// "safe-harbor" is reserved for the table compiled into the build.</summary>
     public Dictionary<string, PolicyFile>? Policies { get; set; }
+
+    /// <summary>Kind to values that identify in every record this organisation redacts: the cities it serves.
+    /// Raw JSON, like the pools, so a key starting with "_" can be a comment.</summary>
+    public Dictionary<string, JsonElement>? Values { get; set; }
 }
 
 /// <summary>One named policy as it sits in a lineage: a version, and the kinds it treats differently from Safe

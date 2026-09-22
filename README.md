@@ -194,6 +194,7 @@ identifier, and the pattern rules to run.
   },
   "labels": { "Phone": "[TELÉFONO]", "Email": "[CORREO]" },
   "generalizations": { "AgeOver89": "90 o más" },
+  "values": { "City": ["Scottsdale", "Queen Creek", "Chandler"] },   // in every record; never a person
   "patterns": [ { "id": "expediente", "kind": "RecordNumber", "regex": "EXP-\\d{6}", "confidence": 0.95 } ]
 }
 ```
@@ -230,7 +231,14 @@ What is worth knowing before you write one:
   select phonetic rules: the matcher has one coarse Spanish-and-English key, compiled in, and a lineage
   saying `de-DE` gets exactly the same matching as one saying `es-MX`.
 - **Patterns replace the built-in pack, they do not extend it.** Two sources for one rule is two rules
-  that will eventually disagree.
+  that will eventually disagree. A rule can name a list instead of spelling it out — `{{us-state}}`,
+  `{{us-state-code}}` — so yours and the built-in ones agree on what a state is.
+- **`values` are what identifies in every record you redact**: the towns you serve, above all. The built-in
+  rule finds a city only before a state ("Flagstaff, Arizona") and only where the transcript has capitals;
+  a list is found like a roster entry — `scotsdale` in a lower-case transcript included — and becomes the
+  kind's label. Never a person: a person needs a subject so that the same one gets the same invented name,
+  and belongs on each record's roster. A town whose name is also a word — Mesa, Surprise, Casa Grande — is
+  removed wherever the word appears; that trade is yours to make.
 
 ### Your own policy: what you keep
 
@@ -244,7 +252,7 @@ a set of departures from Safe Harbor:
 "policies": {
   "statistics": {
     "version": "1",
-    "actions": { "Date": "Keep" }        // Label, Surrogate, YearOnly, Generalize or Keep
+    "actions": { "Date": "Keep", "City": "Keep", "PostalCode": "Keep" }   // Label, Surrogate, YearOnly, Generalize or Keep
   }
 }
 ```
@@ -331,10 +339,11 @@ leak rate with its interval when asked, and say what is known to survive. Instal
    stops at the end of a sentence, and a short company name has to be the same letters, not only the
    same sound — "Inc" is not "ink".
 3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89, a ZIP code
-   introduced as one: a JSON pattern pack, which is a file anyone can extend by pull request, never
-   compiled code.
+   introduced as one, a state, the city before a state: a JSON pattern pack, which is a file anyone can
+   extend by pull request, never compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
-   dates keep only their year, ages above 89 become "90 or older". A postal code keeps its first three
+   dates keep only their year, ages above 89 become "90 or older", a city becomes `[CITY]` and the state
+   after it stays — "all geographic subdivisions smaller than a state" go. A postal code keeps its first three
    digits where the 2020 census counts more than 20,000 people behind them — `85004` becomes `850XX` — and
    becomes `000XX` everywhere else, including every prefix the census has no area for. The table is
    derived from the census by [a script in this repository](tools/census/zip3.py), with its source, date
@@ -375,7 +384,7 @@ transcribed by Whisper large-v3 — and it is reproduced by `silueta evaluate --
 A test runs that evaluation and fails if the table below stops matching it.
 
 <!-- leak-rate:start — written by tools/Silueta.Calibration; PublishedNumberTests checks it against a fresh evaluation -->
-| 30 documents · 22 Sep 2026 · engine 0.1.0 · lineage `silueta-core/1` | Silueta | The same roster, matched literally |
+| 30 documents · 22 Sep 2026 · engine 0.1.0 · lineage `silueta-core/2` | Silueta | The same roster, matched literally |
 | --- | --- | --- |
 | **Every kind marked** — could this corpus leave the building? | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) | 96.7% of 30 transcripts (95% CI 83.3%–99.4%) |
 | **In scope** — the kinds this build has a way to find | 76.7% of 30 transcripts (95% CI 59.1%–88.2%) · recall 0.854 | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) · recall 0.781 |
@@ -431,9 +440,12 @@ How the corpus was built, and the rules that keep it from being tuned to a resul
 **What is next, in order.** The matcher work this corpus pointed at — nicknames, and the dictated numbers
 the pattern pack misses — judged on data it was not tuned against. A second corpus that records every
 script under every condition, and a person as a second annotator. Then the parts of Safe Harbor still
-missing: no rule finds a street address or a city today, a postal code is found only when it is introduced
-as one ("zip code 85004", "código postal 85004"), and numbers and dates spoken as words ("five five five,
-oh one four seven", "September eleventh") are not normalised at all.
+missing: no rule finds a street address today, a city is found only before a state or from the lineage's
+list, a postal code only when it is introduced as one ("zip code 85004", "código postal 85004") or follows
+a state, and numbers and dates spoken as words ("five five five, oh one four seven", "September eleventh")
+are not normalised at all. The places this corpus marks are mostly towns named alone — "called from Mesa" —
+which only an organisation's own list can find, and the built-in lineage lists none: a list written from
+this corpus would be a number tuned to it.
 
 ### Data that is not a person
 

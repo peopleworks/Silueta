@@ -163,9 +163,10 @@ matched as one name.
 ## 4. Shapes by rule
 
 Phone numbers, e-mail, URLs, IPs, record numbers, numeric and spoken-month dates in both languages, ages
-above 89, and a ZIP code introduced as one — after "ZIP", "zip code", "postal code" or "código postal". Not
-a bare five-digit number, which would read every record number, amount and count as a postal code; and the
-span is the digits alone, so the words that introduced them stay. A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
+above 89, and a ZIP code introduced as one — after "ZIP", "zip code", "postal code", "código postal" or a
+state. Not a bare five-digit number, which would read every record number, amount and count as a postal
+code; and the span is the digits alone, so the words that introduced them stay. States, and the city before
+one (§6d). A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
 able to add without a compiler. Each rule carries its own confidence, and every regex runs with a timeout:
 the text comes from outside, and so does the pack.
 
@@ -210,9 +211,10 @@ framework's own timeout exception carries the input that defeated it.
 | Action | Applied to | Result |
 | --- | --- | --- |
 | `Surrogate` | names of people, organisations, products | a consistent invented name per subject — or, for a kind the lineage brings no pool for, its label (see below) |
-| `Label` | phone, e-mail, URL, IP, address, record and account numbers | `[PHONE]`, `[EMAIL]`, … |
+| `Label` | phone, e-mail, URL, IP, address, city, record and account numbers | `[PHONE]`, `[EMAIL]`, `[CITY]`, … |
 | `YearOnly` | dates | `3/14/2026` → `2026` |
 | `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; `85004` → `850XX`, or `000XX` where the census counts 20,000 people or fewer behind the prefix (§6c) |
+| `Keep` | states | `Flagstaff, Arizona` → `[CITY], Arizona` (§6d) |
 
 **Why surrogates rather than labels for names.** The text stays a sentence, so whatever reads it next —
 a person, a model, a metric — still works. Concretely: a model reading `[NAME_1] told [NAME_2] that she
@@ -262,7 +264,8 @@ What the lineage still does not decide: the kinds (a closed enum — see the REA
 rules (`language` is recorded, not acted on), and any generalisation that has to *derive* a wider value
 from the original rather than state a literal one. That last is the hierarchy idea from ARX. The only rung
 anyone has asked for — three digits of a postal code — is compiled in with its census table (§6c) rather
-than written in the lineage.
+than written in the lineage. What a lineage *can* add is `values`: kinds to values that identify in every
+record — the towns an organisation serves — found by the roster's matcher and never a person.
 
 **What it is not.** This used to add that a leak would no longer stand out among plausible invented
 names. That claim does not survive an adversary. The pool is forty-three words in a public MIT
@@ -385,6 +388,34 @@ the wrong one.
   it, and three of its digits may stay under a manifest that says the US census decided. Safe Harbor is US
   law and `phone-us` already sets that precedent, but it is written down here and in every report's caveat
   rather than left to be discovered.
+
+## 6d. Places: the city goes, the state stays
+
+Safe Harbor removes "all geographic subdivisions smaller than a state". Until `safe-harbor/0.3` neither a
+city nor a state was a kind, so both survived for the same reason — nothing looked — which was right about
+the state by accident and wrong about the city, and a manifest could say neither. Now `City` is labelled
+and `State` is kept: a row that says `Keep`, not an absence, so the fingerprint describes it.
+
+- **A city is found two ways.** A rule anchored on the state that follows it — "Flagstaff, Arizona", "Mesa,
+  AZ 85201", "Las Cruces, Nuevo México" — because a capitalised word before a state is a place far more
+  often than anything else, where a capitalised word alone is usually a person. It needs capitals, so a
+  recogniser that writes everything in lower case gives it nothing; a handful of words that open a sentence
+  ("Yes, Arizona") are excluded. And the organisation's own list, `values` in its lineage, found by the
+  roster's matcher, lower case and mishearings included. The built-in lineage lists no town: the places the
+  frozen corpus marks are mostly towns named alone, and a list written from it would tune the number to it.
+- **A state is found in order to be counted.** Full names anywhere, in English and Spanish; a two-letter code
+  only after a place ("Mesa, AZ") or before a ZIP, because OK, OR, IN, ME, HI, LA, DE and CO are words in
+  one language or the other. Safe Harbor keeps it, and a kept reading is dropped *before* overlaps are
+  resolved — so a patient called Georgia is never kept because Georgia is also a state, and "New York, NY"
+  becomes `[CITY], NY` because the kept reading of New York gives way to the city.
+- **The states are one list.** Three rules need them — the state, the city before one, the ZIP after one —
+  and written out three times they would drift. `lists.core.json` holds them once and a rule names
+  `{{us-state}}` or `{{us-state-code}}`; the pattern fingerprint is taken over the expansion, so a list that
+  changes changes the digest. A rule naming a list the build does not have is skipped and reported.
+- **An organisation keeps both in a policy of its own**: `"City": "Keep"`, listed as a departure.
+
+Measured on the frozen corpus: no change, and it could not have been otherwise — the corpus names no state.
+What speaks for this section is its tests.
 
 ## 7. The vault
 

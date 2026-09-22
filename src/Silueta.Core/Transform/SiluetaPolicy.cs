@@ -35,7 +35,8 @@ public enum RedactionAction
     /// <see cref="CensusZipTable"/> is the count that says which; the rest become 000XX.</summary>
     Generalize,
 
-    /// <summary>Leave it. Only ever for kinds a caller has decided are not identifiers in their setting.</summary>
+    /// <summary>Leave it. For kinds a caller has decided are not identifiers in their setting — and for a
+    /// state, which Safe Harbor itself keeps.</summary>
     Keep,
 }
 
@@ -58,10 +59,11 @@ public sealed class SiluetaPolicy
 
     public string Name { get; init; } = "safe-harbor";
 
-    /// <summary>"0.2" since the policy started naming kinds the standard does not: an organisation, a
-    /// product, a client. Removing more keeps the name true; it does not keep the rules identical, and a
-    /// corpus labelled 0.1 was redacted under a table that did not have those rows.</summary>
-    public string Version { get; init; } = "0.2";
+    /// <summary>"0.3" since the table has a row for a city and one for a state; "0.2" since it named kinds the
+    /// standard does not: an organisation, a product, a client. Removing more keeps the name true; it does not
+    /// keep the rules identical, and a corpus labelled 0.2 was redacted under a table that did not have those
+    /// rows — its cities survived because nothing looked for them.</summary>
+    public string Version { get; init; } = "0.3";
 
     /// <summary>Detections below this are dropped. Raising it trades leaks for readability; the number
     /// belongs to the agency, and the harness is how they pick it.</summary>
@@ -127,6 +129,13 @@ public sealed class SiluetaPolicy
                 [IdentifierKind.AccountNumber] = RedactionAction.Label,
                 [IdentifierKind.DeviceId] = RedactionAction.Label,
                 [IdentifierKind.Other] = RedactionAction.Label,
+
+                // Places. A city is a subdivision smaller than a state and goes; a state is the one place the
+                // standard keeps. Keep is a row here and not an absence, so the fingerprint says so — and a kept
+                // reading is dropped before overlaps are resolved, so "Georgia" the patient is never kept because
+                // Georgia is also a state.
+                [IdentifierKind.City] = RedactionAction.Label,
+                [IdentifierKind.State] = RedactionAction.Keep,
 
                 // Not Safe Harbor identifiers, and named here anyway. ActionFor would give them Label
                 // without a row, but the fingerprint walks this table only: a kind handled by the

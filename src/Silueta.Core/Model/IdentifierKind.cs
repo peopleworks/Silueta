@@ -6,8 +6,8 @@ namespace Silueta.Core;
 /// happens to a span is written in those terms — and because a reviewer checking the work will be
 /// reading the rule, not our vocabulary.
 /// <para>
-/// The last three are <em>not</em> Safe Harbor identifiers: <see cref="Organization"/>,
-/// <see cref="Product"/> and <see cref="ClientName"/>. A company's transcripts are full of identifiers the
+/// <see cref="Organization"/>, <see cref="Product"/> and <see cref="ClientName"/> are <em>not</em> Safe Harbor
+/// identifiers, and neither is <see cref="State"/>, which the standard keeps. A company's transcripts are full of identifiers the
 /// standard never mentions. Removing more than it asks keeps a policy named after it true — keeping
 /// something it names would not — so a manifest's policy name says which standard the run meets, and
 /// its per-kind counts say what was actually removed. Those are not the same list.
@@ -75,6 +75,20 @@ public enum IdentifierKind
     /// </para>
     /// </summary>
     ClientName,
+
+    /// <summary>
+    /// A city, town or other place smaller than a state. Safe Harbor removes "all geographic subdivisions
+    /// smaller than a state" (45 CFR § 164.514(b)(2)(i)(B)); an organisation's own policy may keep it, because a
+    /// city is statistics as long as nobody knows whose it is.
+    /// </summary>
+    City,
+
+    /// <summary>
+    /// A state of the United States, the District of Columbia or Puerto Rico. Safe Harbor <em>keeps</em> it — the
+    /// one place the standard allows — so it is found in order to be counted, and removed only by a policy
+    /// stricter than Safe Harbor.
+    /// </summary>
+    State,
 }
 
 /// <summary>

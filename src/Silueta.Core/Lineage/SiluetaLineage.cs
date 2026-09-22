@@ -37,6 +37,7 @@ public sealed class SiluetaLineage
         IReadOnlyDictionary<IdentifierKind, string> generalizations,
         IReadOnlyList<PatternRule> patterns,
         IReadOnlyDictionary<string, SiluetaPolicy> policies,
+        IReadOnlyDictionary<IdentifierKind, IReadOnlyList<string>> values,
         IReadOnlyList<string> skipped)
     {
         Name = name;
@@ -47,6 +48,7 @@ public sealed class SiluetaLineage
         Generalizations = generalizations;
         Patterns = patterns;
         Policies = policies;
+        Values = values;
         Skipped = skipped;
         Fingerprint = ComputeFingerprint();
     }
@@ -158,8 +160,22 @@ public sealed class SiluetaLineage
             WithoutPostalCode(Parse(file.Generalizations, skipped), skipped),
             file.Patterns ?? [],
             ReadPolicies(file.Policies, skipped),
+            ReadValues(file.Values, skipped),
             skipped);
     }
+
+    /// <summary>
+    /// Values that identify in every record this organisation redacts, by kind — the cities it serves, found
+    /// by the same matcher as the roster, so a lower-case transcript and a misheard "Scotsdale" are found too.
+    /// Each run adds them to its roster with no subject, so each becomes the kind's label.
+    /// <para>
+    /// Never a person. A person needs a subject so that the same person gets the same invented name across a
+    /// corpus, and a list shared by every record has none; people belong on each record's roster. A value that
+    /// is also an ordinary word — Mesa, Surprise, Casa Grande — is removed wherever the word appears: the list
+    /// is the organisation's, and so is that trade.
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<IdentifierKind, IReadOnlyList<string>> Values { get; }
 
     /// <summary>Reads a lineage from disk. The file is the organisation's, so everything about it is
     /// checked rather than assumed.</summary>
@@ -271,6 +287,44 @@ public sealed class SiluetaLineage
 
         skipped.Add("generalizations.PostalCode");
         return generalizations.Where(entry => entry.Key != IdentifierKind.PostalCode).ToFrozenDictionary();
+    }
+
+    /// <summary>
+    /// The <c>values</c> section. A kind this build does not know is skipped and written down, as everywhere
+    /// in the file; so is a person, for the reason on <see cref="Values"/>. A value that is not a list of
+    /// strings is refused: it is a mistake in the file, and guessing what it meant is how a city goes out.
+    /// </summary>
+    private static IReadOnlyDictionary<IdentifierKind, IReadOnlyList<string>> ReadValues(
+        Dictionary<string, JsonElement>? raw, List<string> skipped)
+    {
+        var values = new Dictionary<IdentifierKind, IReadOnlyList<string>>();
+
+        foreach ((string key, JsonElement value) in raw ?? [])
+        {
+            if (key.StartsWith('_'))
+            {
+                continue; // a comment, by the convention the built-in file teaches
+            }
+
+            if (!IdentifierKindExtensions.TryParseName(key, out IdentifierKind kind) || kind.IsPersonName())
+            {
+                skipped.Add($"values.{key}");
+                continue;
+            }
+
+            if (value.ValueKind != JsonValueKind.Array ||
+                value.EnumerateArray().Any(static e => e.ValueKind != JsonValueKind.String))
+            {
+                throw new InvalidOperationException($"values.{key} has to be a list of strings.");
+            }
+
+            values[kind] = [.. value.EnumerateArray()
+                .Select(static e => e.GetString()!.Trim())
+                .Where(static v => v.Length > 0)
+                .Distinct(StringComparer.Ordinal)];
+        }
+
+        return values.ToFrozenDictionary();
     }
 
     private static IReadOnlyDictionary<IdentifierKind, string> Parse(
@@ -526,6 +580,15 @@ public sealed class SiluetaLineage
         foreach ((string name, SiluetaPolicy policy) in Policies.OrderBy(p => p.Key, StringComparer.Ordinal))
         {
             canonical.Append("policy\t").Append(name).Append('\t').Append(policy.Fingerprint).Append('\n');
+        }
+
+        // The same rule: nothing when there are none.
+        foreach ((IdentifierKind kind, IReadOnlyList<string> list) in Values.OrderBy(p => p.Key))
+        {
+            foreach (string value in list.Order(StringComparer.Ordinal))
+            {
+                canonical.Append("value\t").Append(kind).Append('\t').Append(value).Append('\n');
+            }
         }
 
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())).AsSpan(0, 8));

@@ -84,7 +84,7 @@ Silueta's leak rate has been measured only on a small synthetic corpus, and on i
 held something identifying — the numbers and their limits are in the repository README. Nothing here is
 verified to be de-identified. Names nobody wrote down — nicknames, a relative mentioned only by
 relationship, a doctor named once — are invisible to the roster matcher and survive. No rule finds a street
-address yet, a postal code is found only after "ZIP" or "código postal", and numbers spoken as words are not
-recognised. Every tool result says so in its own `caveat` field.
+address yet, a city is found only before a state or when the lineage lists it, a postal code only after "ZIP",
+"código postal" or a state, and numbers spoken as words are not recognised. Every tool result says so in its own `caveat` field.
 
 MIT. Pedro Hernández (PeopleWorks) · https://github.com/peopleworks/Silueta

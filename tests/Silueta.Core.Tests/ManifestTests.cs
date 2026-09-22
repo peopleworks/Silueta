@@ -92,6 +92,10 @@ public class ManifestTests
         RedactionResult result = SiluetaEngine.CreateDefault().Redact("Nothing here.", Roster(), lenient);
 
         Assert.Contains(nameof(IdentifierKind.StaffName), result.Manifest.KeptKinds);
-        Assert.Empty(SiluetaEngine.CreateDefault().Redact("Nothing here.", Roster()).Manifest.KeptKinds);
+
+        // Safe Harbor keeps one kind of its own, the state, and a manifest under it says so.
+        Assert.Equal(
+            [nameof(IdentifierKind.State)],
+            SiluetaEngine.CreateDefault().Redact("Nothing here.", Roster()).Manifest.KeptKinds);
     }
 }

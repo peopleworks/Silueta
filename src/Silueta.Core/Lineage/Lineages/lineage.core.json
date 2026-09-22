@@ -1,6 +1,6 @@
 {
   "lineage": "silueta-core",
-  "version": "1",
+  "version": "2",
   "language": "es-en",
 
   "_pools": [
@@ -41,7 +41,9 @@
     "Other": "[REMOVED]",
     "Organization": "[ORGANIZATION]",
     "Product": "[PRODUCT]",
-    "ClientName": "[CLIENT]"
+    "ClientName": "[CLIENT]",
+    "City": "[CITY]",
+    "State": "[STATE]"
   },
 
   "_generalizations": [
@@ -51,5 +53,12 @@
   ],
   "generalizations": {
     "AgeOver89": "90 or older"
-  }
+  },
+
+  "_values": [
+    "Values that identify in every record an organisation redacts, by kind: \"values\": { \"City\":",
+    "[\"Scottsdale\", \"Queen Creek\"] }. Found like a roster entry, lower case and misheard included, and",
+    "replaced with the kind's label. Never a person: a person needs a subject, and belongs on the roster.",
+    "This lineage names none — the towns a caller mentions are the organisation's to list, not the library's."
+  ]
 }

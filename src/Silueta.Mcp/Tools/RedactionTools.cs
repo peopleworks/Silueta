@@ -45,7 +45,7 @@ public static class RedactionTools
         string transcriptPath,
         [Description("An opaque id for this record, e.g. \"r-042\". It goes in the manifest, which travels with the corpus, so it must not be the patient's name or the file's.")]
         string recordId,
-        [Description("Path to the roster JSON: [{ \"value\": \"Eleanor Vasquez\", \"kind\": \"PatientName\", \"subjectId\": \"patient-1\" }]. Kinds: PatientName, FamilyName, StaffName, OtherName, ClientName (a person: the customer), Organization (a company, including a client company), Product, Phone, Email, Url, IpAddress, Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, DeviceId.")]
+        [Description("Path to the roster JSON: [{ \"value\": \"Eleanor Vasquez\", \"kind\": \"PatientName\", \"subjectId\": \"patient-1\" }]. Kinds: PatientName, FamilyName, StaffName, OtherName, ClientName (a person: the customer), Organization (a company, including a client company), Product, Phone, Email, Url, IpAddress, Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, DeviceId, City, State.")]
         string? rosterPath = null,
         [Description("Path to the vault, created if absent. Pass the same one for every transcript in a corpus so one person keeps one invented name.")]
         string? vaultPath = null,

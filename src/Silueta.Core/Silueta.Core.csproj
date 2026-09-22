@@ -38,6 +38,12 @@
       <LogicalName>Silueta.Core.Detectors.Packs.%(Filename)%(Extension)</LogicalName>
     </EmbeddedResource>
 
+    <!-- The word lists a pattern rule names instead of spelling out ({{us-state}}): one list, so three rules
+         cannot disagree about what a state is. -->
+    <EmbeddedResource Include="Detectors\Packs\lists.*.json" WithCulture="false">
+      <LogicalName>Silueta.Core.Detectors.Packs.%(Filename)%(Extension)</LogicalName>
+    </EmbeddedResource>
+
     <!-- The default lineage: the word lists and the labels, as data. Same WithCulture trick, and for the
          same reason — lineage.core.json parses as a culture-tagged satellite resource otherwise. -->
     <EmbeddedResource Include="Lineage\Lineages\lineage.*.json" WithCulture="false">

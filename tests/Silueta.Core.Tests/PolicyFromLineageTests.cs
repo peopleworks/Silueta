@@ -97,12 +97,15 @@ public class PolicyFromLineageTests
     }
 
     [Fact]
-    public void The_safe_harbor_fingerprint_is_the_one_every_manifest_already_carries()
+    public void The_built_in_fingerprints_change_only_when_someone_decides_they_do()
     {
-        // Moving the table into a data-driven design must not change what the built-in policy digests to, or
-        // every manifest ever written stops matching the policy it names.
-        Assert.Equal("25fd6239682ded47", SiluetaPolicy.SafeHarbor.Fingerprint);
-        Assert.Equal("bdd1fddb5f83b212", SiluetaLineage.Default.Fingerprint);
+        // Moving the table into a data-driven design did not change what the built-in policy digested to —
+        // 25fd6239682ded47 for safe-harbor/0.2, bdd1fddb5f83b212 for silueta-core/1 — and it must not have, or
+        // every manifest already written would stop matching the policy it names. The city and the state did
+        // change them, on purpose, with a version each: safe-harbor/0.3 has their rows, silueta-core/2 their
+        // labels. Pinned so that the next change is a decision too.
+        Assert.Equal("f8a3e4af18df78a5", SiluetaPolicy.SafeHarbor.Fingerprint);
+        Assert.Equal("0d2728ee31c404eb", SiluetaLineage.Default.Fingerprint);
     }
 
     [Fact]

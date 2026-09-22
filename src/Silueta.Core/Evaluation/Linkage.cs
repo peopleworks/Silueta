@@ -81,7 +81,7 @@ public static class Linkage
 {
     private static readonly string[] BlindSpots =
     [
-        "Places: no rule finds an address or a city yet, and a postal code only after \"ZIP\" or \"código postal\"; every place that survives, and the three digits of a ZIP that Safe Harbor keeps, go uncounted here.",
+        "Places: no rule finds a street address; a city is found only before a state or from the lineage's list, and a postal code only after \"ZIP\", \"código postal\" or a state. Every place that survives — and the state and three ZIP digits Safe Harbor keeps — goes uncounted here.",
         "Clinical detail: diagnoses, medications and events are the analysis this library preserves, and they are quasi-identifiers this report does not see.",
         "Wording outside the vocabulary: kinship and age written in other forms or languages are not counted.",
         "Attribution by co-occurrence: every quasi-identifier in a document is attributed to every subject named in it. That makes patterns more distinct and classes smaller than a careful reader could prove — pessimistic by construction.",

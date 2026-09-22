@@ -11,7 +11,7 @@
   "lineage": "silueta-core/1",
   "lineageFingerprint": "bdd1fddb5f83b212",
   "policyFingerprint": "25fd6239682ded47",
-  "scope": "In scope: kinds the pattern pack has a rule for (Phone, Email, Url, IpAddress, Date, AgeOver89, RecordNumber, AccountNumber), plus the kinds on each document\u0027s roster. A rule that exists and fails stays in scope.",
+  "scope": "In scope: kinds the pattern pack has a rule for (Phone, Email, Url, IpAddress, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber), plus the kinds on each document\u0027s roster. A rule that exists and fails stays in scope.",
   "caveats": [
     "30 of 30 documents were marked by one annotator: for those the number measures that annotator as much as the redactor, and agreement cannot be computed.",
     "The corpus mixes sources. Read the result per source before reading it whole."

@@ -236,7 +236,8 @@ What is worth knowing before you write one:
 
 Dates, ages, diagnoses, measurements and places are what an analysis is made of, and what matters is not
 knowing whose they are. Safe Harbor removes more of them than many organisations need — it keeps only the
-year of a date, and no place smaller than a state. So a lineage can also name **policies of its own**, each
+year of a date, and of a place only the state and, where the area is large, three digits of the ZIP. So a
+lineage can also name **policies of its own**, each
 a set of departures from Safe Harbor:
 
 ```jsonc
@@ -329,12 +330,17 @@ leak rate with its interval when asked, and say what is known to survive. Instal
    distance on top absorbs the rest. `Na'vi`, `Navy` and `Navi` are one word here. A window of words
    stops at the end of a sentence, and a short company name has to be the same letters, not only the
    same sound — "Inc" is not "ink".
-3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89: a JSON
-   pattern pack, which is a file anyone can extend by pull request, never compiled code.
+3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89, a ZIP code
+   introduced as one: a JSON pattern pack, which is a file anyone can extend by pull request, never
+   compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
-   dates keep only their year, ages above 89 become "90 or older". Postal codes are removed whole rather
-   than kept to three digits — the rule allows three digits only where that area holds more than 20,000
-   people, and the census table that decides which is which is not in this package yet.
+   dates keep only their year, ages above 89 become "90 or older". A postal code keeps its first three
+   digits where the 2020 census counts more than 20,000 people behind them — `85004` becomes `850XX` — and
+   becomes `000XX` everywhere else, including every prefix the census has no area for. The table is
+   derived from the census by [a script in this repository](tools/census/zip3.py), with its source, date
+   and digest, rather than copied from the seventeen prefixes HHS printed in 2012: those are the 2000
+   count, the guidance itself says not to rely on them once newer data exists, and against 2020 they keep
+   six prefixes the rule says to zero.
 5. **Every run writes a manifest, and the manifest carries this build's failure rate.** What was removed,
    by kind, by detector, under which policy and which lineage, bound to the text it came from by a hash —
    plus the leak rate measured below, embedded in the assembly so it travels with the corpus and needs no
@@ -425,8 +431,9 @@ How the corpus was built, and the rules that keep it from being tuned to a resul
 **What is next, in order.** The matcher work this corpus pointed at — nicknames, and the dictated numbers
 the pattern pack misses — judged on data it was not tuned against. A second corpus that records every
 script under every condition, and a person as a second annotator. Then the parts of Safe Harbor still
-missing: no rule emits a postal code or a street address today, and numbers and dates spoken as words
-("five five five, oh one four seven", "September eleventh") are not normalised at all.
+missing: no rule finds a street address or a city today, a postal code is found only when it is introduced
+as one ("zip code 85004", "código postal 85004"), and numbers and dates spoken as words ("five five five,
+oh one four seven", "September eleventh") are not normalised at all.
 
 ### Data that is not a person
 
@@ -453,8 +460,10 @@ matcher work, not this one.
 *The lineage exists, and it does not yet cover everything it should.* Pools, labels, generalisations and
 pattern rules are yours to bring. Three things are still the library's: `language` does not select
 phonetic rules, the kinds themselves are a fixed list, and a generalisation is a literal string — there is
-no ladder that derives a wider value from the one it replaces, so `85001 → 850**` is not expressible. That
-last one waits on the same census table as the postal-code rule.
+no ladder that derives a wider value from the one it replaces. The one derived value anyone has asked for,
+three digits of a ZIP, is compiled in with its census table instead of written in a lineage, for the reason
+Safe Harbor is: a file that could rewrite the table could keep every prefix under a manifest that says
+safe-harbor.
 
 ## What it is not
 

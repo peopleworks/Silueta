@@ -155,7 +155,7 @@ public sealed class SiluetaLineage
             string.IsNullOrWhiteSpace(file.Language) ? "und" : file.Language.Trim(),
             pools,
             Parse(file.Labels, skipped),
-            Parse(file.Generalizations, skipped),
+            WithoutPostalCode(Parse(file.Generalizations, skipped), skipped),
             file.Patterns ?? [],
             ReadPolicies(file.Policies, skipped),
             skipped);
@@ -252,6 +252,25 @@ public sealed class SiluetaLineage
         }
 
         return policies.ToFrozenDictionary(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// A postal code's generalisation is not the lineage's to write. What it keeps is Safe Harbor's rule applied
+    /// to the census's count (<see cref="CensusZipTable"/>), and a fixed text in its place would be a second rule
+    /// for the same kind — one the manifest could not see, because it would still name the census table. An
+    /// organisation that wants the whole code gone says so in a policy, <c>"PostalCode": "Label"</c>, where it is
+    /// listed as a departure. The entry is skipped and written down, not refused: the rest of the file is fine.
+    /// </summary>
+    private static IReadOnlyDictionary<IdentifierKind, string> WithoutPostalCode(
+        IReadOnlyDictionary<IdentifierKind, string> generalizations, List<string> skipped)
+    {
+        if (!generalizations.ContainsKey(IdentifierKind.PostalCode))
+        {
+            return generalizations;
+        }
+
+        skipped.Add("generalizations.PostalCode");
+        return generalizations.Where(entry => entry.Key != IdentifierKind.PostalCode).ToFrozenDictionary();
     }
 
     private static IReadOnlyDictionary<IdentifierKind, string> Parse(

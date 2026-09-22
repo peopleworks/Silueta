@@ -30,9 +30,9 @@ public enum RedactionAction
     /// <summary>Keep the year, drop the rest. Safe Harbor allows the year and nothing finer.</summary>
     YearOnly,
 
-    /// <summary>Widen until it stops identifying: 94 becomes "90 or older". A postal code is removed
-    /// whole — Safe Harbor allows its first three digits only where that area holds more than 20,000
-    /// people, and the census table that says which is which is not in this package yet.</summary>
+    /// <summary>Widen until it stops identifying: 94 becomes "90 or older", and 85004 becomes 850XX — Safe
+    /// Harbor keeps three digits of a postal code only where that area holds more than 20,000 people, and
+    /// <see cref="CensusZipTable"/> is the count that says which; the rest become 000XX.</summary>
     Generalize,
 
     /// <summary>Leave it. Only ever for kinds a caller has decided are not identifiers in their setting.</summary>

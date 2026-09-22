@@ -89,8 +89,10 @@ public static class Caveats
         }
 
         notes.Add(
-            "No rule emits a postal code or a street address yet, and numbers spoken as words " +
-            "(\"five five five, oh one four seven\") are not recognised.");
+            "No rule finds a street address or a city yet, a postal code is found only after \"ZIP\" or " +
+            "\"código postal\", and numbers spoken as words (\"five five five, oh one four seven\") are not " +
+            "recognised. The postal-code table is the United States census: a five-digit code from another " +
+            "country is widened against it, and three of its digits may stay.");
 
         return notes;
     }

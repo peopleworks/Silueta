@@ -163,7 +163,9 @@ matched as one name.
 ## 4. Shapes by rule
 
 Phone numbers, e-mail, URLs, IPs, record numbers, numeric and spoken-month dates in both languages, ages
-above 89. A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
+above 89, and a ZIP code introduced as one — after "ZIP", "zip code", "postal code" or "código postal". Not
+a bare five-digit number, which would read every record number, amount and count as a postal code; and the
+span is the digits alone, so the words that introduced them stay. A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
 able to add without a compiler. Each rule carries its own confidence, and every regex runs with a timeout:
 the text comes from outside, and so does the pack.
 
@@ -210,7 +212,7 @@ framework's own timeout exception carries the input that defeated it.
 | `Surrogate` | names of people, organisations, products | a consistent invented name per subject — or, for a kind the lineage brings no pool for, its label (see below) |
 | `Label` | phone, e-mail, URL, IP, address, record and account numbers | `[PHONE]`, `[EMAIL]`, … |
 | `YearOnly` | dates | `3/14/2026` → `2026` |
-| `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; a postal code is removed whole |
+| `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; `85004` → `850XX`, or `000XX` where the census counts 20,000 people or fewer behind the prefix (§6c) |
 
 **Why surrogates rather than labels for names.** The text stays a sentence, so whatever reads it next —
 a person, a model, a metric — still works. Concretely: a model reading `[NAME_1] told [NAME_2] that she
@@ -258,9 +260,9 @@ surrogate away from the roster is turned on the pool itself.
 
 What the lineage still does not decide: the kinds (a closed enum — see the README's Status), the phonetic
 rules (`language` is recorded, not acted on), and any generalisation that has to *derive* a wider value
-from the original rather than state a literal one. That last is the hierarchy idea from ARX, and the only
-rung anyone actually wants — three-digit postal codes — is blocked on the census table in §7, not on the
-file format.
+from the original rather than state a literal one. That last is the hierarchy idea from ARX. The only rung
+anyone has asked for — three digits of a postal code — is compiled in with its census table (§6c) rather
+than written in the lineage.
 
 **What it is not.** This used to add that a leak would no longer stand out among plausible invented
 names. That claim does not survive an adversary. The pool is forty-three words in a public MIT
@@ -296,8 +298,8 @@ Three constraints on what it may mint:
 
 ## 6a. Whose rules: policies as data
 
-Safe Harbor is a floor, and a strict one for analysis: only the year of a date, no place smaller than a
-state. Pedro's principle for this library is that dates, ages, diagnoses, measurements and places are the
+Safe Harbor is a floor, and a strict one for analysis: only the year of a date, and of a place only the
+state and, where the area is large, three digits of the ZIP. Pedro's principle for this library is that dates, ages, diagnoses, measurements and places are the
 statistics an analysis is made of, and what matters is not knowing whose they are — so an organisation can
 write, in its lineage, a policy of its own under a name of its own.
 
@@ -350,6 +352,40 @@ It is the same correction the leak meter needed, one level up: check the result,
 has the same honest limit — residue is what *this* pipeline can see, so a name it never knew about is
 missing from here too. It is a self-consistency check, not a leak rate.
 
+## 6c. Three digits of a ZIP: the census table
+
+Safe Harbor keeps the first three digits of a ZIP code where the area formed by every ZIP sharing them holds
+more than 20,000 people "according to the current publicly available data from the Bureau of the Census",
+and turns the rest into 000 (45 CFR § 164.514(b)(2)(i)(B)). The rule needs a table, and the obvious one is
+the wrong one.
+
+- **Not HHS's seventeen.** The de-identification guidance (26 November 2012, §3.1) prints seventeen prefixes
+  from the 2000 census and, in the same paragraph, says not to rely on them "if more current data has been
+  published". Against the 2020 count that list keeps six prefixes the rule says to zero — 202, 204, 205,
+  369, 753, 772 — and zeroes five that may stay, Las Vegas's 890 among them.
+- **Derived, not copied.** `tools/census/zip3.py` takes table P1 (total population) of the 2020 Census
+  Demographic and Housing Characteristics File for every ZIP Code Tabulation Area and sums it by prefix —
+  HHS's own method, on the current count. The file it writes records the URL, the day it was fetched and the
+  SHA-256 of what the Census Bureau served. The populations add up to that response's total as the file
+  records it, and a test holds them to it, so one number edited by hand shows.
+- **An allow-list.** 894 prefixes have at least one tabulation area, and 876 of them hold more than 20,000
+  people. The other 106 of the thousand — military mail, unassigned ranges, ZIPs that are only post-office
+  boxes — have nobody the census counted, and they become 000 too. A list of small prefixes would have
+  passed each of them for the reason that nobody wrote it down.
+- **Compiled in.** Like Safe Harbor's table of actions, and for the same reason: a lineage that could
+  rewrite it could keep every prefix under a manifest that says safe-harbor. A lineage's
+  `generalizations.PostalCode` is skipped and reported; an organisation that wants the whole code gone
+  writes `"PostalCode": "Label"` in a policy, where it is listed as a departure. The manifest names the
+  table and its digest in `postalCodeTable`, and a manifest from before it says `none` — which is true of
+  those runs: the whole code went.
+- **What it does not do.** The 2020 counts carry the Census Bureau's disclosure-avoidance noise, and one
+  prefix, 576, sits 310 people above the line; the rule says to follow the published count, and this does.
+  A ZIP nobody introduced as one is not found, and one spoken as words is not read. And the table is the
+  United States count while the anchor is also Spanish: a Mexican "código postal 06600" is widened against
+  it, and three of its digits may stay under a manifest that says the US census decided. Safe Harbor is US
+  law and `phone-us` already sets that precedent, but it is written down here and in every report's caveat
+  rather than left to be discovered.
+
 ## 7. The vault
 
 Two things per subject, held together: the **code** a structured field refers to (`SIL-3f9a…`) and the
@@ -398,6 +434,8 @@ Plus the four things that bind it to something:
   here says what ran; none of them said how often what ran is wrong, and this is the file a compliance
   officer opens. Its default is the admission that there is no measurement, because a field left empty
   reads as a run that did not leak. See §9.
+- **`postalCodeTable`.** Which census count decided the ZIP prefixes a run kept (§6c). Two corpora
+  redacted against different counts keep different prefixes under one policy fingerprint.
 
 What is still missing, and worth saying: **a run cannot be reproduced from the manifest.** Invented names
 are minted at random, so the only way to reproduce one is to hold the vault — which must not travel. The

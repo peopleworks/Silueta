@@ -147,6 +147,15 @@ public sealed class RedactionManifest
     /// </summary>
     public List<string> DeparturesFromSafeHarbor { get; set; } = new();
 
+    /// <summary>
+    /// The census table that decided which postal-code prefixes stayed — "zip3/census-2020" and its digest — or
+    /// "unused (PostalCode: Label)" when the policy does not widen postal codes. The default, "none", is what a
+    /// manifest from before the table says, and it is true of those runs: the whole code went. Two corpora
+    /// redacted against different counts keep different prefixes under the same policy fingerprint, so the count
+    /// belongs here beside the policy.
+    /// </summary>
+    public string PostalCodeTable { get; set; } = "none";
+
     /// <inheritdoc cref="MeasuredLeakRate"/>
     public const string NoMeasurement =
         "No measured leak rate: this build carries no calibration, so nothing here says how often it leaves an identifier behind.";
@@ -321,6 +330,9 @@ public sealed partial class SiluetaEngine
             AmbiguousAttributions = ambiguous,
             UnrosteredPeople = unrostered,
             DeparturesFromSafeHarbor = [.. DeparturesFromSafeHarbor(policy)],
+            PostalCodeTable = policy.ActionFor(IdentifierKind.PostalCode) == RedactionAction.Generalize
+                ? $"{CensusZipTable.Table} {CensusZipTable.Fingerprint}"
+                : $"unused (PostalCode: {policy.ActionFor(IdentifierKind.PostalCode)})",
             RelativesRule = FindRelativesNamedInText ? RelativesInText.Fingerprint(QuasiIdentifierVocabulary.Default) : "off",
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
@@ -656,15 +668,17 @@ public sealed partial class SiluetaEngine
     }
 
     /// <summary>
-    /// Widening, where a wider value stops identifying. Postal codes are the awkward one: Safe Harbor
-    /// allows the first three digits <em>only</em> where that three-digit area holds more than 20,000
-    /// people, and requires the rest to become 000 — 45 CFR § 164.514(b)(2)(i)(B). Deciding which is
-    /// which needs a census table with a date and a source on it, and there is not one in this package
-    /// yet. Keeping three digits regardless would emit "036XX" for a Vermont prefix the rule names
-    /// explicitly, inside a corpus whose manifest says safe-harbor. So the whole code goes until the
-    /// table exists.
+    /// Widening, where a wider value stops identifying. For most kinds the wider value is a fixed text the
+    /// lineage supplies — "90 or older". A postal code is the one whose wider value depends on what was written:
+    /// Safe Harbor keeps its first three digits <em>only</em> where that area holds more than 20,000 people and
+    /// turns the rest into 000 (45 CFR § 164.514(b)(2)(i)(B)), and <see cref="CensusZipTable"/> is the count that
+    /// decides. Something found as a postal code that is not a five- or nine-digit code is labelled: three
+    /// digits of another number are not an area.
     /// </summary>
-    private string Generalized(IdentifierKind kind, string original) => Lineage.GeneralizationFor(kind);
+    private string Generalized(IdentifierKind kind, string original) =>
+        kind == IdentifierKind.PostalCode
+            ? CensusZipTable.Generalize(original) ?? LabelFor(kind)
+            : Lineage.GeneralizationFor(kind);
 
     /// <summary>
     /// What a removed identifier is replaced by. It was a <c>switch</c> here, in English, compiled in —

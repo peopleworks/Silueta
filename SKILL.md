@@ -127,9 +127,11 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    is three edits apart on a five-character key, where the budget is one, and that is a matcher failure
    rather than a design decision. A name that is also an ordinary word cuts the other way — with `Rose` on
    a roster, "roses from the garden" is redacted too.
-5. **No rule emits a postal code or a street address yet**, and numbers or dates spoken as words
-   ("five five five, oh one four seven", "September eleventh") are not recognised at all. If the
-   transcript has those, say they were not touched.
+5. **No rule finds a street address or a city yet, and a postal code only when it is introduced as one**
+   ("zip code 85004", "código postal 85004"). One that is found keeps three digits where the census
+   allows — `850XX` — and becomes `000XX` elsewhere. Numbers or dates spoken as words ("five five five,
+   oh one four seven", "September eleventh") are not recognised at all. If the transcript has those, say
+   they were not touched.
 6. **Companies and products come back as labels unless the lineage brings names for them.** Use
    `Organization` for a company and `Product` for a product; `ClientName` is a **person** — in home care
    the client is the patient — and a client that is a company is an `Organization`. The lineage that

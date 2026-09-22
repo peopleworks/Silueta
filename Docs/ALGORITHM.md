@@ -268,8 +268,12 @@ What the lineage still does not decide: the kinds (a closed enum — see the REA
 rules (`language` is recorded, not acted on), and any generalisation that has to *derive* a wider value
 from the original rather than state a literal one. That last is the hierarchy idea from ARX. The only rung
 anyone has asked for — three digits of a postal code — is compiled in with its census table (§6c) rather
-than written in the lineage. What a lineage *can* add is `values`: kinds to values that identify in every
-record — the towns an organisation serves — found by the roster's matcher and never a person.
+than written in the lineage. What a lineage *can* add is `values` — kinds to values that identify in every
+record, the towns an organisation serves, found by the roster's matcher and never a person — and `lists`,
+word lists its own rules name as the built-in rules name theirs. That last one is what makes the library
+portable at all: the rules that ship are American and Mexican, and without it a project in another country
+had to spell its own country into every regular expression it wrote, with no way to say "the same list as
+the other rule". A name the build already uses is refused, because one name must mean one list.
 
 **What it is not.** This used to add that a leak would no longer stand out among plausible invented
 names. That claim does not survive an adversary. The pool is forty-three words in a public MIT

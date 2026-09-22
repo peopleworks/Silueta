@@ -54,8 +54,14 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
     private readonly List<(PatternRule Rule, Regex Regex, IdentifierKind Kind)> _rules = new();
     private readonly List<string> _skipped = new();
 
+    /// <param name="rules">The rules to compile.</param>
     /// <param name="timeout">Per-match ceiling. The text comes from outside, and so does the pack.</param>
-    public PatternDetector(IEnumerable<PatternRule> rules, TimeSpan? timeout = null)
+    /// <param name="lists">Word lists the rules may name beside the build's own — a lineage's, for a country
+    /// the built-in lists do not cover.</param>
+    public PatternDetector(
+        IEnumerable<PatternRule> rules,
+        TimeSpan? timeout = null,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? lists = null)
     {
         TimeSpan limit = timeout ?? DefaultTimeout;
 
@@ -65,7 +71,7 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
             // build too, and falls the same way.
             if (string.IsNullOrWhiteSpace(rule.Regex) ||
                 !IdentifierKindExtensions.TryParseName(rule.Kind, out IdentifierKind kind) ||
-                !PatternLists.TryExpand(rule.Regex, out string pattern))
+                !PatternLists.TryExpand(rule.Regex, lists, out string pattern))
             {
                 // A pack naming a kind we do not know is a pack written against a newer version, so the
                 // rule is skipped rather than crashing the run — but it is written down, because silence

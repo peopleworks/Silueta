@@ -55,6 +55,14 @@
     "AgeOver89": "90 or older"
   },
 
+  "_lists": [
+    "Word lists this lineage's own rules name: \"lists\": { \"departamento-co\": [\"Antioquia\", ...] }, used",
+    "in a rule as {{departamento-co}}. The build's own lists — {{us-state}}, {{street-suffix-us}},",
+    "{{vialidad-mx}}, {{month-en}}, {{month-es}}, {{ordinal-en}}, {{day-es}}, {{tld}}, {{sentence-opener}},",
+    "{{directional-us}}, {{thoroughfare-us}}, {{unit-us}}, {{us-state-code}} — are available to them too, and",
+    "a list that takes one of those names is refused: one name must mean one list. This lineage declares none."
+  ],
+
   "_values": [
     "Values that identify in every record an organisation redacts, by kind: \"values\": { \"City\":",
     "[\"Scottsdale\", \"Queen Creek\"] }. Found like a roster entry, lower case and misheard included, and",

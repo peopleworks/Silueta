@@ -156,9 +156,11 @@ public static class MatchingTools
             rules.Count,
             rules,
             missing,
+            [.. PatternLists.Names.Order(StringComparer.Ordinal)],
             "Kinds listed under notCoveredByAnyRule have a policy action but no rule that emits them, so " +
             "nothing will ever be found for them. Names are not in that list because names come from the " +
-            "roster, not from a pattern.");
+            "roster, not from a pattern. The names under wordLists are what a rule may write between double " +
+            "braces instead of spelling the words out; an operator's lineage can add its own.");
     }
 }
 
@@ -205,4 +207,5 @@ public sealed record PatternCatalog(
     int Count,
     IReadOnlyList<PatternRuleInfo> Rules,
     IReadOnlyList<string> NotCoveredByAnyRule,
+    IReadOnlyList<string> WordLists,
     string Note);

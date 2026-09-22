@@ -38,14 +38,24 @@ public static partial class PatternLists
             : throw new InvalidOperationException(
                 $"The pattern names a list this build does not have. Lists: {string.Join(", ", Names)}.");
 
-    internal static bool TryExpand(string pattern, out string expanded)
+    internal static bool TryExpand(string pattern, out string expanded) => TryExpand(pattern, null, out expanded);
+
+    /// <param name="extra">A lineage's own lists, which its rules may name beside the build's.</param>
+    internal static bool TryExpand(
+        string pattern, IReadOnlyDictionary<string, IReadOnlyList<string>>? extra, out string expanded)
     {
         bool known = true;
         expanded = Placeholder().Replace(pattern, match =>
         {
-            if (Alternations.Value.TryGetValue(match.Groups[1].Value, out string? alternation))
+            string name = match.Groups[1].Value;
+            if (Alternations.Value.TryGetValue(name, out string? alternation))
             {
                 return alternation;
+            }
+
+            if (extra is not null && extra.TryGetValue(name, out IReadOnlyList<string>? words))
+            {
+                return Words(words);
             }
 
             known = false;

@@ -68,6 +68,10 @@ public sealed class LineageFile
     /// <summary>Kind to values that identify in every record this organisation redacts: the cities it serves.
     /// Raw JSON, like the pools, so a key starting with "_" can be a comment.</summary>
     public Dictionary<string, JsonElement>? Values { get; set; }
+
+    /// <summary>Word lists this lineage's own pattern rules name — the departments of Colombia, the types of
+    /// road of Portugal — beside the ones compiled into the build.</summary>
+    public Dictionary<string, JsonElement>? Lists { get; set; }
 }
 
 /// <summary>One named policy as it sits in a lineage: a version, and the kinds it treats differently from Safe

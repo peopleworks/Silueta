@@ -195,7 +195,11 @@ identifier, and the pattern rules to run.
   "labels": { "Phone": "[TELÉFONO]", "Email": "[CORREO]" },
   "generalizations": { "AgeOver89": "90 o más" },
   "values": { "City": ["Scottsdale", "Queen Creek", "Chandler"] },   // in every record; never a person
-  "patterns": [ { "id": "expediente", "kind": "RecordNumber", "regex": "EXP-\\d{6}", "confidence": 0.95 } ]
+  "lists":  { "departamento-co": ["Antioquia", "Cundinamarca"] },    // words your own rules name
+  "patterns": [
+    { "id": "expediente", "kind": "RecordNumber", "regex": "EXP-\\d{6}", "confidence": 0.95 },
+    { "id": "ciudad-co", "kind": "City", "regex": "(?-i:\\b\\p{Lu}\\p{Ll}+)(?=,\\s+{{departamento-co}}\\b)", "confidence": 0.9 }
+  ]
 }
 ```
 
@@ -231,8 +235,14 @@ What is worth knowing before you write one:
   select phonetic rules: the matcher has one coarse Spanish-and-English key, compiled in, and a lineage
   saying `de-DE` gets exactly the same matching as one saying `es-MX`.
 - **Patterns replace the built-in pack, they do not extend it.** Two sources for one rule is two rules
-  that will eventually disagree. A rule can name a list instead of spelling it out — `{{us-state}}`,
-  `{{us-state-code}}` — so yours and the built-in ones agree on what a state is.
+  that will eventually disagree.
+- **A rule names a word list instead of spelling it out.** The build ships lists taken from published
+  standards — `{{us-state}}`, `{{street-suffix-us}}` (USPS Publication 28), `{{vialidad-mx}}` (INEGI),
+  `{{month-en}}`, `{{month-es}}`, `{{tld}}` — and your rules may name any of them. `lists` adds your own,
+  for the country or the trade the built-in ones do not cover, and every rule of yours can share them. A
+  name the build already uses is refused rather than replaced, and a name no `{{…}}` could write (upper
+  case, a space) is refused too: both are a rule deciding what gets found, and neither should depend on
+  which file was read last.
 - **`values` are what identifies in every record you redact**: the towns you serve, above all. The built-in
   rule finds a city only before a state ("Flagstaff, Arizona") and only where the transcript has capitals;
   a list is found like a roster entry — `scotsdale` in a lower-case transcript included — and becomes the
@@ -492,6 +502,34 @@ no ladder that derives a wider value from the one it replaces. The one derived v
 three digits of a ZIP, is compiled in with its census table instead of written in a lineage, for the reason
 Safe Harbor is: a file that could rewrite the table could keep every prefix under a manifest that says
 safe-harbor.
+
+### Taking it somewhere else
+
+Silueta was written for a home-care agency in Phoenix, and the rules that ship say so: the states, the ZIP
+table, USPS street suffixes, INEGI's types of road, English and Spanish. None of that is the library. What
+you bring for another country, another language or another trade:
+
+| You bring | In the lineage | Why it is yours |
+| --- | --- | --- |
+| The names an invented person is drawn from | `pools` | A safe name in your market is not a safe name in ours |
+| What a removed identifier is replaced by | `labels`, `generalizations` | `[TELÉFONO]` in a Spanish note, and a wider value in your words |
+| The shapes your country writes | `patterns` | A national id, a phone format, a record number |
+| The words those shapes are made of | `lists` | Your departments, your types of road — named by every rule of yours, and by none of ours |
+| What identifies in every record you redact | `values` | The towns you serve, the hospitals you work with |
+| What you keep and what goes | `policies` | Statistics is what your analysis is made of; the manifest lists every departure from Safe Harbor |
+
+What stays the library's, and why:
+
+- **The kinds** are a closed list, because the policy that decides what happens to a span is written in
+  their terms and a kind nobody can act on is a span that quietly survives. A kind you need that is missing
+  is a pull request, not a config file.
+- **Safe Harbor's table and the census behind its postal codes** are compiled in: they are a law, and a
+  file that could rewrite them could put that law's name on a corpus it does not describe. A policy of your
+  own is the way to depart from them, and it says so in every manifest and every report.
+- **The phonetic key** is one coarse Spanish-and-English rule set. `language` is recorded and does not
+  select it. Matching a language whose confusions are different — German umlauts, Portuguese nasals — is
+  work that has not been done, and a lineage saying `pt-BR` gets exactly the matcher this file describes.
+  The honest way to find out what that costs you is a gold corpus of your own and `silueta evaluate`.
 
 ## What it is not
 

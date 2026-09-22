@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Silueta.Core;
 
@@ -24,7 +25,7 @@ namespace Silueta.Core;
 /// it does not have is a lie with a schema.
 /// </para>
 /// </summary>
-public sealed class SiluetaLineage
+public sealed partial class SiluetaLineage
 {
     private static readonly Lazy<SiluetaLineage> Builtin = new(LoadBuiltin);
 
@@ -38,6 +39,7 @@ public sealed class SiluetaLineage
         IReadOnlyList<PatternRule> patterns,
         IReadOnlyDictionary<string, SiluetaPolicy> policies,
         IReadOnlyDictionary<IdentifierKind, IReadOnlyList<string>> values,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> lists,
         IReadOnlyList<string> skipped)
     {
         Name = name;
@@ -49,6 +51,7 @@ public sealed class SiluetaLineage
         Patterns = patterns;
         Policies = policies;
         Values = values;
+        Lists = lists;
         Skipped = skipped;
         Fingerprint = ComputeFingerprint();
     }
@@ -161,6 +164,7 @@ public sealed class SiluetaLineage
             file.Patterns ?? [],
             ReadPolicies(file.Policies, skipped),
             ReadValues(file.Values, skipped),
+            ReadLists(file.Lists),
             skipped);
     }
 
@@ -177,6 +181,18 @@ public sealed class SiluetaLineage
     /// </summary>
     public IReadOnlyDictionary<IdentifierKind, IReadOnlyList<string>> Values { get; }
 
+    /// <summary>
+    /// Word lists this lineage's rules may name — <c>{{departamento-co}}</c> — beside the ones compiled into the
+    /// build, which its rules may name too.
+    /// <para>
+    /// The rules that ship are built from American and Mexican standards, and this is how a project somewhere
+    /// else writes its own without spelling its country into every regular expression. A name the build already
+    /// carries is refused rather than replaced: one name for two lists is the second copy of a rule, and this
+    /// copy would decide what gets found.
+    /// </para>
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyList<string>> Lists { get; }
+
     /// <summary>Reads a lineage from disk. The file is the organisation's, so everything about it is
     /// checked rather than assumed.</summary>
     public static SiluetaLineage Load(string path)
@@ -185,9 +201,10 @@ public sealed class SiluetaLineage
         return FromJson(File.ReadAllText(path));
     }
 
-    /// <summary>The detectors this lineage asks for: its own pattern rules, or the built-in pack.</summary>
+    /// <summary>The detectors this lineage asks for: its own pattern rules, or the built-in pack. Its own rules
+    /// are compiled with its own word lists as well as the build's.</summary>
     public PatternDetector CreatePatternDetector() =>
-        Patterns.Count > 0 ? new PatternDetector(Patterns) : PatternDetector.FromEmbeddedPack();
+        Patterns.Count > 0 ? new PatternDetector(Patterns, lists: Lists) : PatternDetector.FromEmbeddedPack();
 
     /// <summary>What this lineage puts in place of a kind that is labelled away.</summary>
     public string LabelFor(IdentifierKind kind) =>
@@ -288,6 +305,63 @@ public sealed class SiluetaLineage
         skipped.Add("generalizations.PostalCode");
         return generalizations.Where(entry => entry.Key != IdentifierKind.PostalCode).ToFrozenDictionary();
     }
+
+    /// <summary>
+    /// The <c>lists</c> section. Two refusals rather than a skip, because a list is not a rule this build might
+    /// be too old to know: it is a name the lineage's own rules use. A name the build already has would make two
+    /// lists answer to one name; a name no placeholder could write — <c>{{...}}</c> reads lower-case letters,
+    /// digits and hyphens — is a list nothing can name, which is a typo with no other explanation.
+    /// </summary>
+    private static IReadOnlyDictionary<string, IReadOnlyList<string>> ReadLists(Dictionary<string, JsonElement>? raw)
+    {
+        var lists = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+        foreach ((string name, JsonElement value) in raw ?? [])
+        {
+            if (name.StartsWith('_'))
+            {
+                continue; // a comment, by the convention the built-in file teaches
+            }
+
+            if (PatternLists.Names.Contains(name))
+            {
+                throw new InvalidOperationException(
+                    $"lists.{name}: this build already has a list called \"{name}\", and a rule naming it would " +
+                    "have two answers. Call yours something else — the build's lists are available to your rules " +
+                    "as they are.");
+            }
+
+            if (!LineageListName().IsMatch(name))
+            {
+                throw new InvalidOperationException(
+                    $"lists.{name}: a list's name is what a rule writes between double braces, so it may hold " +
+                    "lower-case letters, digits and hyphens only.");
+            }
+
+            if (value.ValueKind != JsonValueKind.Array ||
+                value.EnumerateArray().Any(static e => e.ValueKind != JsonValueKind.String))
+            {
+                throw new InvalidOperationException($"lists.{name} has to be a list of words.");
+            }
+
+            string[] words = [.. value.EnumerateArray()
+                .Select(static e => e.GetString()!.Trim())
+                .Where(static w => w.Length > 0)
+                .Distinct(StringComparer.Ordinal)];
+
+            if (words.Length == 0)
+            {
+                throw new InvalidOperationException($"lists.{name} is empty. A rule naming it would match nothing.");
+            }
+
+            lists[name] = words;
+        }
+
+        return lists.ToFrozenDictionary(StringComparer.Ordinal);
+    }
+
+    [GeneratedRegex("^[a-z0-9-]+$")]
+    private static partial Regex LineageListName();
 
     /// <summary>
     /// The <c>values</c> section. A kind this build does not know is skipped and written down, as everywhere
@@ -588,6 +662,14 @@ public sealed class SiluetaLineage
             foreach (string value in list.Order(StringComparer.Ordinal))
             {
                 canonical.Append("value\t").Append(kind).Append('\t').Append(value).Append('\n');
+            }
+        }
+
+        foreach ((string name, IReadOnlyList<string> list) in Lists.OrderBy(p => p.Key, StringComparer.Ordinal))
+        {
+            foreach (string word in list.Order(StringComparer.Ordinal))
+            {
+                canonical.Append("list\t").Append(name).Append('\t').Append(word).Append('\n');
             }
         }
 

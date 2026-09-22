@@ -19,8 +19,9 @@ namespace Silueta.Core;
 /// telephone number is one, and any other run of six or more is an identifier of no named kind — labelled, and
 /// counted as <see cref="IdentifierKind.Other"/>.</item>
 /// <item><b>A count is not a number.</b> "Nine eight seven six five four" is somebody counting, which in home care
-/// is a cognitive test; a run whose digits only go up or down by one is left alone unless a word before it says
-/// it is a number.</item>
+/// is a cognitive test; a run holding five digits in a row that each go up or down by one is left alone unless a
+/// word before it says it is a number. A full stop ends a run, so a count cannot take the first word of the next
+/// sentence with it.</item>
 /// </list>
 /// <para>
 /// Not a pack rule, for the same reason <see cref="BirthYear"/> is not: the run has to be read back as digits to
@@ -31,8 +32,10 @@ namespace Silueta.Core;
 /// </summary>
 public static partial class SpokenDigits
 {
-    /// <summary>Named and fingerprinted, like every rule that decides what gets found outside the pack.</summary>
-    public const string RuleVersion = "spoken-digits/1";
+    /// <summary>Named and fingerprinted, like every rule that decides what gets found outside the pack. "/2"
+    /// since a full stop ends a run and a count is recognised by a stretch: "/1", in 0.3.0-preview.2, read
+    /// "…three two one. Dos o tres" as a telephone number.</summary>
+    public const string RuleVersion = "spoken-digits/2";
 
     /// <summary>How far before a run a word may sit and still be the word that introduced it.</summary>
     private const int Window = 32;
@@ -147,17 +150,35 @@ public static partial class SpokenDigits
             ? IdentifierKind.Phone
             : IdentifierKind.Other;
 
-    /// <summary>Every step up by one, or every step down by one: counting, not dictating.</summary>
+    /// <summary>A stretch this long that only goes up or down by one is somebody counting.</summary>
+    private const int CountingStretch = 5;
+
+    /// <summary>
+    /// Counting, not dictating: somewhere in the run, five digits or more in a row that each go up by one, or
+    /// each go down by one.
+    /// <para>
+    /// A stretch rather than the whole run, because the whole run was the published defect: "…three two one.
+    /// Dos o tres veces" took the "Dos" that followed, and one digit more was enough to make a count read as a
+    /// telephone number. The cost is on the other side and it is accepted on purpose: a number nobody introduced
+    /// whose digits climb for five in a row reads as a count and stays. Introduced — "call her at" — it never
+    /// reaches this test.
+    /// </para>
+    /// </summary>
     private static bool IsACount(string digits)
     {
-        bool up = true, down = true;
+        int up = 1, down = 1;
         for (int i = 1; i < digits.Length; i++)
         {
-            up &= digits[i] - digits[i - 1] == 1;
-            down &= digits[i - 1] - digits[i] == 1;
+            up = digits[i] - digits[i - 1] == 1 ? up + 1 : 1;
+            down = digits[i - 1] - digits[i] == 1 ? down + 1 : 1;
+
+            if (up >= CountingStretch || down >= CountingStretch)
+            {
+                return true;
+            }
         }
 
-        return up || down;
+        return false;
     }
 
     [GeneratedRegex(@"^oh[ \t]*,[ \t]*", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)]
@@ -165,7 +186,9 @@ public static partial class SpokenDigits
 
     private static (Regex, Regex, (Regex, IdentifierKind)[], string) Build()
     {
-        const string separator = @"[ \t]*[,.\-–][ \t]*|[ \t]+";
+        // A comma or a dash between digits, never a full stop: a full stop between two digit words is the end of
+        // one sentence and the start of the next, and a run that crossed it took "Dos" from "Dos o tres veces".
+        const string separator = @"[ \t]*[,\-–][ \t]*|[ \t]+";
         string word = PatternLists.Expand("{{digit-word}}");
 
         // Compiled: it is built once per process and runs over every transcript, and it is the one rule here that
@@ -193,7 +216,8 @@ public static partial class SpokenDigits
         ];
 
         var canonical = new StringBuilder(RuleVersion).Append('\n')
-            .Append($"window {Window}, unintroduced {UnintroducedMinimum}, introduced {IntroducedMinimum}\n");
+            .Append($"window {Window}, unintroduced {UnintroducedMinimum}, introduced {IntroducedMinimum}, counting {CountingStretch}\n")
+            .Append("separator ").Append(separator).Append('\n');
         foreach ((string digit, int value) in PatternLists.DigitValues.OrderBy(p => p.Value).ThenBy(p => p.Key, StringComparer.Ordinal))
         {
             canonical.Append(value).Append('=').Append(digit).Append('\n');

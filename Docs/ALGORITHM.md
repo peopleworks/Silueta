@@ -489,8 +489,14 @@ transcript. Three rules keep the two apart, and they are in `SpokenDigits`:
   — lists of their own, read most specific first, so "record number" is a record — four digits are enough
   and the word names the kind. With none, seven or ten digits are a telephone number and any other run of
   six or more an identifier of no named kind, labelled and counted as `Other`.
-- **A count is not a number.** A run whose digits only go up or down by one is somebody counting — in home
-  care, a cognitive test — and stays unless a word before it says it is a number.
+- **A count is not a number.** A run holding five digits or more in a row that each go up by one, or each go
+  down by one, is somebody counting — in home care, a cognitive test — and stays unless a word before it says
+  it is a number. And a full stop ends a run. Both are the second version of the rule: the first, published in
+  0.3.0-preview.2, read "…three two one. Dos o tres veces" as a telephone number — the run crossed the end of
+  the sentence, took the "Dos", and one digit more was enough to stop the whole run reading as a count. It was
+  found by the check this project runs on every release from outside, and the manifest tells the two apart
+  (`spoken-digits/1`, `spoken-digits/2`). The price, accepted: a number nobody introduced whose digits climb
+  five in a row reads as a count and stays.
 
 It is not a pack rule for the reason §6f is not: the run has to be read back as digits, to tell a count from
 a number and to hand a ZIP said out loud to the census table, which widens "eight five zero zero four" the

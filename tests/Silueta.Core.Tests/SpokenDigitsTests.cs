@@ -59,6 +59,29 @@ public class SpokenDigitsTests
     }
 
     [Theory]
+    [InlineData("Count backwards: nine eight seven six five four three two one. Dos o tres veces al día.")]
+    [InlineData("Count: nine eight seven six five four three two one, dos o tres veces.")]
+    [InlineData("One two three four five, one two three four five, and breathe.")]
+    public void A_count_stays_a_count_when_another_digit_follows_it(string text)
+    {
+        // Found from outside, in the published 0.3.0-preview.2: the first of these came back as
+        // "Count backwards: [PHONE] o tres veces al día". The run crossed the end of the sentence, took the "Dos"
+        // that opens the next one, and with one digit more the count no longer read as a count — so its ten
+        // digits read as a telephone number. A full stop ends a run now, and a count is recognised by a stretch
+        // of it rather than by every digit, so one digit more cannot undo it.
+        Assert.Equal(text, Run(text));
+    }
+
+    [Fact]
+    public void A_number_somebody_introduces_is_a_number_even_when_its_digits_climb()
+    {
+        // The other side of that trade: a count needs nobody to say it is one, and a number introduced as a phone
+        // is a phone whatever its digits do. Without the word, "one two three, four five six seven" reads as a
+        // count and stays — which is the leak this rule accepts to keep a cognitive test in the note.
+        Assert.Equal("Call her at [PHONE].", Run("Call her at six oh two, one two three, four five six seven."));
+    }
+
+    [Theory]
     [InlineData("six oh two", "602")]
     [InlineData("cinco, cinco - cinco", "555")]
     [InlineData("oh one four seven", "0147")]
@@ -75,7 +98,9 @@ public class SpokenDigitsTests
         RedactionResult result = SiluetaEngine.FromLineage(SiluetaLineage.Default, new PseudonymVault())
             .Redact("Nothing here.", new DeidentificationContext("r-1"));
 
-        Assert.StartsWith("spoken-digits/1", result.Manifest.SpokenDigitsRule, StringComparison.Ordinal);
+        // "/2": a full stop ends a run and a count is a stretch. A manifest under "/1" was redacted by a rule that
+        // could read a count and the word after it as a telephone number, and it has to be told apart.
+        Assert.StartsWith("spoken-digits/2", result.Manifest.SpokenDigitsRule, StringComparison.Ordinal);
         Assert.Equal("off", new RedactionManifest().SpokenDigitsRule);
     }
 

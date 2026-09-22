@@ -63,7 +63,7 @@ public static class Samples
 
         new Sample(
             "Said out loud, not typed",
-            "A recogniser writes what was said. The e-mail address, the date and the age are found in the form a person speaks them — and the blood pressure and the twenty minutes are not touched, because those are the figures an analysis is made of. A number dictated digit by digit is still missed; that rule is not written yet.",
+            "A recogniser writes what was said. The e-mail address, the date, the age and the phone number dictated a digit at a time are found in the form a person speaks them — and the blood pressure and the twenty minutes are not touched, because they are said in tens and they are the figures an analysis is made of.",
             """
             Phone note. She said her e-mail is maria dot lopez at example dot com,
             that the next appointment is September eleventh, and that her mother is ninety-four years old.

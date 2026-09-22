@@ -150,6 +150,10 @@ public sealed class RedactionManifest
     /// <summary>The rule that read the words about birth — "birth-year/1" and a digest — or <c>off</c>.</summary>
     public string BirthYearRule { get; set; } = "off";
 
+    /// <summary>The rule that read numbers dictated digit by digit — "spoken-digits/1" and a digest — or
+    /// <c>off</c>, which is what a manifest from before it says.</summary>
+    public string SpokenDigitsRule { get; set; } = "off";
+
     /// <summary>
     /// Every way the policy that ran differs from Safe Harbor — "Date: Keep (Safe Harbor: YearOnly)" — and empty
     /// when it is Safe Harbor. The policy name says what the organisation called its rules; this says what they
@@ -281,6 +285,9 @@ public sealed partial class SiluetaEngine
         DateOnly reference = context.RecordedOn ?? DateOnly.FromDateTime(DateTime.UtcNow);
         BirthYear.Reframe(text, found, reference.Year);
 
+        // And a number dictated digit by digit, which no shape rule can read: "five five five, oh one four seven".
+        SpokenDigits.Find(text, found);
+
         List<Detection> applied = Resolve(found, policy, out int ambiguous);
 
         // No invented name may be one this very run would detect, or the next pass over the output finds
@@ -326,6 +333,7 @@ public sealed partial class SiluetaEngine
         // a fair price for the only check that asks whether the work actually held.
         var readBack = _detectors.SelectMany(detector => detector.Detect(redacted, roster)).ToList();
         BirthYear.Reframe(redacted, readBack, reference.Year);
+        SpokenDigits.Find(redacted, readBack);
         List<Detection> residue = Resolve(readBack, policy);
 
         var manifest = new RedactionManifest
@@ -357,6 +365,7 @@ public sealed partial class SiluetaEngine
             RelativesRule = FindRelativesNamedInText ? RelativesInText.Fingerprint(QuasiIdentifierVocabulary.Default) : "off",
             AgeReference = $"{reference:yyyy-MM-dd} ({(context.RecordedOn is null ? "run date" : "record date")})",
             BirthYearRule = BirthYear.Fingerprint,
+            SpokenDigitsRule = SpokenDigits.Fingerprint,
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
                 .Select(kind => kind.ToString())

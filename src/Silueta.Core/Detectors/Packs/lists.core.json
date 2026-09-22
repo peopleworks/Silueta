@@ -20,7 +20,29 @@
     "month-es": "The months, Spanish, with the 'setiembre' spelling a recogniser also writes.",
     "ordinal-en": "The ordinals a day of the month is said with; a rule prefixes 'twenty' or 'thirty' to reach the rest.",
     "day-es": "The days of the month as Spanish says them, including 'primero' and the veintiún/veintidós forms with and without their accents.",
-    "tld": "The top-level domains an e-mail address said out loud ends in. Without one, 'me at the clinic' would be an address."
+    "tld": "The top-level domains an e-mail address said out loud ends in. Without one, 'me at the clinic' would be an address.",
+    "cue-phone": "Words that say the digits after them are a telephone number.",
+    "cue-record": "Words that say the digits after them are a record number: a chart, a file, an MRN. Read before cue-account and cue-phone, so 'record number' is a record.",
+    "cue-account": "Words that say the digits after them identify an account, a policy, a member or a person to an institution.",
+    "cue-zip": "Words that say the digits after them are a postal code."
+  },
+  "_digitWords": [
+    "Each digit as it is said in English and Spanish. The spoken-digits rule reads a run of these back as a number,",
+    "which is why they carry their values: to tell somebody counting from somebody dictating, and to hand a ZIP",
+    "said out loud to the census table. Single digits only — never 'thirty' or 'ochenta' — because a blood pressure",
+    "is read aloud in tens, and that is a figure this library keeps. Not the Spanish 'o', which also means 'or'."
+  ],
+  "digitWords": {
+    "0": ["zero", "oh", "cero"],
+    "1": ["one", "uno", "una"],
+    "2": ["two", "dos"],
+    "3": ["three", "tres"],
+    "4": ["four", "cuatro"],
+    "5": ["five", "cinco"],
+    "6": ["six", "seis"],
+    "7": ["seven", "siete"],
+    "8": ["eight", "ocho"],
+    "9": ["nine", "nueve"]
   },
   "words": {
     "sentence-opener": [
@@ -93,6 +115,21 @@
     ],
     "tld": [
       "com", "org", "net", "edu", "gov", "mil", "int", "info", "biz", "io", "co", "us", "mx", "es", "ca", "uk"
+    ],
+    "cue-phone": [
+      "phone", "telephone", "cell", "cellphone", "mobile", "landline", "call", "text", "reach", "dial", "extension",
+      "teléfono", "telefono", "celular", "móvil", "movil", "llamar", "llame", "llámeme", "llameme", "marque",
+      "marcar", "extensión", "extension"
+    ],
+    "cue-record": [
+      "record", "chart", "MRN", "file", "case", "expediente", "historia", "registro", "folio", "caso"
+    ],
+    "cue-account": [
+      "account", "policy", "member", "ID", "insurance", "Medicare", "Medicaid", "social security", "SSN",
+      "cuenta", "póliza", "poliza", "afiliado", "afiliación", "afiliacion", "seguro social", "NSS", "CURP"
+    ],
+    "cue-zip": [
+      "zip", "zipcode", "postal", "código postal", "codigo postal"
     ]
   },
   "usStates": [

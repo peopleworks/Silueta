@@ -135,8 +135,10 @@ public static class MatchingTools
         {{vialidad-mx}} and the others are word lists taken from USPS Publication 28 and INEGI.
 
         HIPAA Safe Harbor names eighteen identifiers; this pack finds a postal code only after "ZIP",
-        "código postal" or a state, a city only before a state, a street address only as the postal
-        standards write it, and no number dictated digit by digit.
+        "código postal" or a state, a city only before a state, and a street address only as the postal
+        standards write it. A number dictated a digit at a time is found by a rule outside the pack
+        (spoken-digits, named in every manifest), which reads single digits only so that a blood pressure
+        said in tens is never taken; a number dictated in pairs or tens is not found.
         """)]
     public static PatternCatalog ListPatternRules(
         [Description("Filter by identifier kind, e.g. \"Date\" or \"Phone\". Empty = all.")] string kind = "")

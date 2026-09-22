@@ -22,13 +22,30 @@ namespace Silueta.Core;
 /// </summary>
 public static partial class PatternLists
 {
-    private static readonly Lazy<IReadOnlyDictionary<string, string>> Alternations = new(Load);
+    private static readonly Lazy<Loaded> Data = new(Load);
+
+    private static IReadOnlyDictionary<string, string> Alternations => Data.Value.Alternations;
+
+    /// <summary>The words of a list by name, for a rule in code that reads the same list a pattern names —
+    /// so the two cannot come to disagree about what the list holds.</summary>
+    internal static IReadOnlyList<string> WordsOf(string name) =>
+        Data.Value.Words.TryGetValue(name, out IReadOnlyList<string>? words)
+            ? words
+            : throw new InvalidOperationException($"The build has no word list called '{name}'.");
+
+    /// <summary>Each digit said as a word, with its value: "oh" is 0, "cinco" is 5.</summary>
+    internal static IReadOnlyDictionary<string, int> DigitValues => Data.Value.Digits;
+
+    private sealed record Loaded(
+        IReadOnlyDictionary<string, string> Alternations,
+        IReadOnlyDictionary<string, IReadOnlyList<string>> Words,
+        IReadOnlyDictionary<string, int> Digits);
 
     [GeneratedRegex(@"\{\{([a-z0-9-]+)\}\}")]
     private static partial Regex Placeholder();
 
     /// <summary>The names a rule can use between double braces.</summary>
-    public static IReadOnlyCollection<string> Names => [.. Alternations.Value.Keys];
+    public static IReadOnlyCollection<string> Names => [.. Alternations.Keys];
 
     /// <summary>A pattern with every list it names spelled out as an alternation. Throws when it names a list this
     /// build does not have; <see cref="PatternDetector"/> skips such a rule instead.</summary>
@@ -48,7 +65,7 @@ public static partial class PatternLists
         expanded = Placeholder().Replace(pattern, match =>
         {
             string name = match.Groups[1].Value;
-            if (Alternations.Value.TryGetValue(name, out string? alternation))
+            if (Alternations.TryGetValue(name, out string? alternation))
             {
                 return alternation;
             }
@@ -65,7 +82,7 @@ public static partial class PatternLists
         return known;
     }
 
-    private static IReadOnlyDictionary<string, string> Load()
+    private static Loaded Load()
     {
         const string resource = "Silueta.Core.Detectors.Packs.lists.core.json";
         using Stream stream = typeof(PatternLists).Assembly.GetManifestResourceStream(resource)
@@ -85,14 +102,31 @@ public static partial class PatternLists
             ["us-state"] = Words(names),
             ["us-state-code"] = Alternation(codes.Order(StringComparer.Ordinal)),
         };
+        var raw = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
         // The named word lists, each from a standard cited beside it in the file.
         foreach (JsonProperty list in document.RootElement.GetProperty("words").EnumerateObject())
         {
-            lists.Add(list.Name, Words(list.Value.EnumerateArray().Select(word => word.GetString()!)));
+            string[] words = [.. list.Value.EnumerateArray().Select(word => word.GetString()!)];
+            raw.Add(list.Name, words);
+            lists.Add(list.Name, Words(words));
         }
 
-        return lists;
+        // The digits as they are said, each with its value. A plain list for a rule that only needs to match one,
+        // and the values for the rule that has to read a run of them back as a number.
+        var digits = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (JsonProperty digit in document.RootElement.GetProperty("digitWords").EnumerateObject())
+        {
+            int value = int.Parse(digit.Name, System.Globalization.CultureInfo.InvariantCulture);
+            foreach (JsonElement word in digit.Value.EnumerateArray())
+            {
+                digits.Add(word.GetString()!, value);
+            }
+        }
+
+        lists.Add("digit-word", Words(digits.Keys));
+
+        return new Loaded(lists, raw, digits);
     }
 
     /// <summary>

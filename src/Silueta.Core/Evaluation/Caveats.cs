@@ -92,8 +92,10 @@ public static class Caveats
             "Places are found only in the forms the rules know and where the transcript has capitals: a street " +
             "address as the postal service writes one, a city before a state (\"Flagstaff, Arizona\") or on the " +
             "lineage's list, a postal code after \"ZIP\", \"código postal\" or a state. A town named alone is " +
-            "not found unless the lineage lists it, and a number dictated digit by digit (\"five five five, oh " +
-            "one four seven\") is not recognised — though a date, an age or an e-mail address said out loud is. The postal-code table is the United States census: a five-digit code from " +
+            "not found unless the lineage lists it. A number dictated a digit at a time (\"five five five, oh " +
+            "one four seven\") is found, and so is a date, an age or an e-mail address said out loud; a number " +
+            "dictated in pairs or tens (\"cincuenta y cinco, cero uno\") is not. The postal-code table is the " +
+            "United States census: a five-digit code from " +
             "another country is widened against it, and three of its digits may stay.");
 
         return notes;

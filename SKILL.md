@@ -139,9 +139,10 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    ("she called from Mesa") is not found unless the lineage lists it. A city becomes `[CITY]` and the state
    stays, as Safe Harbor allows; a postal code keeps three digits where the census allows — `850XX` — and
    becomes `000XX` elsewhere. A date or an e-mail address said out loud is found ("September eleventh",
-   "once de septiembre", "tuan.nguyen at example.com"), and so is an age said in words; a number dictated
-   digit by digit ("five five five, oh one four seven") is not recognised at all. If the transcript has
-   one, say it was not touched.
+   "once de septiembre", "tuan.nguyen at example.com"), and so is an age said in words and a number
+   dictated a digit at a time ("five five five, oh one four seven"). A number dictated in pairs or tens
+   ("cincuenta y cinco, cero uno") is not recognised at all; if the transcript has one, say it was not
+   touched. A clinical figure said in tens — a pressure reading, a temperature — is left alone on purpose.
 6. **Companies and products come back as labels unless the lineage brings names for them.** Use
    `Organization` for a company and `Product` for a product; `ClientName` is a **person** — in home care
    the client is the patient — and a client that is a company is an `Organization`. The lineage that

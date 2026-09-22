@@ -475,6 +475,33 @@ safe-harbor.
 Not measured on the frozen corpus: it names one birth at all ("her birthday is August 9") and no birth year.
 What speaks for this section is its tests.
 
+## 6g. A number said a digit at a time
+
+"Call me at five five five, oh one four seven." A rule that reads `555-0147` reads nothing there, and this is
+the risky half of what is said out loud, because a nurse reads a blood pressure aloud in the same
+transcript. Three rules keep the two apart, and they are in `SpokenDigits`:
+
+- **Single digits only.** "One thirty eight over eighty two" has tens in it, and "thirty" is not a digit, so
+  it never forms a run. Clinical figures are said in tens; identifiers are dictated a digit at a time. The
+  digits and their values are data (`digitWords` in `lists.core.json`, "oh" and "cero" included, the Spanish
+  "o" not — it also means "or").
+- **A word that says what it is, or a length that does.** After "call", "record", "member ID" or "zip code"
+  — lists of their own, read most specific first, so "record number" is a record — four digits are enough
+  and the word names the kind. With none, seven or ten digits are a telephone number and any other run of
+  six or more an identifier of no named kind, labelled and counted as `Other`.
+- **A count is not a number.** A run whose digits only go up or down by one is somebody counting — in home
+  care, a cognitive test — and stays unless a word before it says it is a number.
+
+It is not a pack rule for the reason §6f is not: the run has to be read back as digits, to tell a count from
+a number and to hand a ZIP said out loud to the census table, which widens "eight five zero zero four" the
+same way it widens `85004`. It is named in the manifest (`spokenDigitsRule`). What it does not read: a
+number dictated in pairs or tens, which is how many people say a phone number in Spanish — "seis cero dos,
+cincuenta y cinco" — because reading tens would read blood pressures too.
+
+Measured on the frozen corpus: no change, and it could not have been otherwise — its recogniser wrote every
+dictated number as digits. Over-redaction did not change either, which is the useful half of that result:
+thirty transcripts full of spoken clinical figures, and the rule took none of them.
+
 ## 7. The vault
 
 Two things per subject, held together: the **code** a structured field refers to (`SIL-3f9a…`) and the
@@ -527,6 +554,8 @@ Plus the four things that bind it to something:
   redacted against different counts keep different prefixes under one policy fingerprint.
 - **`ageReference` and `birthYearRule`.** Which date decided that a birth year was an age over 89, and where
   that date came from (§6f). Same reason: a year kept under one reference is removed under another.
+- **`spokenDigitsRule`.** The rule that read numbers dictated a digit at a time, and a digest of the words it
+  read (§6g).
 
 What is still missing, and worth saying: **a run cannot be reproduced from the manifest.** Invented names
 are minted at random, so the only way to reproduce one is to hold the vault — which must not travel. The

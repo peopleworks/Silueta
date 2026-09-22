@@ -65,14 +65,20 @@ public static class CensusZipTable
 
     /// <summary>
     /// A written postal code widened the way Safe Harbor allows: <c>85004-1234</c> becomes <c>850XX</c>, and a
-    /// code whose prefix is too small, or unknown to the census, becomes <c>000XX</c>. Null when what was written
-    /// is not a five- or nine-digit code, because three digits of some other number are not an area.
+    /// code whose prefix is too small, or unknown to the census, becomes <c>000XX</c>. Said out loud — "eight five
+    /// zero zero four" — it is read as the same digits and widened the same way. Null when what was written is not
+    /// a five- or nine-digit code, because three digits of some other number are not an area.
     /// </summary>
     public static string? Generalize(string written)
     {
         ArgumentNullException.ThrowIfNull(written);
 
         string digits = string.Concat(written.Where(char.IsAsciiDigit));
+        if (digits.Length == 0)
+        {
+            digits = SpokenDigits.ToDigits(written) ?? string.Empty;
+        }
+
         if (digits.Length is not (5 or 9))
         {
             return null;

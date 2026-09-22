@@ -49,7 +49,7 @@ The skill is judgment about flow; the engine does the work. Install the MCP serv
 takes a **path** rather than text:
 
 ```jsonc
-{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--yes"] } } }
+{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--prerelease", "--yes"] } } }
 ```
 
 | Want | Tool | Identified text in the context? |

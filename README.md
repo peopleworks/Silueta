@@ -110,6 +110,15 @@ browser demo — need **.NET 10**. .NET 9 leaves Microsoft's support on 10 Novem
 there as a bridge for the first backend that asked for it, not as a long-term commitment.
 
 ```bash
+dotnet add package Silueta.Core --prerelease              # the library, from .NET 9 or .NET 10
+dotnet tool install --global Silueta.Cli --prerelease     # `silueta`, which needs .NET 10
+```
+
+**Every package is a pre-release for now, and each command above asks for one on purpose.** The library is
+not finished and the leak rate it publishes is high; a version number that did not say so would be the
+package contradicting its own README. So `--prerelease` is required until there is a stable version.
+
+```bash
 dotnet run --project src/Silueta.Cli -- demo                  # the example above
 silueta evaluate --gold corpus-synthetic/tts-asr              # the published number, reproduced
 ```
@@ -239,7 +248,7 @@ neither does the vault's mapping from a person to their invented name.
 
 ```jsonc
 // claude_desktop_config.json — or any MCP client
-{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--yes"] } } }
+{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--prerelease", "--yes"] } } }
 ```
 
 | Tool | What it does | Identified text in the model's context |

@@ -43,7 +43,7 @@ path:
 
 ```jsonc
 // claude_desktop_config.json — or any MCP client
-{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--yes"] } } }
+{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--prerelease", "--yes"] } } }
 ```
 
 | Want | Tool | Identified text in your context? |
@@ -66,7 +66,7 @@ Without an MCP client, the command line does the same work and is just as safe, 
 still the argument:
 
 ```bash
-dotnet tool install --global Silueta.Cli
+dotnet tool install --global Silueta.Cli --prerelease
 
 silueta redact --in shift-042.txt --context roster.json --record r-042 \
                --out shift-042.deid.txt --manifest shift-042.manifest.json --vault vault.json

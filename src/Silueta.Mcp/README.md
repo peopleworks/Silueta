@@ -5,13 +5,17 @@ four tools for Claude Desktop, Claude Code, VS Code, or any Model Context Protoc
 
 ```jsonc
 // claude_desktop_config.json
-{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--yes"] } } }
+{ "mcpServers": { "silueta": { "command": "dnx", "args": ["Silueta.Mcp", "--prerelease", "--yes"] } } }
 ```
 
 ```bash
-dnx Silueta.Mcp --yes                    # no install step
-dotnet tool install --global Silueta.Mcp # …or install `silueta-mcp` once
+dnx Silueta.Mcp --prerelease --yes                    # no install step
+dotnet tool install --global Silueta.Mcp --prerelease # …or install `silueta-mcp` once
 ```
+
+Every Silueta package is a pre-release for now, so every command asks for one: without `--prerelease` there
+is no version to find. The engine is not finished and publishes a high leak rate, and the version number says
+the same thing its README does. Needs .NET 10.
 
 ## Why the main tool takes a path and not text
 

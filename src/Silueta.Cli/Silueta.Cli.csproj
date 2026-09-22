@@ -13,7 +13,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>silueta</ToolCommandName>
     <PackageId>Silueta.Cli</PackageId>
-    <Version>0.1.0-preview.1</Version>
+    <Version>0.1.0-preview.2</Version>
     <Authors>Pedro Hernández (PeopleWorks)</Authors>
     <Company>PeopleWorks</Company>
     <Description>Command line for Silueta: de-identify a transcript against a roster you already have, so it can be analysed without the people in it, and write the manifest that says what was removed.</Description>

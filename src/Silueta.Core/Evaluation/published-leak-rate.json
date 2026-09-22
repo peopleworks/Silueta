@@ -23,8 +23,8 @@
       "documents": 30,
       "leaking": 26,
       "leakingInScope": 25,
-      "recallInScope": 0.8203883495145631,
-      "pooledRecall": 0.8075085324232082
+      "recallInScope": 0.8314840499306518,
+      "pooledRecall": 0.8184300341296928
     },
     {
       "name": "deny-list",
@@ -32,17 +32,17 @@
       "documents": 30,
       "leaking": 28,
       "leakingInScope": 27,
-      "recallInScope": 0.7538141470180305,
-      "pooledRecall": 0.7419795221843003
+      "recallInScope": 0.7642163661581137,
+      "pooledRecall": 0.7522184300341297
     }
   ],
   "thesis": {
     "configuration": "silueta",
     "baseline": "deny-list",
     "recallDifference": {
-      "estimate": 0.06657420249653256,
-      "lower": 0.033478287202471146,
-      "upper": 0.10495145125430864
+      "estimate": 0.06726768377253811,
+      "lower": 0.03417381882446664,
+      "upper": 0.10562870180575663
     },
     "leakRateDifference": {
       "estimate": -0.06666666666666665,

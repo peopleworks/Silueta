@@ -85,7 +85,8 @@ held something identifying — the numbers and their limits are in the repositor
 verified to be de-identified. Names nobody wrote down — nicknames, a relative mentioned only by
 relationship, a doctor named once — are invisible to the roster matcher and survive. A street address is found
 only as the postal standards write it, a city only before a state or when the lineage lists it, a postal code
-only after "ZIP", "código postal" or a state, and numbers spoken as words are not recognised. A birth year
+only after "ZIP", "código postal" or a state, and a number dictated digit by digit is not recognised, though a
+date, an age or an e-mail address said out loud is. A birth year
 that makes the person 90 is removed with the rest of its date; which day decided that is in the report. Every tool result says so in its own `caveat` field.
 
 MIT. Pedro Hernández (PeopleWorks) · https://github.com/peopleworks/Silueta

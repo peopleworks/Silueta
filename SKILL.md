@@ -138,9 +138,10 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    ("zip code 85004", "código postal 85004") — and a city the operator's lineage lists. A town named alone
    ("she called from Mesa") is not found unless the lineage lists it. A city becomes `[CITY]` and the state
    stays, as Safe Harbor allows; a postal code keeps three digits where the census allows — `850XX` — and
-   becomes `000XX` elsewhere. Numbers or dates spoken as words ("five five five,
-   oh one four seven", "September eleventh") are not recognised at all. If the transcript has those, say
-   they were not touched.
+   becomes `000XX` elsewhere. A date or an e-mail address said out loud is found ("September eleventh",
+   "once de septiembre", "tuan.nguyen at example.com"), and so is an age said in words; a number dictated
+   digit by digit ("five five five, oh one four seven") is not recognised at all. If the transcript has
+   one, say it was not touched.
 6. **Companies and products come back as labels unless the lineage brings names for them.** Use
    `Organization` for a company and `Product` for a product; `ClientName` is a **person** — in home care
    the client is the patient — and a client that is a company is an `Organization`. The lineage that

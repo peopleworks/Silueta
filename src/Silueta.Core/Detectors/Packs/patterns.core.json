@@ -6,6 +6,12 @@
     "confidence": 0.99
   },
   {
+    "id": "email-spoken",
+    "kind": "Email",
+    "regex": "\\b[\\w+-]+(?:(?:\\s+(?:dot|punto)\\s+|\\.)[\\w+-]+)*\\s+(?:at|arroba)\\s+[\\w-]+(?:(?:\\s+(?:dot|punto)\\s+|\\.)[\\w-]+)*(?:\\s+(?:dot|punto)\\s+|\\.){{tld}}\\b",
+    "confidence": 0.9
+  },
+  {
     "id": "url",
     "kind": "Url",
     "regex": "\\bhttps?://[^\\s<>\"']+",
@@ -86,19 +92,43 @@
   {
     "id": "date-month-en",
     "kind": "Date",
-    "regex": "\\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?\\b",
+    "regex": "\\b{{month-en}}\\s+\\d{1,2}(?:st|nd|rd|th)?(?:,?\\s+\\d{4})?\\b",
     "confidence": 0.9
   },
   {
     "id": "date-month-es",
     "kind": "Date",
-    "regex": "\\b\\d{1,2}\\s+de\\s+(?:enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre)(?:\\s+de\\s+\\d{4})?\\b",
+    "regex": "\\b\\d{1,2}\\s+de\\s+{{month-es}}(?:\\s+de\\s+\\d{4})?\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "date-words-en",
+    "kind": "Date",
+    "regex": "\\b(?:{{month-en}}\\s+(?:the\\s+)?(?:(?:twenty|thirty)[\\s-])?{{ordinal-en}}|(?:the\\s+)?(?:(?:twenty|thirty)[\\s-])?{{ordinal-en}}\\s+of\\s+{{month-en}})(?:,?\\s+\\d{4})?\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "date-words-es",
+    "kind": "Date",
+    "regex": "\\b{{day-es}}\\s+de\\s+{{month-es}}(?:\\s+de\\s+\\d{4})?\\b",
     "confidence": 0.9
   },
   {
     "id": "age-over-89",
     "kind": "AgeOver89",
     "regex": "\\b(?:9\\d|1\\d{2})[ -]?(?:years?[ -]old|year[ -]old|años|anos)\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "age-over-89-words",
+    "kind": "AgeOver89",
+    "regex": "\\b(?:ninety(?:[\\s-](?:one|two|three|four|five|six|seven|eight|nine))?|(?:one\\s+)?hundred(?:\\s+(?:and\\s+)?[a-z]+(?:[\\s-][a-z]+)?)?|noventa(?:\\s+y\\s+(?:uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve))?|cien|ciento(?:\\s+[a-zá-ú]+)?)[\\s-]*(?:years?[\\s-]old|year[\\s-]old|años|anos)\\b",
+    "confidence": 0.9
+  },
+  {
+    "id": "age-over-89-said",
+    "kind": "AgeOver89",
+    "regex": "\\b(?:age|edad)\\s*:?\\s*(?:9\\d|1[0-2]\\d)\\b(?!\\s*(?:over|/|-|\\.\\d))",
     "confidence": 0.9
   }
 ]

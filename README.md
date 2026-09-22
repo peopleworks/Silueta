@@ -338,9 +338,11 @@ leak rate with its interval when asked, and say what is known to survive. Instal
    distance on top absorbs the rest. `Na'vi`, `Navy` and `Navi` are one word here. A window of words
    stops at the end of a sentence, and a short company name has to be the same letters, not only the
    same sound — "Inc" is not "ink".
-3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89, a street
-   address, a ZIP code introduced as one, a state, the city before a state: a JSON pattern pack, which is a
-   file anyone can extend by pull request, never compiled code.
+3. **Shapes are matched by rule.** Phone numbers, e-mail — written or said out loud, "tuan.nguyen at
+   example.com" — record numbers, dates in digits and in words ("September eleventh", "once de
+   septiembre"), ages over 89 in either form, a street address, a ZIP code introduced as one, a state, the
+   city before a state: a JSON pattern pack, which is a file anyone can extend by pull request, never
+   compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
    dates keep only their year, ages above 89 become "90 or older" — a birth year that makes somebody 90
    included, which is the one year the rule takes back — a city becomes `[CITY]` and the state
@@ -388,8 +390,8 @@ A test runs that evaluation and fails if the table below stops matching it.
 | 30 documents · 22 Sep 2026 · engine 0.2.0 · lineage `silueta-core/2` | Silueta | The same roster, matched literally |
 | --- | --- | --- |
 | **Every kind marked** — could this corpus leave the building? | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) | 93.3% of 30 transcripts (95% CI 78.7%–98.2%) |
-| **In scope** — the kinds this build has a way to find | 83.3% of 30 transcripts (95% CI 66.4%–92.7%) · recall 0.820 | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) · recall 0.754 |
-| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.067 [+0.033, +0.105] · leak rate -0.067 [-0.167, 0.000] | — |
+| **In scope** — the kinds this build has a way to find | 83.3% of 30 transcripts (95% CI 66.4%–92.7%) · recall 0.831 | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) · recall 0.764 |
+| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.067 [+0.034, +0.106] · leak rate -0.067 [-0.167, 0.000] | — |
 <!-- leak-rate:end -->
 
 **The first row answers whether this corpus could be shared, and the answer is no.** Almost every
@@ -399,8 +401,10 @@ own list can find, or a person the roster never named.
 **The second row judges the matcher, and it fails five transcripts in six.** "In scope" means the kinds the
 pattern pack has a rule for plus the kinds on each document's roster; a rule that exists and fails stays in.
 The failures are nicknames no roster lists ("Lupita", "Teddy", "Chuy"), pattern rules that miss what a
-recogniser writes for dictated numbers — a record number read out as "441729", an age as "96", an e-mail
-address as "tuan.nguyen at example.com" — and, since there are address rules, every town named on its own.
+recogniser writes for dictated numbers — a record number read out as "441729", an age written as a bare "96"
+— and, since there are address rules, every town named on its own. An e-mail address said out loud
+("tuan.nguyen at example.com") used to be on that list and is now found: e-mail recall went from 0.419 to
+0.791, and in-scope recall from 0.820 to 0.831, without one more word removed that should have stayed.
 
 **The third row is the thesis, and it is small.** Matching the roster by sound instead of letter for letter
 covers about seven more of every hundred characters in scope, and the interval excludes zero, so it is not
@@ -454,8 +458,8 @@ script under every condition, and a person as a second annotator. Then the parts
 missing: a street address is found only in the forms the postal standards write, a city only before a
 state or from the lineage's list, a postal code only when it is introduced as one ("zip code 85004",
 "código postal 85004") or follows a state, all of them only where the transcript has capitals; and numbers
-and dates spoken as words ("five five five, oh one four seven", "September eleventh")
-are not normalised at all. The places this corpus marks are mostly towns named alone — "called from Mesa" —
+and numbers dictated digit by digit ("five five five, oh one four seven") are not read — a date or an
+e-mail address said out loud now is. The places this corpus marks are mostly towns named alone — "called from Mesa" —
 which only an organisation's own list can find, and the built-in lineage lists none: a list written from
 this corpus would be a number tuned to it.
 

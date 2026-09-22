@@ -164,7 +164,11 @@ matched as one name.
 
 Phone numbers, e-mail, URLs, IPs, record numbers, numeric and spoken-month dates in both languages, ages
 above 89, and a ZIP code introduced as one — after "ZIP", "zip code", "postal code", "código postal" or a
-state. Not a bare five-digit number, which would read every record number, amount and count as a postal
+state. Each of those in the form a transcript of speech actually carries as well as the written one: a date
+as "September eleventh" or "once de septiembre", an e-mail address as "tuan.nguyen at example.com" or
+"jamileth arroba ejemplo punto com", an age as "ninety-four years old" or after the word age. The anchors
+are what keep those honest — a month name, a top-level domain, the words "years old" — because a nurse
+reading a blood pressure aloud is also a number in words, and that figure is one this library keeps. Not a bare five-digit number, which would read every record number, amount and count as a postal
 code; and the span is the digits alone, so the words that introduced them stay. States, the city before one
 (§6d), and street addresses (§6e). A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
 able to add without a compiler. Each rule carries its own confidence, and every regex runs with a timeout:

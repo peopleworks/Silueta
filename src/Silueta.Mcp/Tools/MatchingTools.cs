@@ -124,8 +124,9 @@ public static class MatchingTools
     [McpServerTool(Name = "list_pattern_rules", ReadOnly = true),
      Description("""
         Lists the pattern rules that find identifiers by shape rather than by name — phone numbers,
-        e-mail, URLs, IP addresses, record numbers, dates in English and Spanish, ages over 89, postal
-        codes introduced as such, states, the city before a state, and street addresses — with
+        e-mail written or said out loud, URLs, IP addresses, record numbers, dates in English and Spanish
+        in digits and in words, ages over 89 in either form, postal codes introduced as such, states, the
+        city before a state, and street addresses — with
         each rule's regular expression, the kind of identifier it emits and its confidence.
 
         Read it to see what a run will catch without a roster, and, more usefully, what it will not.
@@ -135,7 +136,7 @@ public static class MatchingTools
 
         HIPAA Safe Harbor names eighteen identifiers; this pack finds a postal code only after "ZIP",
         "código postal" or a state, a city only before a state, a street address only as the postal
-        standards write it, and no number or date spoken as words.
+        standards write it, and no number dictated digit by digit.
         """)]
     public static PatternCatalog ListPatternRules(
         [Description("Filter by identifier kind, e.g. \"Date\" or \"Phone\". Empty = all.")] string kind = "")

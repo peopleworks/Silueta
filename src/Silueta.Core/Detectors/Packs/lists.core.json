@@ -15,7 +15,12 @@
     "street-suffix-us": "USPS Publication 28, Appendix C1: the primary street suffix names and their standard abbreviations. Used only after a house number, where 'Walk' and 'Park' are streets.",
     "thoroughfare-us": "The suffixes of Appendix C1 that name a road and nothing else in ordinary English, spelled out. Used without a house number, where 'Court', 'Park', 'Way' and every abbreviation ('St' is also Saint, 'Dr' also Doctor) would take an institution or a person for a street.",
     "unit-us": "USPS Publication 28, Appendix C2: secondary unit designators, spelled out and abbreviated.",
-    "vialidad-mx": "INEGI, Norma Técnica sobre Domicilios Geográficos (DOF 12 nov 2010): the types of road, with their usual abbreviations."
+    "vialidad-mx": "INEGI, Norma Técnica sobre Domicilios Geográficos (DOF 12 nov 2010): the types of road, with their usual abbreviations.",
+    "month-en": "The months, English. One list for the rule that reads 'March 3' and the one that reads 'March third'.",
+    "month-es": "The months, Spanish, with the 'setiembre' spelling a recogniser also writes.",
+    "ordinal-en": "The ordinals a day of the month is said with; a rule prefixes 'twenty' or 'thirty' to reach the rest.",
+    "day-es": "The days of the month as Spanish says them, including 'primero' and the veintiún/veintidós forms with and without their accents.",
+    "tld": "The top-level domains an e-mail address said out loud ends in. Without one, 'me at the clinic' would be an address."
   },
   "words": {
     "sentence-opener": [
@@ -65,6 +70,29 @@
       "Circunvalacion", "Continuación", "Continuacion", "Corredor", "Diagonal", "Eje vial", "Pasaje",
       "Peatonal", "Periférico", "Periferico", "Privada", "Priv", "Prolongación", "Prolongacion", "Prol",
       "Retorno", "Viaducto", "Carretera", "Camino", "Brecha", "Terracería", "Terraceria", "Vereda"
+    ],
+    "month-en": [
+      "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+      "November", "December"
+    ],
+    "month-es": [
+      "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "setiembre",
+      "octubre", "noviembre", "diciembre"
+    ],
+    "ordinal-en": [
+      "first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth", "ninth", "tenth",
+      "eleventh", "twelfth", "thirteenth", "fourteenth", "fifteenth", "sixteenth", "seventeenth",
+      "eighteenth", "nineteenth", "twentieth", "thirtieth"
+    ],
+    "day-es": [
+      "primero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez",
+      "once", "doce", "trece", "catorce", "quince", "dieciséis", "dieciseis", "diecisiete", "dieciocho",
+      "diecinueve", "veinte", "veintiuno", "veintiún", "veintiun", "veintidós", "veintidos", "veintitrés",
+      "veintitres", "veinticuatro", "veinticinco", "veintiséis", "veintiseis", "veintisiete",
+      "veintiocho", "veintinueve", "treinta", "treinta y uno"
+    ],
+    "tld": [
+      "com", "org", "net", "edu", "gov", "mil", "int", "info", "biz", "io", "co", "us", "mx", "es", "ca", "uk"
     ]
   },
   "usStates": [

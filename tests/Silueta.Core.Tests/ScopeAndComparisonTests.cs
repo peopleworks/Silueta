@@ -6,7 +6,7 @@ namespace Silueta.Core.Tests;
 /// Two numbers that must not be confused, and the one that decides whether the thesis is worth anything.
 /// <para>
 /// The leak rate over every kind the annotators marked answers "can this corpus leave the building?". It
-/// includes places no rule looks for and people no roster names, so it measures the absence of a rule as much
+/// includes kinds no rule looks for and people no roster names, so it measures the absence of a rule as much
 /// as the matcher. The leak rate over the kinds this build has a way to find — a pattern rule, or the roster —
 /// judges the matcher. A kind with a rule that fails stays in scope: the scope comes from what the build
 /// attempts, not from what it gets right. And the difference between Silueta and the same roster matched
@@ -25,35 +25,57 @@ public class ScopeAndComparisonTests
 
         Assert.Contains(IdentifierKind.Phone, kinds);
         Assert.Contains(IdentifierKind.RecordNumber, kinds);
-        Assert.DoesNotContain(IdentifierKind.Address, kinds);
+        Assert.Contains(IdentifierKind.Address, kinds);
+        Assert.DoesNotContain(IdentifierKind.DeviceId, kinds);
         Assert.DoesNotContain(IdentifierKind.PatientName, kinds);
     }
 
-    [Fact]
-    public void A_place_no_rule_looks_for_leaks_the_corpus_but_not_the_matcher()
+    private static ConfigurationResult ScoreOne(string text, string spansJson)
     {
-        const string text = "Eleanor lives in Mesa.";
         string directory = Directory.CreateTempSubdirectory("silueta-scope-").FullName;
         try
         {
             File.WriteAllText(System.IO.Path.Combine(directory, "d.json"), $$"""
                 { "documentId": "d", "source": "s", "text": "{{text}}",
                   "roster": [ { "value": "Eleanor Vasquez", "kind": "PatientName", "subjectId": "p-1" } ],
-                  "spans": [ { "start": 0, "length": 7, "kind": "PatientName", "annotator": "a" },
-                             { "start": 17, "length": 4, "kind": "Address", "annotator": "a" } ] }
+                  "spans": {{spansJson}} }
                 """);
 
-            ConfigurationResult silueta = Evaluation.Run(GoldCorpus.Load(directory), EvaluationConfiguration.Silueta)
-                .Configurations.Single();
-
-            Assert.Equal(1, silueta.LeakRate.Leaking);
-            Assert.Equal(0, silueta.LeakRateInScope.Leaking);
-            Assert.False(silueta.Documents.Single().LeakedInScope);
+            return Evaluation.Run(GoldCorpus.Load(directory), EvaluationConfiguration.Silueta).Configurations.Single();
         }
         finally
         {
             Directory.Delete(directory, recursive: true);
         }
+    }
+
+    [Fact]
+    public void A_kind_no_rule_looks_for_leaks_the_corpus_but_not_the_matcher()
+    {
+        // A device serial number: no rule looks for one, so its survival says nothing about the matcher.
+        ConfigurationResult silueta = ScoreOne("Eleanor has pump PX-4471.", """
+            [ { "start": 0, "length": 7, "kind": "PatientName", "annotator": "a" },
+              { "start": 17, "length": 7, "kind": "DeviceId", "annotator": "a" } ]
+            """);
+
+        Assert.Equal(1, silueta.LeakRate.Leaking);
+        Assert.Equal(0, silueta.LeakRateInScope.Leaking);
+        Assert.False(silueta.Documents.Single().LeakedInScope);
+    }
+
+    [Fact]
+    public void A_place_the_address_rules_miss_counts_against_the_build()
+    {
+        // This test used to be the one above, with a town: "Mesa" was a place no rule looked for, so it leaked the
+        // corpus and not the matcher. Since the address rules exist, Address is in scope, and a town named alone —
+        // which they cannot see — is a miss of this build. A rule that exists and fails stays in scope.
+        ConfigurationResult silueta = ScoreOne("Eleanor lives in Mesa.", """
+            [ { "start": 0, "length": 7, "kind": "PatientName", "annotator": "a" },
+              { "start": 17, "length": 4, "kind": "Address", "annotator": "a" } ]
+            """);
+
+        Assert.Equal(1, silueta.LeakRateInScope.Leaking);
+        Assert.True(silueta.Documents.Single().LeakedInScope);
     }
 
     [Fact]

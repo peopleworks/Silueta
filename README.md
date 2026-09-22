@@ -338,9 +338,9 @@ leak rate with its interval when asked, and say what is known to survive. Instal
    distance on top absorbs the rest. `Na'vi`, `Navy` and `Navi` are one word here. A window of words
    stops at the end of a sentence, and a short company name has to be the same letters, not only the
    same sound — "Inc" is not "ink".
-3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89, a ZIP code
-   introduced as one, a state, the city before a state: a JSON pattern pack, which is a file anyone can
-   extend by pull request, never compiled code.
+3. **Shapes are matched by rule.** Phone numbers, e-mail, record numbers, dates, ages over 89, a street
+   address, a ZIP code introduced as one, a state, the city before a state: a JSON pattern pack, which is a
+   file anyone can extend by pull request, never compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
    dates keep only their year, ages above 89 become "90 or older", a city becomes `[CITY]` and the state
    after it stays — "all geographic subdivisions smaller than a state" go. A postal code keeps its first three
@@ -386,27 +386,27 @@ A test runs that evaluation and fails if the table below stops matching it.
 <!-- leak-rate:start — written by tools/Silueta.Calibration; PublishedNumberTests checks it against a fresh evaluation -->
 | 30 documents · 22 Sep 2026 · engine 0.2.0 · lineage `silueta-core/2` | Silueta | The same roster, matched literally |
 | --- | --- | --- |
-| **Every kind marked** — could this corpus leave the building? | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) | 96.7% of 30 transcripts (95% CI 83.3%–99.4%) |
-| **In scope** — the kinds this build has a way to find | 76.7% of 30 transcripts (95% CI 59.1%–88.2%) · recall 0.854 | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) · recall 0.781 |
-| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.073 [+0.037, +0.113] · leak rate -0.100 [-0.233, 0.000] | — |
+| **Every kind marked** — could this corpus leave the building? | 86.7% of 30 transcripts (95% CI 70.3%–94.7%) | 93.3% of 30 transcripts (95% CI 78.7%–98.2%) |
+| **In scope** — the kinds this build has a way to find | 83.3% of 30 transcripts (95% CI 66.4%–92.7%) · recall 0.820 | 90.0% of 30 transcripts (95% CI 74.4%–96.5%) · recall 0.754 |
+| **What matching by sound is worth** — Silueta minus literal, in scope, paired bootstrap over documents | recall +0.067 [+0.033, +0.105] · leak rate -0.067 [-0.167, 0.000] | — |
 <!-- leak-rate:end -->
 
 **The first row answers whether this corpus could be shared, and the answer is no.** Almost every
-transcript still says something identifying — most often a place, which no rule looks for yet, or a person
-the roster never named.
+transcript still says something identifying — most often a town named alone, which only an organisation's
+own list can find, or a person the roster never named.
 
-**The second row judges the matcher, and it still fails three transcripts in four.** "In scope" means the
-kinds the pattern pack has a rule for plus the kinds on each document's roster; a rule that exists and
-fails stays in. The failures are nicknames no roster lists ("Lupita", "Teddy", "Chuy") and pattern rules
-that miss what a recogniser writes for dictated numbers — a record number read out as "441729", an age as
-"96", an e-mail address as "tuan.nguyen at example.com".
+**The second row judges the matcher, and it fails five transcripts in six.** "In scope" means the kinds the
+pattern pack has a rule for plus the kinds on each document's roster; a rule that exists and fails stays in.
+The failures are nicknames no roster lists ("Lupita", "Teddy", "Chuy"), pattern rules that miss what a
+recogniser writes for dictated numbers — a record number read out as "441729", an age as "96", an e-mail
+address as "tuan.nguyen at example.com" — and, since there are address rules, every town named on its own.
 
 **The third row is the thesis, and it is small.** Matching the roster by sound instead of letter for letter
 covers about seven more of every hundred characters in scope, and the interval excludes zero, so it is not
 noise. Whether that changes how many transcripts leak, thirty documents cannot say: that interval reaches
 zero.
 
-**These numbers moved twice since they were first published, and the reasons are written down.** The matcher
+**These numbers moved three times since they were first published, and the reasons are written down.** The matcher
 used to accept a pair of spellings when their keys were 0.84 similar; it now allows a budget of edits read
 from the shorter key — none below four characters, one to seven, two above. One edit in a six-letter key
 scores 0.833, so the old rule was refusing single-letter damage to names of exactly the length most given
@@ -422,6 +422,16 @@ relatives through the recogniser's damage and now catches them by their relation
 rule, so the third row still measures matching by sound and nothing else, and it narrowed from +0.077 to
 +0.073. The case that motivated it came from outside this corpus: "My daughter Linda brought pie", in a test
 with a partner's own data.
+
+The third time the two rows went opposite ways, and both are right. Rules for a street address now exist —
+USPS Publication 28 and INEGI's standard for Mexican addresses, nothing else — so the whole-corpus rate fell
+from 90.0% to 86.7% and pooled recall rose from 0.769 to 0.808, with no word removed that should not have
+been. But `Address` is now a kind this build has a way to find, so it entered the scope, and the corpus marks
+most places as towns named alone ("called from Mesa"), which those rules cannot see: in scope the rate rose
+from 76.7% to 83.3%. A rule that exists and fails stays in scope — that is the definition, and it does not
+bend for a rule of our own. One more thing to weigh: the corpus's four street marks were read before these
+rules were written, so what the rules found on this corpus is an optimistic reading of what they will find
+on another.
 
 What this corpus is, so the numbers are not read as more than they are:
 
@@ -440,9 +450,10 @@ How the corpus was built, and the rules that keep it from being tuned to a resul
 **What is next, in order.** The matcher work this corpus pointed at — nicknames, and the dictated numbers
 the pattern pack misses — judged on data it was not tuned against. A second corpus that records every
 script under every condition, and a person as a second annotator. Then the parts of Safe Harbor still
-missing: no rule finds a street address today, a city is found only before a state or from the lineage's
-list, a postal code only when it is introduced as one ("zip code 85004", "código postal 85004") or follows
-a state, and numbers and dates spoken as words ("five five five, oh one four seven", "September eleventh")
+missing: a street address is found only in the forms the postal standards write, a city only before a
+state or from the lineage's list, a postal code only when it is introduced as one ("zip code 85004",
+"código postal 85004") or follows a state, all of them only where the transcript has capitals; a birth year
+that puts someone over 89 keeps its year; and numbers and dates spoken as words ("five five five, oh one four seven", "September eleventh")
 are not normalised at all. The places this corpus marks are mostly towns named alone — "called from Mesa" —
 which only an organisation's own list can find, and the built-in lineage lists none: a list written from
 this corpus would be a number tuned to it.

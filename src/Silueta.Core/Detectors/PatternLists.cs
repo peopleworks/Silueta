@@ -14,6 +14,11 @@ namespace Silueta.Core;
 /// itself. So the list is data, once, embedded beside the pack, and a rule refers to it by name. A lineage's own
 /// rules can name the same lists.
 /// </para>
+/// <para>
+/// The same holds for word lists — the street suffixes of USPS Publication 28, INEGI's types of road, the words
+/// that open a sentence. Each sits under <c>words</c> in the file with the standard it was taken from beside it,
+/// and a rule names it: <c>{{street-suffix-us}}</c>, <c>{{vialidad-mx}}</c>, <c>{{sentence-opener}}</c>.
+/// </para>
 /// </summary>
 public static partial class PatternLists
 {
@@ -65,17 +70,31 @@ public static partial class PatternLists
             names.AddRange(state.GetProperty("names").EnumerateArray().Select(name => name.GetString()!));
         }
 
-        return new Dictionary<string, string>(StringComparer.Ordinal)
+        var lists = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            // Longest first, so "West Virginia" is tried before "Virginia" at the same position; words joined by
-            // any run of spaces, because a transcript's spacing is the recogniser's.
-            ["us-state"] = Alternation(names
-                .OrderByDescending(name => name.Length)
-                .ThenBy(name => name, StringComparer.Ordinal)
-                .Select(name => string.Join(@"\s+", name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(Regex.Escape)))),
+            ["us-state"] = Words(names),
             ["us-state-code"] = Alternation(codes.Order(StringComparer.Ordinal)),
         };
+
+        // The named word lists, each from a standard cited beside it in the file.
+        foreach (JsonProperty list in document.RootElement.GetProperty("words").EnumerateObject())
+        {
+            lists.Add(list.Name, Words(list.Value.EnumerateArray().Select(word => word.GetString()!)));
+        }
+
+        return lists;
     }
+
+    /// <summary>
+    /// Longest first, so "West Virginia" is tried before "Virginia" and "Northeast" before "North" at the same
+    /// position; words joined by any run of spaces, because a transcript's spacing is the recogniser's.
+    /// </summary>
+    private static string Words(IEnumerable<string> words) =>
+        Alternation(words
+            .Distinct(StringComparer.Ordinal)
+            .OrderByDescending(word => word.Length)
+            .ThenBy(word => word, StringComparer.Ordinal)
+            .Select(word => string.Join(@"\s+", word.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(Regex.Escape))));
 
     private static string Alternation(IEnumerable<string> options) =>
         new StringBuilder("(?:").AppendJoin('|', options).Append(')').ToString();

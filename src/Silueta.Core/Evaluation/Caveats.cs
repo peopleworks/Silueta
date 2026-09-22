@@ -89,10 +89,11 @@ public static class Caveats
         }
 
         notes.Add(
-            "No rule finds a street address yet. A city is found only before a state (\"Flagstaff, Arizona\") " +
-            "and in a transcript with capitals, or when the lineage lists it; a postal code only after \"ZIP\", " +
-            "\"código postal\" or a state; and numbers spoken as words (\"five five five, oh one four seven\") " +
-            "are not recognised. The postal-code table is the United States census: a five-digit code from " +
+            "Places are found only in the forms the rules know and where the transcript has capitals: a street " +
+            "address as the postal service writes one, a city before a state (\"Flagstaff, Arizona\") or on the " +
+            "lineage's list, a postal code after \"ZIP\", \"código postal\" or a state. A town named alone is " +
+            "not found unless the lineage lists it, and numbers spoken as words (\"five five five, oh one four " +
+            "seven\") are not recognised. The postal-code table is the United States census: a five-digit code from " +
             "another country is widened against it, and three of its digits may stay.");
 
         return notes;

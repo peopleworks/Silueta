@@ -50,8 +50,32 @@
   {
     "id": "city-us",
     "kind": "City",
-    "regex": "(?-i:\\b(?!(?:Yes|No|Well|So|And|But|Oh|Okay|Ok|Sure|Then|Now|Also|Right|Thanks|Thank|Hi|Hello|Hey|Sí|Si|Bueno|Pues|Pero|Entonces|Gracias|Hola|Claro|Ahora|También|Tambien|The|In|From|To|At|Of|En|De|Desde|Para|Por|Con|Mr|Mrs|Ms|Dr|Sr|Sra)\\b)\\p{Lu}\\p{Ll}+(?:['’]?\\p{Lu}\\p{Ll}+)?(?:(?:[ -]|\\s(?:de|del|la|las|los|el)\\s)\\p{Lu}\\p{Ll}+(?:['’]?\\p{Lu}\\p{Ll}+)?){0,2})(?=,?\\s+{{us-state}}\\b|(?-i:,\\s?{{us-state-code}}\\b|\\s+{{us-state-code}}\\s+\\d{5}(?!\\d)))",
+    "regex": "(?-i:\\b(?!{{sentence-opener}}\\b)\\p{Lu}\\p{Ll}+(?:['’]?\\p{Lu}\\p{Ll}+)?(?:(?:[ -]|\\s(?:de|del|la|las|los|el)\\s)\\p{Lu}\\p{Ll}+(?:['’]?\\p{Lu}\\p{Ll}+)?){0,2})(?=,?\\s+{{us-state}}\\b|(?-i:,\\s?{{us-state-code}}\\b|\\s+{{us-state-code}}\\s+\\d{5}(?!\\d)))",
     "confidence": 0.85
+  },
+  {
+    "id": "street-us",
+    "kind": "Address",
+    "regex": "(?-i:\\b\\d{1,6}[A-Z]?\\s+(?:{{directional-us}}\\.?\\s+)?(?:(?:\\p{Lu}\\p{Ll}+|\\d{1,3}(?:st|nd|rd|th))\\s+){1,3}{{street-suffix-us}}\\b(?:\\s+{{directional-us}}\\b)?(?:,?\\s+{{unit-us}}\\.?\\s*#?\\s*[A-Za-z0-9-]{1,6}\\b)?)",
+    "confidence": 0.9
+  },
+  {
+    "id": "street-name-us",
+    "kind": "Address",
+    "regex": "(?-i:\\b(?!{{sentence-opener}}\\b)(?:\\p{Lu}\\p{Ll}+\\s+){1,3}{{thoroughfare-us}}\\b)",
+    "confidence": 0.85
+  },
+  {
+    "id": "street-mx",
+    "kind": "Address",
+    "regex": "\\b{{vialidad-mx}}\\.?\\s+(?-i:(?:(?:de|del|la|las|los|el)\\s+)*\\p{Lu}\\p{Ll}+(?:\\s+(?:(?:de|del|la|las|los|el|y)\\s+)*\\p{Lu}\\p{Ll}+){0,3})(?:\\s*(?:#|no\\.|n[úu]m(?:ero)?\\.?)?\\s*\\d{1,5}[A-Za-z]?\\b)?",
+    "confidence": 0.9
+  },
+  {
+    "id": "po-box",
+    "kind": "Address",
+    "regex": "\\bP\\.?\\s?O\\.?\\s*Box\\s*#?\\s*\\d{1,6}\\b|\\bapartado\\s+postal\\s*#?\\s*\\d{1,6}\\b",
+    "confidence": 0.95
   },
   {
     "id": "date-numeric",

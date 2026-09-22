@@ -125,16 +125,17 @@ public static class MatchingTools
      Description("""
         Lists the pattern rules that find identifiers by shape rather than by name — phone numbers,
         e-mail, URLs, IP addresses, record numbers, dates in English and Spanish, ages over 89, postal
-        codes introduced as such, states, and the city before a state — with
+        codes introduced as such, states, the city before a state, and street addresses — with
         each rule's regular expression, the kind of identifier it emits and its confidence.
 
         Read it to see what a run will catch without a roster, and, more usefully, what it will not.
         A rule may name a list instead of spelling it out: {{us-state}} and {{us-state-code}} stand for
-        every state's name, in English and Spanish, and every state's code.
+        every state's name, in English and Spanish, and every state's code; {{street-suffix-us}},
+        {{vialidad-mx}} and the others are word lists taken from USPS Publication 28 and INEGI.
 
         HIPAA Safe Harbor names eighteen identifiers; this pack finds a postal code only after "ZIP",
-        "código postal" or a state, a city only before a state, no street address, and no number or date
-        spoken as words.
+        "código postal" or a state, a city only before a state, a street address only as the postal
+        standards write it, and no number or date spoken as words.
         """)]
     public static PatternCatalog ListPatternRules(
         [Description("Filter by identifier kind, e.g. \"Date\" or \"Phone\". Empty = all.")] string kind = "")

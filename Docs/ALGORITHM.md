@@ -165,8 +165,8 @@ matched as one name.
 Phone numbers, e-mail, URLs, IPs, record numbers, numeric and spoken-month dates in both languages, ages
 above 89, and a ZIP code introduced as one — after "ZIP", "zip code", "postal code", "código postal" or a
 state. Not a bare five-digit number, which would read every record number, amount and count as a postal
-code; and the span is the digits alone, so the words that introduced them stay. States, and the city before
-one (§6d). A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
+code; and the span is the digits alone, so the words that introduced them stay. States, the city before one
+(§6d), and street addresses (§6e). A JSON pack, embedded but overridable, because a pattern is the kind of thing an agency should be
 able to add without a compiler. Each rule carries its own confidence, and every regex runs with a timeout:
 the text comes from outside, and so does the pack.
 
@@ -417,6 +417,30 @@ and `State` is kept: a row that says `Keep`, not an absence, so the fingerprint 
 Measured on the frozen corpus: no change, and it could not have been otherwise — the corpus names no state.
 What speaks for this section is its tests.
 
+## 6e. Street addresses: the standards, and nothing else
+
+Safe Harbor names the street address first among the subdivisions smaller than a state. The rules that find
+one are taken from the two standards that define what an address is, and every word list they use is cited
+in `lists.core.json`:
+
+- **USPS Publication 28.** A house number, an optional directional (§233), one to three capitalised words or
+  an ordinal ("23rd"), a street suffix from Appendix C1 spelled out or abbreviated, and an optional unit from
+  Appendix C2 — "221 N Main St, Apt 4B". Without a house number, only a suffix that names a road and nothing
+  else in ordinary English, spelled out: "Maple Street", but never "Supreme Court", and never an
+  abbreviation, because `St` is also Saint and `Dr` also Doctor. A post-office box too.
+- **INEGI, Norma Técnica sobre Domicilios Geográficos.** A type of road — calle, avenida, privada, calzada,
+  andador — a capitalised name with its particles ("Privada de los Pinos"), an optional number ("#8",
+  "número 1450"). The type of road may be lower case, as Spanish writes it; the name may not.
+- **Capitals are the anchor**, as for the city. "A 5 minute drive" and "a 3 block walk" are a number, a word
+  and a street suffix; only the capitals tell them from "5 Minute Drive". A lower-case transcript gives
+  these rules nothing, and that is pinned by a test.
+
+Measured on the frozen corpus, and to be read with a caveat: the corpus's four street marks were seen before
+these rules were written, at the close of §6d. Pooled recall rose from 0.769 to 0.808 and the whole-corpus
+leak rate fell from 90.0% to 86.7%, with over-redaction unchanged. In scope the rate rose from 76.7% to
+83.3%, because `Address` entered the scope and the corpus marks most places as towns named alone, which a
+street rule cannot see. Both are reported; neither is tuned away.
+
 ## 7. The vault
 
 Two things per subject, held together: the **code** a structured field refers to (`SIL-3f9a…`) and the
@@ -553,7 +577,7 @@ The gold set is the yardstick, and a redactor scored against its own output meas
 limits.** Thirty synthetic transcripts with real recogniser damage; most leak whichever way it is counted.
 Two things about how it is reported are decisions and belong here. First, there are two leak rates, and
 they are not interchangeable: over every kind the annotators marked, which answers whether the corpus could
-be shared and includes places no rule looks for; and over the kinds the build has a way to find — the
+be shared and includes kinds no rule looks for; and over the kinds the build has a way to find — the
 kinds the pattern pack has a rule for, plus each document's roster — which judges the matcher. The scope is
 derived from the build, not written down, so a rule that exists and fails still counts against it.
 Second, the value of matching by sound is reported as a *difference* from the literal baseline over the

@@ -77,7 +77,7 @@ Silueta's leak rate has been measured only on thirty synthetic transcripts, and 
 still held something identifying. The skill is required to say so, with the interval and what the corpus
 was, rather than paper over it — the numbers are in the repository README. Nicknames, people named only
 by relationship, names nobody wrote down, and names damaged past the matcher's threshold all survive —
-and no rule finds a street address yet, nor a postal code nobody introduced as one, nor a city with no state
-after it that the lineage does not list.
+and places are found only in the forms the rules know: not a postal code nobody introduced as one, nor a
+town named alone that the lineage does not list.
 
 MIT. Pedro Hernández (PeopleWorks) · https://github.com/peopleworks/Silueta

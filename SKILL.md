@@ -113,8 +113,8 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    may leave a building is a lawyer's decision, and an expert determination is a person signing a name.
 3. **The leak rate is measured on a synthetic corpus, and it is high.** On thirty synthetic home-care
    transcripts (Windows voices, phone-degraded audio, Whisper large-v3), this many still held something
-   identifying: 90.0% of 30 transcripts (95% CI 74.4%–96.5%). Counting only the kinds this build has a
-   way to find: 76.7% of 30 transcripts (95% CI 59.1%–88.2%). If you are asked how good it is, give both
+   identifying: 86.7% of 30 transcripts (95% CI 70.3%–94.7%). Counting only the kinds this build has a
+   way to find: 83.3% of 30 transcripts (95% CI 66.4%–92.7%). If you are asked how good it is, give both
    numbers with their intervals, say the corpus is synthetic and was written by the matcher's author, and
    never offer either as a guarantee for the user's own transcripts. You do not have to remember them:
    the build carries its own measurement, so the `caveat` on every redaction result states it and every
@@ -127,10 +127,13 @@ the transcript says `Sophia Rays`, the roster says `Sofía Reyes`, and Silueta i
    is three edits apart on a five-character key, where the budget is one, and that is a matcher failure
    rather than a design decision. A name that is also an ordinary word cuts the other way — with `Rose` on
    a roster, "roses from the garden" is redacted too.
-5. **No rule finds a street address yet; a city only before a state, and a postal code only when it is
-   introduced as one** ("Flagstaff, Arizona", "zip code 85004", "código postal 85004") — or when the
-   operator's lineage lists the city. A city becomes `[CITY]` and the state stays, as Safe Harbor allows;
-   a postal code keeps three digits where the census allows — `850XX` — and becomes `000XX` elsewhere. Numbers or dates spoken as words ("five five five,
+5. **Places are found only in the forms the rules know, and only where the transcript has capitals.** A
+   street address written as the postal service writes one ("1600 Pennsylvania Avenue", "calle Hidalgo
+   27", "Maple Street"), a city before a state ("Flagstaff, Arizona"), a postal code introduced as one
+   ("zip code 85004", "código postal 85004") — and a city the operator's lineage lists. A town named alone
+   ("she called from Mesa") is not found unless the lineage lists it. A city becomes `[CITY]` and the state
+   stays, as Safe Harbor allows; a postal code keeps three digits where the census allows — `850XX` — and
+   becomes `000XX` elsewhere. Numbers or dates spoken as words ("five five five,
    oh one four seven", "September eleventh") are not recognised at all. If the transcript has those, say
    they were not touched.
 6. **Companies and products come back as labels unless the lineage brings names for them.** Use

@@ -5,8 +5,68 @@
     "before one and the rule that finds the ZIP after one cannot come to disagree about what a state is.",
     "Spanish names are here because the transcripts are: a caller in Phoenix says Nuevo México.",
     "Puerto Rico and the District of Columbia are in, because Safe Harbor's 'state' is the unit above a",
-    "city and the census table for postal codes counts them."
+    "city and the census table for postal codes counts them.",
+    "The word lists under \"words\" are named the same way: {{street-suffix-us}} is that list. Each is taken",
+    "from a published standard, cited beside it, and not from any transcript."
   ],
+  "_words": {
+    "sentence-opener": "Words that open a sentence and are capitalised for that reason alone. A rule that reads a capitalised word as a name or a place skips them: 'Yes, Arizona' names no city.",
+    "directional-us": "USPS Publication 28, section 233: the directionals, spelled out and abbreviated.",
+    "street-suffix-us": "USPS Publication 28, Appendix C1: the primary street suffix names and their standard abbreviations. Used only after a house number, where 'Walk' and 'Park' are streets.",
+    "thoroughfare-us": "The suffixes of Appendix C1 that name a road and nothing else in ordinary English, spelled out. Used without a house number, where 'Court', 'Park', 'Way' and every abbreviation ('St' is also Saint, 'Dr' also Doctor) would take an institution or a person for a street.",
+    "unit-us": "USPS Publication 28, Appendix C2: secondary unit designators, spelled out and abbreviated.",
+    "vialidad-mx": "INEGI, Norma Técnica sobre Domicilios Geográficos (DOF 12 nov 2010): the types of road, with their usual abbreviations."
+  },
+  "words": {
+    "sentence-opener": [
+      "Yes", "No", "Well", "So", "And", "But", "Oh", "Okay", "Ok", "Sure", "Then", "Now", "Also", "Right",
+      "Thanks", "Thank", "Hi", "Hello", "Hey", "Sí", "Si", "Bueno", "Pues", "Pero", "Entonces", "Gracias",
+      "Hola", "Claro", "Ahora", "También", "Tambien", "The", "In", "From", "To", "At", "Of", "En", "De",
+      "Desde", "Para", "Por", "Con", "Mr", "Mrs", "Ms", "Dr", "Sr", "Sra"
+    ],
+    "directional-us": [
+      "North", "South", "East", "West", "Northeast", "Northwest", "Southeast", "Southwest",
+      "N", "S", "E", "W", "NE", "NW", "SE", "SW"
+    ],
+    "street-suffix-us": [
+      "Alley", "Aly", "Annex", "Anx", "Arcade", "Arc", "Avenue", "Ave", "Bayou", "Byu", "Beach", "Bch",
+      "Bend", "Bnd", "Bluff", "Blf", "Bottom", "Btm", "Boulevard", "Blvd", "Branch", "Br", "Bridge", "Brg",
+      "Brook", "Brk", "Burg", "Bg", "Bypass", "Byp", "Camp", "Cp", "Canyon", "Cyn", "Cape", "Cpe",
+      "Causeway", "Cswy", "Center", "Ctr", "Circle", "Cir", "Cliff", "Clf", "Club", "Clb", "Common", "Cmn",
+      "Corner", "Cor", "Course", "Crse", "Court", "Ct", "Cove", "Cv", "Creek", "Crk", "Crescent", "Cres",
+      "Crest", "Crst", "Crossing", "Xing", "Curve", "Curv", "Dale", "Dl", "Dam", "Dm", "Divide", "Dv",
+      "Drive", "Dr", "Estate", "Est", "Expressway", "Expy", "Extension", "Ext", "Falls", "Fls", "Ferry", "Fry",
+      "Field", "Fld", "Flat", "Flt", "Ford", "Frd", "Forest", "Frst", "Forge", "Frg", "Fork", "Frk", "Fort", "Ft",
+      "Freeway", "Fwy", "Garden", "Gdn", "Gateway", "Gtwy", "Glen", "Gln", "Green", "Grn", "Grove", "Grv",
+      "Harbor", "Hbr", "Haven", "Hvn", "Heights", "Hts", "Highway", "Hwy", "Hill", "Hl", "Hollow", "Holw",
+      "Inlet", "Inlt", "Island", "Is", "Junction", "Jct", "Key", "Ky", "Knoll", "Knl", "Lake", "Lk",
+      "Landing", "Lndg", "Lane", "Ln", "Light", "Lgt", "Loop", "Mall", "Manor", "Mnr", "Meadow", "Mdw",
+      "Mill", "Ml", "Mission", "Msn", "Motorway", "Mtwy", "Mount", "Mt", "Mountain", "Mtn", "Oval",
+      "Overpass", "Opas", "Park", "Parkway", "Pkwy", "Pass", "Path", "Pike", "Pine", "Pne", "Place", "Pl",
+      "Plain", "Pln", "Plaza", "Plz", "Point", "Pt", "Port", "Prt", "Prairie", "Pr", "Radial", "Radl",
+      "Ranch", "Rnch", "Rapid", "Rpd", "Rest", "Rst", "Ridge", "Rdg", "River", "Riv", "Road", "Rd",
+      "Route", "Rte", "Row", "Run", "Shoal", "Shl", "Shore", "Shr", "Skyway", "Skwy", "Spring", "Spg",
+      "Square", "Sq", "Station", "Sta", "Stream", "Strm", "Street", "St", "Summit", "Smt", "Terrace", "Ter",
+      "Trace", "Trce", "Track", "Trak", "Trail", "Trl", "Tunnel", "Tunl", "Turnpike", "Tpke", "Union", "Un",
+      "Valley", "Vly", "Viaduct", "Via", "View", "Vw", "Village", "Vlg", "Ville", "Vl", "Vista", "Vis",
+      "Walk", "Wall", "Way", "Wy", "Well", "Wl", "Wells", "Wls"
+    ],
+    "thoroughfare-us": [
+      "Street", "Avenue", "Road", "Lane", "Drive", "Boulevard", "Parkway", "Highway", "Expressway",
+      "Freeway", "Turnpike", "Alley", "Terrace"
+    ],
+    "unit-us": [
+      "Apartment", "Apt", "Suite", "Ste", "Unit", "Building", "Bldg", "Floor", "Fl", "Room", "Rm",
+      "Lot", "Space", "Spc", "Trailer", "Trlr", "Department", "Dept", "Office", "Ofc"
+    ],
+    "vialidad-mx": [
+      "Ampliación", "Ampliacion", "Andador", "Avenida", "Av", "Avda", "Boulevard", "Bulevar", "Blvd",
+      "Calle", "Callejón", "Callejon", "Calzada", "Calz", "Cerrada", "Circuito", "Circunvalación",
+      "Circunvalacion", "Continuación", "Continuacion", "Corredor", "Diagonal", "Eje vial", "Pasaje",
+      "Peatonal", "Periférico", "Periferico", "Privada", "Priv", "Prolongación", "Prolongacion", "Prol",
+      "Retorno", "Viaducto", "Carretera", "Camino", "Brecha", "Terracería", "Terraceria", "Vereda"
+    ]
+  },
   "usStates": [
     { "code": "AL", "names": ["Alabama"] },
     { "code": "AK", "names": ["Alaska"] },

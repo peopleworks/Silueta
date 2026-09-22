@@ -11,7 +11,7 @@
   "lineage": "silueta-core/2",
   "lineageFingerprint": "0d2728ee31c404eb",
   "policyFingerprint": "f8a3e4af18df78a5",
-  "scope": "In scope: kinds the pattern pack has a rule for (Phone, Email, Url, IpAddress, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, City, State), plus the kinds on each document\u0027s roster. A rule that exists and fails stays in scope.",
+  "scope": "In scope: kinds the pattern pack has a rule for (Phone, Email, Url, IpAddress, Address, PostalCode, Date, AgeOver89, RecordNumber, AccountNumber, City, State), plus the kinds on each document\u0027s roster. A rule that exists and fails stays in scope.",
   "caveats": [
     "30 of 30 documents were marked by one annotator: for those the number measures that annotator as much as the redactor, and agreement cannot be computed.",
     "The corpus mixes sources. Read the result per source before reading it whole."
@@ -21,32 +21,32 @@
       "name": "silueta",
       "description": "roster matched by sound, plus the pattern pack",
       "documents": 30,
-      "leaking": 27,
-      "leakingInScope": 23,
-      "recallInScope": 0.8543247344461306,
-      "pooledRecall": 0.7686006825938566
+      "leaking": 26,
+      "leakingInScope": 25,
+      "recallInScope": 0.8203883495145631,
+      "pooledRecall": 0.8075085324232082
     },
     {
       "name": "deny-list",
       "description": "the same roster matched literally, plus the same pattern pack",
       "documents": 30,
-      "leaking": 29,
-      "leakingInScope": 26,
-      "recallInScope": 0.7814871016691958,
-      "pooledRecall": 0.7030716723549488
+      "leaking": 28,
+      "leakingInScope": 27,
+      "recallInScope": 0.7538141470180305,
+      "pooledRecall": 0.7419795221843003
     }
   ],
   "thesis": {
     "configuration": "silueta",
     "baseline": "deny-list",
     "recallDifference": {
-      "estimate": 0.07283763277693478,
-      "lower": 0.036965343139400746,
-      "upper": 0.11331931621841337
+      "estimate": 0.06657420249653256,
+      "lower": 0.033478287202471146,
+      "upper": 0.10495145125430864
     },
     "leakRateDifference": {
-      "estimate": -0.09999999999999998,
-      "lower": -0.2333333333333334,
+      "estimate": -0.06666666666666665,
+      "lower": -0.16666666666666674,
       "upper": 0
     },
     "resamples": 1000,

@@ -140,6 +140,17 @@ public sealed class RedactionManifest
     public string RelativesRule { get; set; } = "off";
 
     /// <summary>
+    /// The date that decided whether a birth year makes someone 90, and where it came from — "2026-09-22 (record
+    /// date)" or "(run date)". Its default, "none", is what a manifest from before the rule says. A corpus
+    /// redacted against two different reference dates keeps different years, so the date belongs here beside the
+    /// rule that used it.
+    /// </summary>
+    public string AgeReference { get; set; } = "none";
+
+    /// <summary>The rule that read the words about birth — "birth-year/1" and a digest — or <c>off</c>.</summary>
+    public string BirthYearRule { get; set; } = "off";
+
+    /// <summary>
     /// Every way the policy that ran differs from Safe Harbor — "Date: Keep (Safe Harbor: YearOnly)" — and empty
     /// when it is Safe Harbor. The policy name says what the organisation called its rules; this says what they
     /// were, so a compliance reader holding the manifest does not also need the lineage file to see that a
@@ -264,6 +275,12 @@ public sealed partial class SiluetaEngine
             found.AddRange(detector.Detect(text, roster));
         }
 
+        // A date of birth that makes the person 90 is not a year Safe Harbor lets through. Read after the
+        // detectors and against what they found, so one span is replaced rather than two rules disagreeing
+        // about the same date.
+        DateOnly reference = context.RecordedOn ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        BirthYear.Reframe(text, found, reference.Year);
+
         List<Detection> applied = Resolve(found, policy, out int ambiguous);
 
         // No invented name may be one this very run would detect, or the next pass over the output finds
@@ -307,9 +324,9 @@ public sealed partial class SiluetaEngine
 
         // Read our own output back. Costs one more detection pass over a text of the same size, which is
         // a fair price for the only check that asks whether the work actually held.
-        List<Detection> residue = Resolve(
-            _detectors.SelectMany(detector => detector.Detect(redacted, roster)).ToList(),
-            policy);
+        var readBack = _detectors.SelectMany(detector => detector.Detect(redacted, roster)).ToList();
+        BirthYear.Reframe(redacted, readBack, reference.Year);
+        List<Detection> residue = Resolve(readBack, policy);
 
         var manifest = new RedactionManifest
         {
@@ -338,6 +355,8 @@ public sealed partial class SiluetaEngine
                 ? $"{CensusZipTable.Table} {CensusZipTable.Fingerprint}"
                 : $"unused (PostalCode: {policy.ActionFor(IdentifierKind.PostalCode)})",
             RelativesRule = FindRelativesNamedInText ? RelativesInText.Fingerprint(QuasiIdentifierVocabulary.Default) : "off",
+            AgeReference = $"{reference:yyyy-MM-dd} ({(context.RecordedOn is null ? "run date" : "record date")})",
+            BirthYearRule = BirthYear.Fingerprint,
             KeptKinds = [.. Enum.GetValues<IdentifierKind>()
                 .Where(kind => policy.ActionFor(kind) == RedactionAction.Keep)
                 .Select(kind => kind.ToString())
@@ -685,10 +704,12 @@ public sealed partial class SiluetaEngine
         return Vault.Pools.Fit(Vault.SurrogateFor(subjectId, kind, wouldBeFound), Tokenizer.Tokenize(original).Count);
     }
 
-    /// <summary>Safe Harbor keeps the year and nothing finer. A date with no year loses everything.</summary>
+    /// <summary>Safe Harbor keeps the year and nothing finer. A date with no year loses everything. The shape
+    /// of a year is <see cref="BirthYear.YearPattern"/>'s and only its: the rule that takes a year away and the
+    /// one that keeps it must agree about what a year looks like.</summary>
     private string YearOf(string text)
     {
-        Match match = YearPattern().Match(text);
+        Match match = BirthYear.YearPattern().Match(text);
         return match.Success ? match.Value : LabelFor(IdentifierKind.Date);
     }
 
@@ -734,6 +755,4 @@ public sealed partial class SiluetaEngine
     private static void Increment(Dictionary<string, int> counter, string key) =>
         counter[key] = counter.TryGetValue(key, out int n) ? n + 1 : 1;
 
-    [GeneratedRegex(@"\b(1[5-9]\d{2}|20\d{2})\b")]
-    private static partial Regex YearPattern();
 }

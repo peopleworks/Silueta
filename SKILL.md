@@ -81,7 +81,12 @@ people. Pass `--out` when even the redacted text should stay out of the conversa
 
 Silueta finds **the people the caller already knows** — the patient, the family, the staff on shift —
 through whatever the recogniser did to their names. Without a roster only the shape rules fire (phone,
-e-mail, URL, IP, record numbers, dates, ages over 89) and **every name in the transcript survives**.
+e-mail, URL, IP, record numbers, dates, ages over 89, street addresses, places) and **every name in the
+transcript survives**.
+
+A date of birth is read as an age when its year makes the person 90 — "born in 1930" comes back as "90 or
+older", not as 1930. What counts as 90 depends on the day: pass the record's own date when you know it, and
+the report says which date decided (`ageReference`).
 
 ```json
 [

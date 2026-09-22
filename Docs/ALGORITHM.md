@@ -213,7 +213,7 @@ framework's own timeout exception carries the input that defeated it.
 | `Surrogate` | names of people, organisations, products | a consistent invented name per subject — or, for a kind the lineage brings no pool for, its label (see below) |
 | `Label` | phone, e-mail, URL, IP, address, city, record and account numbers | `[PHONE]`, `[EMAIL]`, `[CITY]`, … |
 | `YearOnly` | dates | `3/14/2026` → `2026` |
-| `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`; `85004` → `850XX`, or `000XX` where the census counts 20,000 people or fewer behind the prefix (§6c) |
+| `Generalize` | ages over 89, postal codes | `94 years old` → `90 or older`, and `born in 1930` with it (§6f); `85004` → `850XX`, or `000XX` where the census counts 20,000 people or fewer behind the prefix (§6c) |
 | `Keep` | states | `Flagstaff, Arizona` → `[CITY], Arizona` (§6d) |
 
 **Why surrogates rather than labels for names.** The text stays a sentence, so whatever reads it next —
@@ -441,6 +441,32 @@ leak rate fell from 90.0% to 86.7%, with over-redaction unchanged. In scope the 
 83.3%, because `Address` entered the scope and the corpus marks most places as towns named alone, which a
 street rule cannot see. Both are reported; neither is tuned away.
 
+## 6f. A birth year is an age
+
+Safe Harbor allows the year of a date and then takes it back once: "all ages over 89 and all elements of dates
+(including year) indicative of such age" may be kept only "aggregated into a single category of age 90 or
+older" (§ 164.514(b)(2)(i)(C)). The pack found the age said as a number — "94 years old" — and nothing found
+the same fact said as a date, so "born in 1930" came back with its year under a manifest that said
+safe-harbor.
+
+- **It is not a rule about shapes**, which is why it is not in the pack: whether 1930 is over 89 depends on
+  when you ask. The reference is the record's own date when the caller sets `RecordedOn`, and the day of the
+  run otherwise; the manifest says which in `ageReference`, because the same transcript redacted in two
+  different years is two different corpora.
+- **The test is blunt on purpose**: reference year minus birth year, 90 or more. A birthday nobody stated
+  falls either side of the run, and the side that removes is the side to fall on. Born in 1936, read in 2026:
+  the year goes. Born in 1937: it stays, because 89 is the most she can be.
+- **It reads what the pack already found.** A date near a word about birth — born, birthday, nació,
+  nacimiento — is re-read as an age over 89 and replaced whole, so no second rule argues with the date rule
+  about the same span; a bare year, which no date rule matches because a year alone is not a date, becomes a
+  span of its own. It never reads across the end of a sentence: "a birth defect. She moved in 1930" is not a
+  date of birth, and that year is one Safe Harbor allows.
+- **One shape of a year in the build.** The rule that takes a year away and the rule that keeps one are the
+  same regular expression, in one place, for the reason this file keeps repeating.
+
+Not measured on the frozen corpus: it names one birth at all ("her birthday is August 9") and no birth year.
+What speaks for this section is its tests.
+
 ## 7. The vault
 
 Two things per subject, held together: the **code** a structured field refers to (`SIL-3f9a…`) and the
@@ -491,6 +517,8 @@ Plus the four things that bind it to something:
   reads as a run that did not leak. See §9.
 - **`postalCodeTable`.** Which census count decided the ZIP prefixes a run kept (§6c). Two corpora
   redacted against different counts keep different prefixes under one policy fingerprint.
+- **`ageReference` and `birthYearRule`.** Which date decided that a birth year was an age over 89, and where
+  that date came from (§6f). Same reason: a year kept under one reference is removed under another.
 
 What is still missing, and worth saying: **a run cannot be reproduced from the manifest.** Invented names
 are minted at random, so the only way to reproduce one is to hold the vault — which must not travel. The

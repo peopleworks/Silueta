@@ -342,7 +342,8 @@ leak rate with its interval when asked, and say what is known to survive. Instal
    address, a ZIP code introduced as one, a state, the city before a state: a JSON pattern pack, which is a
    file anyone can extend by pull request, never compiled code.
 4. **Replacement follows a policy.** HIPAA Safe Harbor by default: names become consistent invented names,
-   dates keep only their year, ages above 89 become "90 or older", a city becomes `[CITY]` and the state
+   dates keep only their year, ages above 89 become "90 or older" — a birth year that makes somebody 90
+   included, which is the one year the rule takes back — a city becomes `[CITY]` and the state
    after it stays — "all geographic subdivisions smaller than a state" go. A postal code keeps its first three
    digits where the 2020 census counts more than 20,000 people behind them — `85004` becomes `850XX` — and
    becomes `000XX` everywhere else, including every prefix the census has no area for. The table is
@@ -452,8 +453,8 @@ the pattern pack misses — judged on data it was not tuned against. A second co
 script under every condition, and a person as a second annotator. Then the parts of Safe Harbor still
 missing: a street address is found only in the forms the postal standards write, a city only before a
 state or from the lineage's list, a postal code only when it is introduced as one ("zip code 85004",
-"código postal 85004") or follows a state, all of them only where the transcript has capitals; a birth year
-that puts someone over 89 keeps its year; and numbers and dates spoken as words ("five five five, oh one four seven", "September eleventh")
+"código postal 85004") or follows a state, all of them only where the transcript has capitals; and numbers
+and dates spoken as words ("five five five, oh one four seven", "September eleventh")
 are not normalised at all. The places this corpus marks are mostly towns named alone — "called from Mesa" —
 which only an organisation's own list can find, and the built-in lineage lists none: a list written from
 this corpus would be a number tuned to it.

@@ -35,6 +35,18 @@ public sealed class DeidentificationContext
     /// <summary>Opaque id of the record being processed. Appears in the manifest, never in the output.</summary>
     public string RecordId { get; }
 
+    /// <summary>
+    /// The day this record is of, when the caller knows it. One rule needs it: a birth year is an identifier
+    /// only when it makes the person 90, and whether it does depends on when you ask. Left unset, the run's own
+    /// day is used and the manifest says so — a transcript from 1998 redacted today would otherwise be read as
+    /// being about someone nearly thirty years older.
+    /// <para>
+    /// It is a date, not a time: nothing here is finer than a year, and a time would be one more thing about a
+    /// record travelling in a manifest for no purpose.
+    /// </para>
+    /// </summary>
+    public DateOnly? RecordedOn { get; init; }
+
     public IReadOnlyList<KnownIdentifier> Known => _known;
 
     /// <summary>
@@ -43,7 +55,7 @@ public sealed class DeidentificationContext
     /// </summary>
     internal DeidentificationContext Copy()
     {
-        var copy = new DeidentificationContext(RecordId);
+        var copy = new DeidentificationContext(RecordId) { RecordedOn = RecordedOn };
         copy._known.AddRange(_known);
         return copy;
     }

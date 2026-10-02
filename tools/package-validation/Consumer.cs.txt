@@ -1,0 +1,52 @@
+// Copied into a temporary project outside the repository. Only PackageReference supplies Core.
+using System.Security.Cryptography;
+using System.Text.Json;
+using Silueta.Core;
+
+static void Require(bool condition, string message)
+{
+    if (!condition) throw new InvalidOperationException(message);
+}
+string Fixture(string name) => File.ReadAllText(Path.Combine(args[0], name)).TrimEnd('\r', '\n');
+var lineage = SiluetaLineage.FromJson(Fixture("lineage.json"));
+var vault = PseudonymVault.FromJson(Fixture("vault-v2.json"), lineage.Pools);
+var context = new DeidentificationContext("fixture-r1") { RecordedOn = new DateOnly(2026, 9, 22) };
+context.AddPerson("s-1", "Sofia Reyes", IdentifierKind.PatientName);
+var result = SiluetaEngine.FromLineage(lineage, vault).Redact(Fixture("input.txt"), context);
+Require(result.Text == Fixture("output.txt") && result.Residue.Count == 0, "Historical redaction changed.");
+var previous = JsonSerializer.Deserialize(Fixture("manifest.json"), SiluetaJsonContext.Default.RedactionManifest)!;
+Require(result.Manifest.InputSha256 == previous.InputSha256 && result.Manifest.OutputSha256 == previous.OutputSha256,
+    "Historical transcript hashes changed.");
+Require(vault.SurrogateFor("s-1") == "Noa Bravo" && vault.RetiredSurrogatesFor("s-1").Contains("Ale Bravo"),
+    "Historical assignments changed.");
+string path = Path.Combine(args[1], "consumer-vault.json");
+vault.SaveTo(path);
+var stale = PseudonymVault.LoadOrCreate(path, lineage.Pools);
+vault.Assign("s-2", "Ina Bravo").SaveTo(path);
+bool conflict = false;
+try { stale.SaveTo(path); } catch (VaultWriteConflictException) { conflict = true; }
+Require(conflict && PseudonymVault.LoadOrCreate(path, lineage.Pools).Count == 2, "Stale save lost an assignment.");
+var bounded = SiluetaEngine.FromLineage(lineage, vault, new RedactionLimits { MaxInputCharacters = 2 });
+bool limited = false;
+try { bounded.Redact("too long", context); } catch (RedactionLimitException) { limited = true; }
+Require(limited, "Input limit did not fail.");
+using var cancellation = new CancellationTokenSource();
+cancellation.Cancel();
+bool cancelled = false;
+try { SiluetaEngine.FromLineage(lineage, vault).Redact("short", context, null, cancellation.Token); }
+catch (OperationCanceledException) { cancelled = true; }
+Require(cancelled, "Cancellation did not fail.");
+Require(SiluetaLineage.Default.Pools.Given.Count > 0 && SiluetaLineage.Default.Pools.Family.Count > 0,
+    "Embedded default lineage is missing.");
+Require(PublishedLeakRate.Current?.Documents > 0, "Embedded measurement is missing.");
+var defaults = SiluetaEngine.CreateDefault().Redact("Call 602-555-0147 or fixture@example.com.",
+    new DeidentificationContext("package-defaults"));
+Require(defaults.Applied.Count >= 2 && !defaults.Text.Contains("fixture@example.com")
+    && !defaults.Text.Contains("602-555-0147") && defaults.Residue.Count == 0, "Embedded pattern rules did not run.");
+string assembly = typeof(SiluetaEngine).Assembly.Location;
+Console.WriteLine(JsonSerializer.Serialize(new {
+    runtime = System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription,
+    coreSha256 = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(assembly))).ToLowerInvariant(),
+    checks = new[] { "historical-redaction", "manifest-hashes", "retired-names", "stale-save",
+        "input-limit", "cancellation", "embedded-lineage", "embedded-measurement", "embedded-patterns" }
+}));

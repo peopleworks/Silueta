@@ -747,6 +747,7 @@ claim than "PII redaction", and it is the one this repository can defend.
 | `tools/Silueta.Calibration` | Re-measures this build against that corpus and writes both copies of the number: the JSON embedded in `Silueta.Core`, and the table above. |
 | [`tools/Silueta.Performance`](tools/Silueta.Performance/README.md) | Reproducible synthetic probes of matching and full-pipeline cost, including dense overlaps, surrogate minting and ambiguous attribution; result hashes guard equivalent output. |
 | `tools/Silueta.PersistenceProbe` | Cross-process vault checks: contention, process-death recovery, stale saves and reload/retry. |
+| [`tools/package-validation`](tools/package-validation/README.md) | Consume packed Core on both runtimes and exercise installed CLI/MCP with isolated caches; record hashes for the exact artifacts. |
 | `src/Silueta.Web` | The browser demo, deployed to GitHub Pages. One page, no server, no HTTP client. |
 | `tests/Silueta.Core.Tests` | The tests — including the ones that hold this README's demo and numbers to the code. |
 | `Docs/` | `ALGORITHM.md`, every decision and what it costs; and the brand. |

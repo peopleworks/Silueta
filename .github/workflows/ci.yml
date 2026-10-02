@@ -41,8 +41,23 @@ jobs:
       - name: Test
         run: dotnet test Silueta.slnx -c Release --no-build --nologo
 
-      - name: The Core package preserves the published API
-        run: dotnet pack src/Silueta.Core -c Release --no-build --nologo -o artifacts/packages
+      # Core pack includes the published API baseline check. Then consume the same three artifacts
+      # from outside the repository, without project references or any shared NuGet/tool cache.
+      - name: Pack all three packages
+        run: |
+          dotnet pack src/Silueta.Core -c Release --no-build --nologo -o artifacts/packages
+          dotnet pack src/Silueta.Cli -c Release --no-build --nologo -o artifacts/packages
+          dotnet pack src/Silueta.Mcp -c Release --no-build --nologo -o artifacts/packages
+
+      - name: The installed packages work with isolated caches
+        run: python3 tools/package-validation/validate.py artifacts/packages --report artifacts/packages/validation-report.json
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-validation
+          path: artifacts/packages/validation-report.json
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Vault writers preserve assignments across processes
         run: dotnet run --project tools/Silueta.PersistenceProbe -c Release --no-build

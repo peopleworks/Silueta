@@ -9,8 +9,8 @@
 # To ship a version: set the same <Version> in all three csproj files, merge, then publish a GitHub
 # Release tagged v<that version> (e.g. v0.1.0-preview.1). Published versions cannot be deleted.
 #
-# Two jobs, so that the approval means something. `build` tests, packs and checks the tag with no access
-# to NuGet at all. `publish` holds the only OIDC permission, runs in the `nuget` environment, and waits
+# Two jobs, so that the approval means something. `build` tests, packs, consumes and checks the tag
+# without publish credentials. `publish` holds the only OIDC permission, runs in the `nuget` environment, and waits
 # there for Pedro to approve — after the tests have passed and the packages exist, so what he approves is
 # exactly what gets pushed. In one job, the environment would have held the job before it started, and
 # the approval would have been given before anything had been checked.
@@ -122,6 +122,10 @@ jobs:
           done
 
           echo "Tag $GITHUB_REF_NAME matches the packages."
+
+      # Check the exact artifacts that will be approved and pushed; this probe never repacks.
+      - name: The installed packages work with isolated caches
+        run: python3 tools/package-validation/validate.py out --report out/validation-report.json
 
       - uses: actions/upload-artifact@v7
         with:

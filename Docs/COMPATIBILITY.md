@@ -108,6 +108,14 @@ dotnet run --project tools/Silueta.PersistenceProbe -c Release
 It uses explicit barriers to exercise contention, holder-process death, two stale writers and
 reload/retry. It uses synthetic assignments and deletes only its own temporary directory.
 
+## Package consumption
+
+CI also [validates the three installed packages](../tools/package-validation/README.md) with a local
+feed, isolated caches and external Core consumers on both runtimes. The release build runs this
+check on the exact packages that await approval, and includes their hashes and validation report
+with the artifacts. This complements API validation by exercising bundled resources, tool entry
+points, historical files and the MCP protocol outside the repository.
+
 ## Migrating from preview.3
 
 Existing valid version-2 vaults and lineage files remain usable. Preserve their files and retired names;

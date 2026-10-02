@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -218,15 +218,22 @@ public sealed partial class SiluetaEngine
     public static SiluetaEngine CreateDefault() =>
         new([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()]);
 
+    public static SiluetaEngine CreateDefault(RedactionLimits limits) =>
+        new([new KnownValueDetector(), PatternDetector.FromEmbeddedPack()]) { Limits = limits };
+
     /// <summary>
     /// The same pipeline, reading its word lists, its labels and its pattern rules from a lineage the
     /// caller brought. A vault passed in keeps its own pools: the vault is what minted the names already
     /// in the corpus, and a lineage swapped underneath it does not rename anybody.
     /// </summary>
     public static SiluetaEngine FromLineage(SiluetaLineage lineage, PseudonymVault? vault = null)
+        => FromLineage(lineage, vault, RedactionLimits.Default);
+
+    public static SiluetaEngine FromLineage(SiluetaLineage lineage, PseudonymVault? vault, RedactionLimits limits)
     {
         ArgumentNullException.ThrowIfNull(lineage);
-        return new SiluetaEngine([new KnownValueDetector(), lineage.CreatePatternDetector()], vault, lineage);
+        ArgumentNullException.ThrowIfNull(limits);
+        return new SiluetaEngine([new KnownValueDetector(), lineage.CreatePatternDetector()], vault, lineage) { Limits = limits };
     }
 
     public PseudonymVault Vault { get; }
@@ -256,45 +263,61 @@ public sealed partial class SiluetaEngine
     /// <summary>What this engine replaces with, and what it draws invented names from.</summary>
     public SiluetaLineage Lineage { get; }
 
-    public RedactionResult Redact(string text, DeidentificationContext context, SiluetaPolicy? policy = null)
+    public RedactionLimits Limits { get; init; } = RedactionLimits.Default;
+
+    public RedactionResult Redact(string text, DeidentificationContext context, SiluetaPolicy? policy = null) =>
+        Redact(text, context, policy, CancellationToken.None);
+
+    /// <summary>A complete redaction or an exception. Cancellation is cooperative; a regex match
+    /// finishes or reaches its timeout before observing cancellation. No partial result is returned.</summary>
+    public RedactionResult Redact(string text, DeidentificationContext context,
+        SiluetaPolicy? policy, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        ArgumentNullException.ThrowIfNull(Limits);
+        Limits.Validate();
+        if (text.Length > Limits.MaxInputCharacters)
+        {
+            throw new RedactionLimitException("input characters", Limits.MaxInputCharacters);
+        }
         policy ??= SiluetaPolicy.SafeHarbor;
 
         // The caller's roster, plus the people this transcript names through a relationship and the roster does
         // not already know. Everything below — detection, the choice of invented names, the read-back — runs
         // against this, so a relative found here is searched for everywhere the roster is.
         (DeidentificationContext roster, int unrostered) = FindRelativesNamedInText
-            ? WithRelativesNamedIn(text, context)
+            ? WithRelativesNamedIn(text, context, cancellationToken)
             : (context, 0);
 
         // And the values the lineage says identify in every record — the cities the organisation serves. After
         // the relatives, so that a daughter named Florence in a lineage that lists Florence stays a relative.
-        roster = WithLineageValues(roster);
+        roster = WithLineageValues(roster, cancellationToken);
 
-        var found = new List<Detection>();
-        foreach (IDetector detector in _detectors)
-        {
-            found.AddRange(detector.Detect(text, roster));
-        }
+        List<Detection> found = Collect(text, roster, cancellationToken);
 
         // A date of birth that makes the person 90 is not a year Safe Harbor lets through. Read after the
         // detectors and against what they found, so one span is replaced rather than two rules disagreeing
         // about the same date.
         DateOnly reference = context.RecordedOn ?? DateOnly.FromDateTime(DateTime.UtcNow);
-        BirthYear.Reframe(text, found, reference.Year);
+        BirthYear.Reframe(text, found, reference.Year, Limits, cancellationToken);
 
         // And a number dictated digit by digit, which no shape rule can read: "five five five, oh one four seven".
-        SpokenDigits.Find(text, found);
+        SpokenDigits.Find(text, found, Limits, cancellationToken);
 
-        List<Detection> applied = Resolve(found, policy, out int ambiguous);
+        List<Detection> applied = Resolve(found, policy, out int ambiguous, cancellationToken);
 
         // No invented name may be one this very run would detect, or the next pass over the output finds
         // the surrogate and replaces it again. The test is the detectors themselves rather than a second
         // copy of their threshold, because two copies of a rule are two rules that will disagree.
-        bool WouldBeFound(string candidate) =>
-            _detectors.Any(detector => detector.Detect(candidate, roster).Any());
+        bool WouldBeFound(string candidate)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            bool found = _detectors.Any(detector => detector.Detect(candidate, roster, cancellationToken).Any());
+            cancellationToken.ThrowIfCancellationRequested();
+            return found;
+        }
 
         // The record id and every subject id travel: one in the manifest that ships with the corpus, the
         // others as the keys of the vault. Both are documented as needing to be opaque, and that rule
@@ -314,6 +337,7 @@ public sealed partial class SiluetaEngine
 
         foreach (Detection detection in applied)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             sb.Append(text, cursor, detection.Start - cursor);
             sb.Append(Replacement(detection, text, WouldBeFound, policy, unavailable));
             cursor = detection.End;
@@ -331,11 +355,12 @@ public sealed partial class SiluetaEngine
 
         // Read our own output back. Costs one more detection pass over a text of the same size, which is
         // a fair price for the only check that asks whether the work actually held.
-        var readBack = _detectors.SelectMany(detector => detector.Detect(redacted, roster)).ToList();
-        BirthYear.Reframe(redacted, readBack, reference.Year);
-        SpokenDigits.Find(redacted, readBack);
-        List<Detection> residue = Resolve(readBack, policy);
+        List<Detection> readBack = Collect(redacted, roster, cancellationToken);
+        BirthYear.Reframe(redacted, readBack, reference.Year, Limits, cancellationToken);
+        SpokenDigits.Find(redacted, readBack, Limits, cancellationToken);
+        List<Detection> residue = Resolve(readBack, policy, out _, cancellationToken);
 
+        cancellationToken.ThrowIfCancellationRequested();
         var manifest = new RedactionManifest
         {
             RecordId = context.RecordId,
@@ -375,6 +400,7 @@ public sealed partial class SiluetaEngine
 
         foreach (IDetector detector in _detectors)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (detector is IDetectorProvenance provenance)
             {
                 manifest.DetectorFingerprints[detector.Id] = provenance.Fingerprint;
@@ -385,44 +411,31 @@ public sealed partial class SiluetaEngine
 
         foreach (Detection detection in applied)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             Increment(manifest.ByKind, detection.Kind.ToString());
             Increment(manifest.ByDetector, detection.DetectorId);
             Increment(manifest.ByMatch, detection.Match.ToString());
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return new RedactionResult(redacted, applied, manifest, residue);
     }
 
-    /// <summary>
-    /// Two detectors will find the same name, and a longer span usually contains a shorter one
-    /// ("Sofia Reyes" over "Sofia"). What survives is a set of spans that do not touch, in reading order.
-    /// <para>
-    /// Candidates that overlap are <b>united</b>, not sorted and discarded. Discarding was right for
-    /// containment and wrong for everything else: with a roster holding <c>Ana Maria</c> and
-    /// <c>Maria Perez</c>, the text <c>Ana Maria Perez</c> produced two candidates where neither contains
-    /// the other, the longer one won, and the characters only the loser covered — a word of somebody's
-    /// name — stayed in the transcript. Uniting cannot leave a character that a detector found and nothing
-    /// covers, and there is a test that says exactly that.
-    /// </para>
-    /// <para>
-    /// Who the span is about is decided separately from where it runs, because those are different
-    /// questions and the honest answer to the second one is sometimes nobody. A span keeps a subject when
-    /// something that covers the whole of it names that subject and nothing covering it disagrees — which
-    /// is every ordinary case, including the household where a mother and daughter share a surname, since
-    /// there the full name contains the surname rather than crossing it. Where two people are called the
-    /// same thing, or where two names cross, no one can say whose mention it is: the span is replaced with
-    /// a label instead of an invented name, coreference is lost for it, and the manifest counts it. Losing
-    /// coreference on a span is a cost; attributing a sentence to the wrong person is a different kind of
-    /// thing entirely.
-    /// </para>
-    /// <para>
-    /// Every tie is broken on the candidate's own content — length, confidence, position, kind, subject —
-    /// and never on the order the roster was written in. Reordering a roster used to change whose life a
-    /// sentence was about.
-    /// </para>
-    /// </summary>
-    private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy) =>
-        Resolve(candidates, policy, out _);
+    private List<Detection> Collect(string text, DeidentificationContext roster, CancellationToken cancellationToken)
+    {
+        var found = new List<Detection>();
+        foreach (IDetector detector in _detectors)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            foreach (Detection detection in detector.Detect(text, roster, cancellationToken))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Limits.Add(found, detection);
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+        return found;
+    }
 
     /// <summary>How a policy differs from Safe Harbor, one line per difference, in a stable order.</summary>
     private static IEnumerable<string> DeparturesFromSafeHarbor(SiluetaPolicy policy)
@@ -453,7 +466,7 @@ public sealed partial class SiluetaEngine
 
     /// <summary>The roster plus the lineage's <see cref="SiluetaLineage.Values"/>, each with no subject. The
     /// roster passed in is returned untouched when the lineage has none.</summary>
-    private DeidentificationContext WithLineageValues(DeidentificationContext roster)
+    private DeidentificationContext WithLineageValues(DeidentificationContext roster, CancellationToken cancellationToken)
     {
         if (Lineage.Values.Count == 0)
         {
@@ -465,6 +478,7 @@ public sealed partial class SiluetaEngine
         {
             foreach (string value in values)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 widened.AddValue(value, kind, string.Empty);
             }
         }
@@ -476,9 +490,10 @@ public sealed partial class SiluetaEngine
     /// The caller's roster plus every relative the transcript names that the roster does not already find, each
     /// with no subject. Returns the caller's own context untouched when there is nobody to add.
     /// </summary>
-    private (DeidentificationContext Roster, int Added) WithRelativesNamedIn(string text, DeidentificationContext context)
+    private (DeidentificationContext Roster, int Added) WithRelativesNamedIn(
+        string text, DeidentificationContext context, CancellationToken cancellationToken)
     {
-        IReadOnlyList<NamedRelative> named = RelativesInText.NamedIn(text);
+        IReadOnlyList<NamedRelative> named = RelativesInText.NamedIn(text, null, cancellationToken);
         if (named.Count == 0)
         {
             return (context, 0);
@@ -487,13 +502,14 @@ public sealed partial class SiluetaEngine
         // Whether a name is already somebody's is asked of the detectors themselves, as the invented-name check
         // is, so that "already on the roster" cannot mean one thing here and another in the matcher.
         bool Known(string candidate, DeidentificationContext against) =>
-            _detectors.Any(detector => detector.Detect(candidate, against).Any());
+            _detectors.Any(detector => detector.Detect(candidate, against, cancellationToken).Any());
 
         DeidentificationContext roster = context.Copy();
         int added = 0;
 
         foreach (NamedRelative relative in named)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // A listed person referred to by a relationship — "her daughter Jamileth" for the Yamilet on the
             // roster — is the roster's. And a name found twice ("my daughter Linda ... my daughter Linda") is one
             // person, which the roster built so far already answers.
@@ -522,11 +538,40 @@ public sealed partial class SiluetaEngine
         return added == 0 ? (context, 0) : (roster, added);
     }
 
-    /// <inheritdoc cref="Resolve(List{Detection}, SiluetaPolicy)"/>
+    /// <summary>
+    /// Two detectors will find the same name, and a longer span usually contains a shorter one
+    /// ("Sofia Reyes" over "Sofia"). What survives is a set of spans that do not touch, in reading order.
+    /// <para>
+    /// Candidates that overlap are <b>united</b>, not sorted and discarded. Discarding was right for
+    /// containment and wrong for everything else: with a roster holding <c>Ana Maria</c> and
+    /// <c>Maria Perez</c>, the text <c>Ana Maria Perez</c> produced two candidates where neither contains
+    /// the other, the longer one won, and the characters only the loser covered — a word of somebody's
+    /// name — stayed in the transcript. Uniting cannot leave a character that a detector found and nothing
+    /// covers, and there is a test that says exactly that.
+    /// </para>
+    /// <para>
+    /// Who the span is about is decided separately from where it runs, because those are different
+    /// questions and the honest answer to the second one is sometimes nobody. A span keeps a subject when
+    /// something that covers the whole of it names that subject and nothing covering it disagrees — which
+    /// is every ordinary case, including the household where a mother and daughter share a surname, since
+    /// there the full name contains the surname rather than crossing it. Where two people are called the
+    /// same thing, or where two names cross, no one can say whose mention it is: the span is replaced with
+    /// a label instead of an invented name, coreference is lost for it, and the manifest counts it. Losing
+    /// coreference on a span is a cost; attributing a sentence to the wrong person is a different kind of
+    /// thing entirely.
+    /// </para>
+    /// <para>
+    /// Every tie is broken on the candidate's own content — length, confidence, position, kind, subject —
+    /// and never on the order the roster was written in. Reordering a roster used to change whose life a
+    /// sentence was about.
+    /// </para>
+    /// </summary>
     /// <param name="ambiguous">How many surviving spans lost their subject because nothing could say whose
     /// they were.</param>
-    private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy, out int ambiguous)
+    private static List<Detection> Resolve(List<Detection> candidates, SiluetaPolicy policy,
+        out int ambiguous, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         List<Detection> ordered = candidates
             .Where(d => d.Confidence >= policy.MinConfidence && policy.ActionFor(d.Kind) != RedactionAction.Keep)
             .OrderBy(d => d.Start)
@@ -537,11 +582,13 @@ public sealed partial class SiluetaEngine
             .ThenBy(d => d.DetectorId, StringComparer.Ordinal)
             .ToList();
 
+        cancellationToken.ThrowIfCancellationRequested();
         ambiguous = 0;
         var accepted = new List<Detection>();
 
         for (int i = 0; i < ordered.Count;)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // One sweep: the component is everything reachable from here by overlap, which because the
             // list is in reading order is a run of candidates that starts before the running end.
             int start = ordered[i].Start;
@@ -550,11 +597,12 @@ public sealed partial class SiluetaEngine
 
             while (last + 1 < ordered.Count && ordered[last + 1].Start < end)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 last++;
                 end = Math.Max(end, ordered[last].End);
             }
 
-            accepted.Add(Unite(ordered, i, last, start, end, policy, ref ambiguous));
+            accepted.Add(Unite(ordered, i, last, start, end, policy, ref ambiguous, cancellationToken));
             i = last + 1;
         }
 
@@ -563,11 +611,13 @@ public sealed partial class SiluetaEngine
 
     /// <summary>One component of overlapping candidates, as the single span that replaces them.</summary>
     private static Detection Unite(
-        List<Detection> ordered, int from, int to, int start, int end, SiluetaPolicy policy, ref int ambiguous)
+        List<Detection> ordered, int from, int to, int start, int end, SiluetaPolicy policy,
+        ref int ambiguous, CancellationToken cancellationToken)
     {
         Detection anchor = ordered[from];
         for (int i = from + 1; i <= to; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (Precedes(ordered[i], anchor))
             {
                 anchor = ordered[i];
@@ -590,6 +640,7 @@ public sealed partial class SiluetaEngine
         bool disagreement = false;
         for (int i = from; i <= to; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (ordered[i].Start != start || ordered[i].End != end)
             {
                 continue;
@@ -625,6 +676,7 @@ public sealed partial class SiluetaEngine
             subject = ordered[from].SubjectId;
             for (int i = from + 1; i <= to && !disagreement; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 disagreement = !string.Equals(subject, ordered[i].SubjectId, StringComparison.Ordinal);
             }
         }

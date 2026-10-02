@@ -403,6 +403,10 @@ else if (_result is not null && _context is not null)
             SiluetaLineage lineage = Configured();
             _result = SiluetaEngine.FromLineage(lineage, _vault).Redact(_text, context, lineage.Policy(_policy));
         }
+        catch (RedactionLimitException ex)
+        {
+            _error = ex.Message;
+        }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
             // Never the transcript, and never the value that caused it: an exception message is one of the

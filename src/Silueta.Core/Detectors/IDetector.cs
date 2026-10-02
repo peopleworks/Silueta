@@ -11,4 +11,17 @@ public interface IDetector
     string Id { get; }
 
     IEnumerable<Detection> Detect(string text, DeidentificationContext context);
+
+    /// <summary>Cooperative cancellation. Existing detectors keep working through this adapter;
+    /// override it to interrupt work inside a detector instead of only between its yielded candidates.</summary>
+    IEnumerable<Detection> Detect(string text, DeidentificationContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        foreach (Detection detection in Detect(text, context))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return detection;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
 }

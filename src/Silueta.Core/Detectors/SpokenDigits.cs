@@ -60,13 +60,17 @@ public static partial class SpokenDigits
     /// A run of digit words read back as digits — "six oh two" is <c>602</c> — or null when the text is not only
     /// digit words and the spaces, commas and dashes between them.
     /// </summary>
-    public static string? ToDigits(string text)
+    public static string? ToDigits(string text) => ToDigits(text, CancellationToken.None);
+
+    private static string? ToDigits(string text, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
+        cancellationToken.ThrowIfCancellationRequested();
 
         var digits = new StringBuilder();
         foreach (string word in Rules.Value.Separator.Split(text.Trim()))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (word.Length == 0)
             {
                 continue;
@@ -84,12 +88,15 @@ public static partial class SpokenDigits
     }
 
     /// <summary>Adds a span for every dictated number in the text that the rules above call one.</summary>
-    internal static void Find(string text, List<Detection> found)
+    internal static void Find(string text, List<Detection> found, RedactionLimits limits,
+        CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         foreach (Match run in Rules.Value.Run.Matches(text))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             (int start, string words) = WithoutALeadingOh(run);
-            if (ToDigits(words) is not { } digits)
+            if (ToDigits(words, cancellationToken) is not { } digits)
             {
                 continue;
             }
@@ -104,10 +111,11 @@ public static partial class SpokenDigits
                 continue;
             }
 
-            found.Add(new Detection(
+            limits.Add(found, new Detection(
                 start, run.Index + run.Length - start, kind.Value, RuleVersion,
                 introduced is null ? 0.8 : 0.9, SubjectId: null, MatchKind.Pattern));
         }
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     /// <summary>"Oh, five five five…" is somebody saying oh. Dropped when a comma follows it, so it neither joins

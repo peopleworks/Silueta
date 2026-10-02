@@ -51,6 +51,57 @@ public sealed class CliTests : IDisposable
         Commands.Redact(Commands.ParseOptions(arguments), _output, _error);
 
     [Fact]
+    public void An_input_limit_failure_preserves_all_existing_artifacts()
+    {
+        string input = Write("input.txt", "Invented Person came in.");
+        string destination = Write("output.txt", "existing output");
+        string manifest = Write("manifest.json", "existing manifest");
+        string vault = Write("vault.json", "existing vault");
+        Assert.Equal(4, Redact("--in", input, "--record", "r-1", "--max-input-chars", "8",
+            "--out", destination, "--manifest", manifest, "--vault", vault));
+        Assert.Equal("existing output", File.ReadAllText(destination));
+        Assert.Equal("existing manifest", File.ReadAllText(manifest));
+        Assert.Equal("existing vault", File.ReadAllText(vault));
+        Assert.DoesNotContain("Invented Person", _error.ToString(), StringComparison.Ordinal);
+        Assert.Equal("", _output.ToString());
+    }
+
+    [Fact]
+    public void A_candidate_limit_failure_writes_no_artifacts()
+    {
+        string input = Write("input.txt", "Call 602-555-0147 or 602-555-0148 or 602-555-0149.");
+        Assert.Equal(4, Redact("--in", input, "--record", "r-1", "--max-detections", "1",
+            "--out", Path("output.txt"), "--manifest", Path("manifest.json"), "--vault", Path("new-vault.json")));
+        Assert.False(File.Exists(Path("output.txt")));
+        Assert.False(File.Exists(Path("manifest.json")));
+        Assert.False(File.Exists(Path("new-vault.json")));
+    }
+
+    [Fact]
+    public void A_cancelled_command_returns_130_and_writes_nothing()
+    {
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        string input = Write("input.txt", "Nothing identifying.");
+        var options = Commands.ParseOptions(["--in", input, "--record", "r-1", "--out", Path("output.txt")]);
+        Assert.Equal(130, Commands.Redact(options, _output, _error, source.Token));
+        Assert.False(File.Exists(Path("output.txt")));
+        Assert.Equal("", _output.ToString());
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-1")]
+    [InlineData("Invented Person")]
+    [InlineData("2147483648")]
+    public void Invalid_limit_flags_are_refused_without_echoing_the_value(string value)
+    {
+        string input = Write("input.txt", "Nothing identifying.");
+        Assert.Equal(2, Redact("--in", input, "--record", "r-1", "--max-input-chars", value));
+        Assert.DoesNotContain(value, _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_policy_is_chosen_by_name_from_the_lineage()
     {
         string lineage = Write("lineage.json", """

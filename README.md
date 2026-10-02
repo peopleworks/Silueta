@@ -608,6 +608,38 @@ One page, so nothing has to be discovered by reading source. Every key is option
 | `RecordedOn` | The day the record is of. One rule needs it: a birth year is an identifier only when it makes the person 90 |
 | `--vault` / `PseudonymVault` | Where invented names live, so one subject keeps one name across a corpus. Never leaves the agency |
 | `SiluetaEngine.FindRelativesNamedInText` | The rule that finds "my daughter Linda" when nobody listed Linda. On by default |
+| `--max-input-chars` / `RedactionLimits.MaxInputCharacters` | Positive input ceiling, in UTF-16 characters; default 1,000,000 |
+| `--max-detections` / `RedactionLimits.MaxDetections` | Positive candidate ceiling per detection pass, before overlap resolution; default 100,000 |
+
+**Large or cancelled runs fail as a whole.** A limit never truncates the text or drops candidates to
+produce an apparently complete result. The CLI reads the transcript incrementally, exits with code
+`4` on a resource limit, and supports Ctrl+C during processing (`130`). A refused or cancelled run
+writes no vault, manifest or output. Once persistence starts, the vault-first write sequence completes.
+These two ceilings apply to transcript input and detection candidates; they are not total memory or
+execution-time limits and do not bound roster or lineage files.
+
+In the MCP server the operator sets `SILUETA_MAX_INPUT_CHARACTERS` and `SILUETA_MAX_DETECTIONS`; neither
+is a tool argument. Defaults are the same, and invalid settings stop the run. The client's request
+cancellation token reaches the engine without appearing in the tool schema. The browser demo uses the
+default ceilings and displays a limit failure.
+
+From code, existing `Redact` calls keep working. Set limits on the engine, and pass a token to the new
+overload when processing needs to be cancellable:
+
+```csharp
+var limits = new RedactionLimits { MaxInputCharacters = 2_000_000, MaxDetections = 200_000 };
+var engine = SiluetaEngine.CreateDefault(limits);
+var text = TranscriptReader.Read(path, limits, cancellationToken);
+var result = engine.Redact(text, context, policy: null, cancellationToken: cancellationToken);
+```
+
+Cancellation is cooperative. Built-in detectors check during scanning and between candidates; a
+running regex match finishes or reaches its existing timeout before checking the token. Sorting and
+individual word transformations finish before their next checkpoint. Existing custom `IDetector`
+implementations work through an adapter that checks between candidates; implement its token overload
+to interrupt work inside the detector. Cancellation returns no `RedactionResult`. An in-memory vault
+can retain names minted before a later cancellation or read-back failure; CLI and MCP persist it only
+after a complete run.
 
 **What comes back** — the manifest, which travels with the corpus:
 

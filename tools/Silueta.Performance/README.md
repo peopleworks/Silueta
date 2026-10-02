@@ -53,4 +53,14 @@ confidence is unchanged, and public explanations still calculate distances beyon
 
 This addresses key reuse and bounded edit distance from F2.8. Matching still visits words × roster
 values, and this probe does not establish the cost of the full pipeline with dense overlapping
-detections. Cancellation and limits for large inputs remain separate work.
+detections. The follow-up below covers cancellation and input/candidate limits.
+
+## Follow-up: processing controls
+
+The engine now has configurable input/candidate ceilings and cooperative cancellation. The same
+15-call local probe still produces exactly the detection and output hashes above; raw results are in
+[`results/processing-limits.json`](results/processing-limits.json). The three detector cases measured
+49.8, 71.8 and 53.1 ms, with 4.14, 23.99 and 8.04 MiB allocated respectively; the full engine case
+measured 329.4 ms and 19.22 MiB. Checkpoints and iterator wrappers add work, and these local timings
+also include runtime and scheduling variation. The allocation improvements persist. Full-engine
+performance with dense overlapping detections is still unmeasured by this probe.

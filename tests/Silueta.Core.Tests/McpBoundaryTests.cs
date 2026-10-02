@@ -39,6 +39,102 @@ public sealed class McpBoundaryTests : IDisposable
         [ { "value": "Eleanor Vasquez", "kind": "PatientName", "subjectId": "patient-1" } ]
         """);
 
+    [Theory]
+    [InlineData(nameof(RedactionTools.RedactTranscript))]
+    [InlineData(nameof(RedactionTools.RedactText))]
+    public void The_protocol_binds_cancellation_without_exposing_it_or_limits_as_arguments(string methodName)
+    {
+        System.Reflection.MethodInfo method = typeof(RedactionTools).GetMethod(methodName)!;
+        var tool = ModelContextProtocol.Server.McpServerTool.Create(method);
+        System.Text.Json.JsonElement properties = tool.ProtocolTool.InputSchema.GetProperty("properties");
+        Assert.False(properties.TryGetProperty("cancellationToken", out _));
+        Assert.False(properties.TryGetProperty("maxInputCharacters", out _));
+        Assert.False(properties.TryGetProperty("maxDetections", out _));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Input_limits_are_operator_settings_and_never_echo_the_rejected_text(bool inline)
+    {
+        string? previous = Environment.GetEnvironmentVariable(RedactionTools.MaxInputCharactersVariable);
+        Environment.SetEnvironmentVariable(RedactionTools.MaxInputCharactersVariable, "8");
+        try
+        {
+            const string text = "Invented Person came in.";
+            string path = Write("oversized.txt", text);
+            Exception error = Assert.ThrowsAny<Exception>(() =>
+            {
+                if (inline) RedactionTools.RedactText(text, "r-1");
+                else RedactionTools.RedactTranscript(path, "r-1", outputPath: Path.Combine(_root, "result.txt"));
+            });
+            Assert.Contains("input characters", error.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain(text, error.ToString(), StringComparison.Ordinal);
+            Assert.False(File.Exists(Path.Combine(_root, "result.txt")));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.MaxInputCharactersVariable, previous);
+        }
+    }
+
+    [Fact]
+    public void Candidate_limits_preserve_the_existing_vault_and_output()
+    {
+        string? previous = Environment.GetEnvironmentVariable(RedactionTools.MaxDetectionsVariable);
+        Environment.SetEnvironmentVariable(RedactionTools.MaxDetectionsVariable, "1");
+        try
+        {
+            string text = Write("phones.txt", "Call 602-555-0147 or 602-555-0148 or 602-555-0149.");
+            string destination = Write("result.txt", "existing output");
+            string vaultPath = Path.Combine(_root, "vault.json");
+            new PseudonymVault().Assign("s-1", "Noa Toledo").SaveTo(vaultPath);
+            string originalVault = File.ReadAllText(vaultPath);
+            Exception error = Assert.ThrowsAny<Exception>(() =>
+                RedactionTools.RedactTranscript(text, "r-1", vaultPath: vaultPath, outputPath: destination));
+            Assert.Contains("candidate detections", error.Message, StringComparison.Ordinal);
+            Assert.Equal(originalVault, File.ReadAllText(vaultPath));
+            Assert.Equal("existing output", File.ReadAllText(destination));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.MaxDetectionsVariable, previous);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_cancelled_tool_call_writes_no_artifacts(bool inline)
+    {
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        string destination = Path.Combine(_root, "result.txt");
+        Assert.Throws<OperationCanceledException>(() =>
+        {
+            if (inline) RedactionTools.RedactText("Nothing identifying.", "r-1", cancellationToken: source.Token);
+            else RedactionTools.RedactTranscript("does-not-exist.txt", "r-1", outputPath: destination, cancellationToken: source.Token);
+        });
+        Assert.False(File.Exists(destination));
+    }
+
+    [Fact]
+    public void Invalid_limit_settings_name_the_setting_without_echoing_its_value()
+    {
+        string? previous = Environment.GetEnvironmentVariable(RedactionTools.MaxDetectionsVariable);
+        Environment.SetEnvironmentVariable(RedactionTools.MaxDetectionsVariable, "Invented Person");
+        try
+        {
+            Exception error = Assert.ThrowsAny<Exception>(() => RedactionTools.RedactText("Nothing identifying.", "r-1"));
+            Assert.Contains(RedactionTools.MaxDetectionsVariable, error.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("Invented Person", error.ToString(), StringComparison.Ordinal);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(RedactionTools.MaxDetectionsVariable, previous);
+        }
+    }
+
     [Fact]
     public void The_lineage_is_the_operators_decision_and_it_is_read_from_the_environment()
     {

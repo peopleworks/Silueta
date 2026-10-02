@@ -13,12 +13,29 @@ if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
 string command = args[0];
 Dictionary<string, string> options = Commands.ParseOptions(args.AsSpan(1));
 
-return command switch
+using var cancellation = new CancellationTokenSource();
+void CancelRedaction(object? sender, ConsoleCancelEventArgs eventArgs)
 {
-    "redact" => Commands.Redact(options, Console.Out, Console.Error),
-    "evaluate" => Commands.Evaluate(options, Console.Out, Console.Error),
-    "demo" => Commands.Demo(Console.Out),
-    "lineage" => Commands.Lineage(Console.Out),
-    "lists" => Commands.Lists(Console.Out),
-    _ => Commands.Unknown(command, Console.Out, Console.Error),
-};
+    if (command == "redact")
+    {
+        eventArgs.Cancel = true;
+        cancellation.Cancel();
+    }
+}
+Console.CancelKeyPress += CancelRedaction;
+try
+{
+    return command switch
+    {
+        "redact" => Commands.Redact(options, Console.Out, Console.Error, cancellation.Token),
+        "evaluate" => Commands.Evaluate(options, Console.Out, Console.Error),
+        "demo" => Commands.Demo(Console.Out),
+        "lineage" => Commands.Lineage(Console.Out),
+        "lists" => Commands.Lists(Console.Out),
+        _ => Commands.Unknown(command, Console.Out, Console.Error),
+    };
+}
+finally
+{
+    Console.CancelKeyPress -= CancelRedaction;
+}

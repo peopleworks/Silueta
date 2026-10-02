@@ -130,43 +130,53 @@ public sealed class PatternDetector : IDetector, IDetectorProvenance
         return new PatternDetector(rules);
     }
 
-    public IEnumerable<Detection> Detect(string text, DeidentificationContext context)
+    public IEnumerable<Detection> Detect(string text, DeidentificationContext context) =>
+        Detect(text, context, CancellationToken.None).ToList();
+
+    public IEnumerable<Detection> Detect(string text, DeidentificationContext context, CancellationToken cancellationToken)
     {
-        var results = new List<Detection>();
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(text))
         {
-            return results;
+            yield break;
         }
 
         foreach ((PatternRule rule, Regex regex, IdentifierKind kind) in _rules)
         {
-            // The timeout fires while the matches are being enumerated, not when Matches() is called,
-            // so the whole walk sits inside the guard.
-            try
+            for (Match match = Next(regex, text, null, rule.Id, cancellationToken); match.Success;
+                match = Next(regex, text, match, rule.Id, cancellationToken))
             {
-                foreach (Match match in regex.Matches(text))
+                if (match.Length > 0)
                 {
-                    if (match.Length > 0)
-                    {
-                        results.Add(new Detection(
-                            match.Index,
-                            match.Length,
-                            kind,
-                            $"{Id}:{rule.Id}",
-                            rule.Confidence,
-                            SubjectId: null,
-                            MatchKind.Pattern));
-                    }
+                    yield return new Detection(
+                        match.Index,
+                        match.Length,
+                        kind,
+                        $"{Id}:{rule.Id}",
+                        rule.Confidence,
+                        SubjectId: null,
+                        MatchKind.Pattern);
                 }
-            }
-            catch (RegexMatchTimeoutException)
-            {
-                // Caught and dropped on the floor: not rethrown, not wrapped, not logged. Everything
-                // about that object except the fact that it happened is a copy of the transcript.
-                throw new PatternPackException(rule.Id, "it exceeded its time limit on this input");
             }
         }
 
-        return results;
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private static Match Next(Regex regex, string text, Match? previous, string ruleId, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        try
+        {
+            Match next = previous is null ? regex.Match(text) : previous.NextMatch();
+            cancellationToken.ThrowIfCancellationRequested();
+            return next;
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            // Never retain the framework exception: it carries the input, even in ToString().
+            throw new PatternPackException(ruleId, "it exceeded its time limit on this input");
+        }
     }
 }

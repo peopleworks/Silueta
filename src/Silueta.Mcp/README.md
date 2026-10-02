@@ -48,6 +48,18 @@ calling a tool is not that person.
 
 ## What the server refuses
 
+Both redaction tools have resource ceilings: **1,000,000 UTF-16 input characters** and **100,000
+candidates per detection pass**, including candidates that later overlap or are kept by policy. The
+operator can override them with `SILUETA_MAX_INPUT_CHARACTERS` and `SILUETA_MAX_DETECTIONS`, each a
+positive integer. They are not tool parameters. Transcript files are read incrementally, so an
+oversized input is refused before the entire file is allocated. These ceilings do not bound roster
+or lineage files, total memory, or execution time.
+
+A limit failure or a cancellation observed during processing returns no partial redaction and writes
+no vault or output. The client's cancellation token is injected by the SDK and never appears in the
+tool schema. Cancellation is cooperative: a running regex match reaches completion or its timeout
+before observing it. Once persistence begins, the existing vault-first sequence completes.
+
 `redact_transcript` takes a path the model wrote, which is the whole attack surface. So:
 
 - every path is confined to one directory — `SILUETA_ROOT`, defaulting to where the server was started;

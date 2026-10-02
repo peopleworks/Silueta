@@ -55,13 +55,16 @@ public static partial class BirthYear
     /// Rewrites, in place, every date near a word about birth whose year could make the person 90 — as an age
     /// over 89, which Safe Harbor generalises — and adds a span for a bare year no date rule matched.
     /// </summary>
-    internal static void Reframe(string text, List<Detection> found, int referenceYear)
+    internal static void Reframe(string text, List<Detection> found, int referenceYear,
+        RedactionLimits limits, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         // Born in this year or earlier, the person may already have turned 90 by the reference date.
         int cutoff = referenceYear - 90;
 
         foreach (Match cue in CuePattern().Matches(text))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             int from = cue.Index + cue.Length;
             if (from >= text.Length)
             {
@@ -100,9 +103,10 @@ public static partial class BirthYear
             }
             else
             {
-                found.Add(new Detection(
+                limits.Add(found, new Detection(
                     at, year.Length, IdentifierKind.AgeOver89, RuleVersion, 0.99, SubjectId: null, MatchKind.Pattern));
             }
         }
+        cancellationToken.ThrowIfCancellationRequested();
     }
 }

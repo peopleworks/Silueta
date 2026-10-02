@@ -50,10 +50,13 @@ public static class RedactionTools
         [Description("Path to the vault, created if absent. Pass the same one for every transcript in a corpus so one person keeps one invented name.")]
         string? vaultPath = null,
         [Description("Where to write the redacted text. If given, the text is written there and NOT returned in the response — use this when even the redacted text should stay out of the context.")]
-        string? outputPath = null)
+        string? outputPath = null,
+        CancellationToken cancellationToken = default)
     {
-        string text = ReadTranscript(transcriptPath);
-        var context = BuildContext(recordId, rosterPath);
+        cancellationToken.ThrowIfCancellationRequested();
+        RedactionLimits limits = ConfiguredLimits();
+        string text = ReadTranscript(transcriptPath, limits, cancellationToken);
+        var context = BuildContext(recordId, rosterPath, cancellationToken);
 
         string? resolvedVault = vaultPath is { Length: > 0 } ? Resolve(vaultPath, nameof(vaultPath)) : null;
         string? resolvedOutput = outputPath is { Length: > 0 } ? Resolve(outputPath, nameof(outputPath)) : null;
@@ -75,8 +78,11 @@ public static class RedactionTools
             ? PseudonymVault.LoadOrCreate(resolvedVault, lineage.Pools)
             : new PseudonymVault(lineage.Pools);
 
-        SiluetaEngine engine = SiluetaEngine.FromLineage(lineage, vault);
-        RedactionResult result = Run(engine, text, context);
+        SiluetaEngine engine = SiluetaEngine.FromLineage(lineage, vault, limits);
+        RedactionResult result = Run(engine, text, context, cancellationToken);
+
+        // Once persistence begins, complete the existing vault-first sequence.
+        cancellationToken.ThrowIfCancellationRequested();
 
         // The vault first, before any redacted artefact exists: it has no second copy, and a run that
         // wrote the transcript and then failed to write the vault leaves a corpus nobody can trace back.
@@ -112,14 +118,22 @@ public static class RedactionTools
         [Description("An opaque id for this record. Not a name, not a file name.")]
         string recordId,
         [Description("Roster entries as \"Value|Kind|SubjectId\", e.g. \"Eleanor Vasquez|PatientName|patient-1\". Empty = pattern rules only, plus people named right after a relationship (\"my daughter Linda\"); every other name survives.")]
-        string[]? roster = null)
+        string[]? roster = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(text);
+        cancellationToken.ThrowIfCancellationRequested();
+        RedactionLimits limits = ConfiguredLimits();
+        if (text.Length > limits.MaxInputCharacters)
+        {
+            throw new McpException(new RedactionLimitException("input characters", limits.MaxInputCharacters).Message);
+        }
 
         var context = new DeidentificationContext(RequireOpaque(recordId, nameof(recordId)));
         string[] entries = roster ?? [];
         for (int i = 0; i < entries.Length; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string[] parts = entries[i].Split('|', StringSplitOptions.TrimEntries);
             if (parts.Length < 3 || parts[0].Length == 0 || parts[2].Length == 0)
             {
@@ -136,8 +150,8 @@ public static class RedactionTools
             context.AddPerson(parts[2], parts[0], ParseKind(parts[1], i + 1));
         }
 
-        SiluetaEngine engine = SiluetaEngine.FromLineage(Lineage());
-        RedactionResult result = Run(engine, text, context);
+        SiluetaEngine engine = SiluetaEngine.FromLineage(Lineage(), null, limits);
+        RedactionResult result = Run(engine, text, context, cancellationToken);
 
         return Report(result, context, vaultPath: null, outputPath: null, engine.Vault.Count);
     }
@@ -169,6 +183,30 @@ public static class RedactionTools
     /// for a policy by name and would otherwise describe the corpus wrongly.
     /// </summary>
     public const string PolicyVariable = "SILUETA_POLICY";
+
+    public const string MaxInputCharactersVariable = "SILUETA_MAX_INPUT_CHARACTERS";
+    public const string MaxDetectionsVariable = "SILUETA_MAX_DETECTIONS";
+
+    private static RedactionLimits ConfiguredLimits() => new()
+    {
+        MaxInputCharacters = ReadLimit(MaxInputCharactersVariable, RedactionLimits.Default.MaxInputCharacters),
+        MaxDetections = ReadLimit(MaxDetectionsVariable, RedactionLimits.Default.MaxDetections)
+    };
+
+    private static int ReadLimit(string variable, int fallback)
+    {
+        string? given = Environment.GetEnvironmentVariable(variable);
+        if (string.IsNullOrEmpty(given))
+        {
+            return fallback;
+        }
+        if (!int.TryParse(given, System.Globalization.NumberStyles.None,
+            System.Globalization.CultureInfo.InvariantCulture, out int value) || value <= 0)
+        {
+            throw new McpException($"{variable} must be a positive integer.");
+        }
+        return value;
+    }
 
     private static string Root =>
         Path.GetFullPath(Environment.GetEnvironmentVariable(RootVariable) is { Length: > 0 } configured
@@ -274,7 +312,8 @@ public static class RedactionTools
     /// stopped working.
     /// </para>
     /// </summary>
-    private static RedactionResult Run(SiluetaEngine engine, string text, DeidentificationContext context)
+    private static RedactionResult Run(SiluetaEngine engine, string text, DeidentificationContext context,
+        CancellationToken cancellationToken)
     {
         SiluetaPolicy policy;
         try
@@ -289,7 +328,11 @@ public static class RedactionTools
 
         try
         {
-            return engine.Redact(text, context, policy);
+            return engine.Redact(text, context, policy, cancellationToken);
+        }
+        catch (RedactionLimitException ex)
+        {
+            throw new McpException(ex.Message);
         }
         catch (ArgumentException ex)
         {
@@ -297,7 +340,7 @@ public static class RedactionTools
         }
     }
 
-    private static string ReadTranscript(string path)
+    private static string ReadTranscript(string path, RedactionLimits limits, CancellationToken cancellationToken)
     {
         string full = Resolve(path, nameof(path));
 
@@ -308,7 +351,15 @@ public static class RedactionTools
             throw new McpException($"No transcript at '{path}'.");
         }
 
-        string text = File.ReadAllText(full);
+        string text;
+        try
+        {
+            text = TranscriptReader.Read(full, limits, cancellationToken);
+        }
+        catch (RedactionLimitException ex)
+        {
+            throw new McpException(ex.Message);
+        }
 
         // The vault maps every subject to the invented name that stands for them in the corpus. Fed to
         // the tool below with no roster, nothing matched and the whole table came back to the model,
@@ -343,8 +394,9 @@ public static class RedactionTools
         }
     }
 
-    private static DeidentificationContext BuildContext(string recordId, string? rosterPath)
+    private static DeidentificationContext BuildContext(string recordId, string? rosterPath, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var context = new DeidentificationContext(RequireOpaque(recordId, nameof(recordId)));
         if (string.IsNullOrWhiteSpace(rosterPath))
         {
@@ -361,6 +413,7 @@ public static class RedactionTools
 
         for (int i = 0; i < roster.Length; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             KnownIdentifierDto entry = roster[i];
             if (string.IsNullOrWhiteSpace(entry.SubjectId))
             {

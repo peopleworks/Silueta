@@ -15,8 +15,46 @@ namespace Silueta.Cli;
 /// </summary>
 public static class Commands
 {
-    public static int Redact(IReadOnlyDictionary<string, string> options, TextWriter output, TextWriter error)
+    private static bool ReadLimit(IReadOnlyDictionary<string, string> options, string name, ref int value) =>
+        !options.TryGetValue(name, out string? given) ||
+        (int.TryParse(given, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out value)
+            && value > 0);
+
+    public static int Redact(IReadOnlyDictionary<string, string> options, TextWriter output, TextWriter error) =>
+        Redact(options, output, error, CancellationToken.None);
+
+    public static int Redact(IReadOnlyDictionary<string, string> options, TextWriter output, TextWriter error,
+        CancellationToken cancellationToken)
     {
+        try
+        {
+            return RedactCore(options, output, error, cancellationToken);
+        }
+        catch (RedactionLimitException ex)
+        {
+            error.WriteLine(ex.Message);
+            return 4;
+        }
+        catch (OperationCanceledException)
+        {
+            error.WriteLine("Redaction cancelled before writing artifacts.");
+            return 130;
+        }
+    }
+
+    private static int RedactCore(IReadOnlyDictionary<string, string> options, TextWriter output, TextWriter error,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        RedactionLimits defaults = RedactionLimits.Default;
+        int characters = defaults.MaxInputCharacters;
+        int detections = defaults.MaxDetections;
+        if (!ReadLimit(options, "max-input-chars", ref characters) || !ReadLimit(options, "max-detections", ref detections))
+        {
+            error.WriteLine("--max-input-chars and --max-detections must be positive integers.");
+            return 2;
+        }
+        var limits = new RedactionLimits { MaxInputCharacters = characters, MaxDetections = detections };
         if (!options.TryGetValue("in", out string? inputPath) || !File.Exists(inputPath))
         {
             error.WriteLine("silueta redact needs --in <transcript.txt>.");
@@ -34,7 +72,7 @@ public static class Commands
             return 2;
         }
 
-        string text = File.ReadAllText(inputPath);
+        string text = TranscriptReader.Read(inputPath, limits, cancellationToken);
         var context = new DeidentificationContext(recordId);
 
         if (options.TryGetValue("context", out string? contextPath))
@@ -50,6 +88,7 @@ public static class Commands
 
             for (int i = 0; i < known.Length; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 KnownIdentifierDto dto = known[i];
 
                 // No falling back to the name. It used to, and that made the subject id — the key the vault
@@ -136,8 +175,12 @@ public static class Commands
             ? new PseudonymVault(lineage.Pools)
             : PseudonymVault.LoadOrCreate(vaultPath, lineage.Pools);
 
-        var engine = SiluetaEngine.FromLineage(lineage, vault);
-        RedactionResult result = engine.Redact(text, context, policy);
+        var engine = SiluetaEngine.FromLineage(lineage, vault, limits);
+        RedactionResult result = engine.Redact(text, context, policy, cancellationToken);
+
+        // Once persistence starts, finish the existing vault-first sequence. A cancellation observed
+        // during processing must not leave a manifest or transcript that looks like a complete run.
+        cancellationToken.ThrowIfCancellationRequested();
 
         // The vault is written FIRST, before any redacted artefact exists. It is the only thing that can
         // undo the work and the only thing with no second copy: a run that wrote the redacted transcript and
@@ -427,6 +470,10 @@ public static class Commands
                   --policy   A policy the lineage defines, by name. Without it, Safe
                              Harbor. A policy that keeps what Safe Harbor removes is
                              written into the manifest, departure by departure.
+                  --max-input-chars  Positive UTF-16 character ceiling (default 1000000).
+                  --max-detections   Positive candidate ceiling per pass (default 100000).
+                  Ctrl+C cancels processing. Limits fail the whole run, never truncate it.
+                  Exit 4: resource limit; exit 130: cancelled before writing artifacts.
 
               silueta lineage
 

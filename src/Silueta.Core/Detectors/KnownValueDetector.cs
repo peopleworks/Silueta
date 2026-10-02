@@ -38,22 +38,26 @@ public sealed class KnownValueDetector : IDetector, IDetectorProvenance
 
     public IReadOnlyList<string> RulesSkipped => [];
 
-    public IEnumerable<Detection> Detect(string text, DeidentificationContext context)
+    public IEnumerable<Detection> Detect(string text, DeidentificationContext context) =>
+        Detect(text, context, CancellationToken.None).ToList();
+
+    public IEnumerable<Detection> Detect(string text, DeidentificationContext context, CancellationToken cancellationToken)
     {
-        var results = new List<Detection>();
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(text) || context.Known.Count == 0)
         {
-            return results;
+            yield break;
         }
 
-        List<Token> tokens = Tokenizer.Tokenize(text);
-        string[] keys = PhoneticKey.ComputeAll(tokens);
+        List<Token> tokens = Tokenizer.Tokenize(text, cancellationToken);
+        string[] keys = PhoneticKey.ComputeAll(tokens, cancellationToken);
 
         var targets = new List<Target>();
         foreach (KnownIdentifier known in context.Known)
         {
-            List<Token> valueTokens = Tokenizer.Tokenize(known.Value);
-            string[] parts = PhoneticKey.ComputeAll(valueTokens);
+            cancellationToken.ThrowIfCancellationRequested();
+            List<Token> valueTokens = Tokenizer.Tokenize(known.Value, cancellationToken);
+            string[] parts = PhoneticKey.ComputeAll(valueTokens, cancellationToken);
             if (parts.Length > 0 && Array.TrueForAll(parts, static p => p.Length > 0))
             {
                 // Where the roster value itself has sentence punctuation between two words — "St. Mary" —
@@ -71,8 +75,10 @@ public sealed class KnownValueDetector : IDetector, IDetectorProvenance
 
         for (int i = 0; i < tokens.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             foreach (Target target in targets)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 int words = target.Keys.Length;
                 if (i + words > tokens.Count)
                 {
@@ -96,18 +102,18 @@ public sealed class KnownValueDetector : IDetector, IDetectorProvenance
                 // Read locally to decide how the match happened; it does not travel on the detection.
                 string matched = text[start..end];
 
-                results.Add(new Detection(
+                yield return new Detection(
                     start,
                     end - start,
                     target.Known.Kind,
                     Id,
                     score,
                     target.Known.SubjectId,
-                    Classify(matched, target.Known.Value, score)));
+                    Classify(matched, target.Known.Value, score));
             }
         }
 
-        return results;
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     /// <summary>

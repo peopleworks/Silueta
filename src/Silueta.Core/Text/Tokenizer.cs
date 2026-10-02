@@ -37,8 +37,11 @@ public static class Tokenizer
     /// either form, so the two spellings meet there.
     /// </para>
     /// </summary>
-    public static List<Token> Tokenize(string text)
+    public static List<Token> Tokenize(string text) => Tokenize(text, CancellationToken.None);
+
+    public static List<Token> Tokenize(string text, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var tokens = new List<Token>();
         if (string.IsNullOrEmpty(text))
         {
@@ -47,8 +50,14 @@ public static class Tokenizer
 
         int start = -1;
         int i = 0;
+        int nextCheck = 0;
         while (i < text.Length)
         {
+            if (i >= nextCheck)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                nextCheck = i + 1_024;
+            }
             // An unpaired surrogate is not a rune at all. It is treated as one code unit that is not a word
             // character, which ends the word it follows: damaged input should break a name apart, not the
             // loop that is reading it.
@@ -84,6 +93,7 @@ public static class Tokenizer
             tokens.Add(new Token(start, text.Length - start, text[start..]));
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return tokens;
     }
 

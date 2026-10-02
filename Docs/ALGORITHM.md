@@ -118,6 +118,30 @@ explanation overload still measures rejected pairs beyond the budget. The rules 
 are unchanged; [the cost probe](../tools/Silueta.Performance/README.md) records time, allocation and
 hashes of the ordered detections, including confidence, separately from the published leak rate.
 
+**Resource ceilings and cancellation.** Each engine has `RedactionLimits`: 1,000,000 input UTF-16
+characters and 100,000 raw candidates per pass by default, configurable to positive integers. The
+input check happens before relatives, detectors or vault changes. Every candidate, including one
+below the policy floor or of a kept kind, uses the ceiling; birth-year and spoken-digit rules share
+it. The read-back pass has its own count. Crossing a ceiling throws `RedactionLimitException`, with
+only the resource name and limit. No truncated result or success manifest is produced. These are
+admission and candidate ceilings, not bounds on total memory, roster size or run duration.
+
+The original `Redact` and detector methods remain available. The engine's token overload checks through
+tokenization, phonetic-key preparation, matching, overlap resolution, replacement, read-back and before
+returning. Built-in detectors stream candidates for that overload so the engine can stop collecting
+at the ceiling; their original overloads still materialize the list. A default `IDetector` adapter
+checks around enumeration for older custom detectors, which must implement the overload themselves
+to interrupt internal work. Regex matches, sorting and a single word's normalization cannot be
+preempted: cancellation is observed at the next checkpoint, with the pack's regex timeout unchanged.
+
+CLI and MCP use `TranscriptReader` to count decoded characters while reading, preserving BOM encoding
+detection and the caller's exact text. CLI limits are flags; MCP limits belong to the operator's
+environment and cannot be chosen in a tool call. Cancellation or a ceiling failure during processing
+produces no disk artifact. A final checkpoint separates processing from persistence: once writes
+begin, the established vault-first sequence finishes. The engine's caller-owned in-memory vault can
+retain assignments minted before a later cancellation or failure; this is not a transaction rollback.
+Neither these controls nor their defaults change a detection rule or its fingerprint.
+
 **One rule deliberately absent:** Spanish `ll` is *not* mapped to the y-sound. Doing it buys `Guillermo`
 ≈ `Giyermo` and costs `Ellenor` ≈ `Eleanor`, and English doubled letters are judged more common in this
 corpus than Spanish *ll*. It is a trade, it is measurable, and nobody has measured it: the corpus that

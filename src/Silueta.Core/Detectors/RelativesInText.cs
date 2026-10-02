@@ -75,17 +75,23 @@ public static class RelativesInText
     }
 
     /// <summary>The people this text names through a relationship, in reading order. Candidates only.</summary>
-    public static IReadOnlyList<NamedRelative> NamedIn(string text, QuasiIdentifierVocabulary? vocabulary = null)
+    public static IReadOnlyList<NamedRelative> NamedIn(string text, QuasiIdentifierVocabulary? vocabulary = null) =>
+        NamedIn(text, vocabulary, CancellationToken.None);
+
+    public static IReadOnlyList<NamedRelative> NamedIn(string text, QuasiIdentifierVocabulary? vocabulary,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(text);
+        cancellationToken.ThrowIfCancellationRequested();
         vocabulary ??= QuasiIdentifierVocabulary.Default;
 
         var kinship = new HashSet<string>(vocabulary.Kinship.Select(Fold), StringComparer.Ordinal);
-        List<Token> tokens = Tokenizer.Tokenize(text);
+        List<Token> tokens = Tokenizer.Tokenize(text, cancellationToken);
         var found = new List<NamedRelative>();
 
         for (int i = 0; i + 1 < tokens.Count; i++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             string relation = Fold(tokens[i].Text);
             if (!kinship.Contains(relation))
             {
@@ -123,6 +129,7 @@ public static class RelativesInText
                 NotFamily.Contains(relation) ? IdentifierKind.OtherName : IdentifierKind.FamilyName));
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return found;
     }
 

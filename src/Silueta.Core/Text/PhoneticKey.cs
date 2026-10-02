@@ -154,10 +154,21 @@ public static class PhoneticKey
     /// <summary>The key of a whole phrase, one word at a time, joined by spaces.</summary>
     public static string[] ComputeAll(IEnumerable<Token> tokens)
     {
-        var keys = new List<string>();
+        var keys = new List<string>(tokens.TryGetNonEnumeratedCount(out int count) ? count : 0);
+        // A transcript repeats its vocabulary. Keep that work within this call: a static cache would
+        // retain words from identified records after the caller had finished with them.
+        var cache = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (Token token in tokens)
         {
-            keys.Add(Compute(token.Text));
+            // A default Token has null text; Compute has always treated it as an empty word.
+            string word = token.Text ?? string.Empty;
+            if (!cache.TryGetValue(word, out string? key))
+            {
+                key = Compute(word);
+                cache.Add(word, key);
+            }
+
+            keys.Add(key);
         }
 
         return keys.ToArray();

@@ -80,7 +80,19 @@ public sealed record MatchTolerance
     }
 
     /// <inheritdoc cref="Accepts(string, string, out int, out int)"/>
-    public bool Accepts(string a, string b) => Accepts(a, b, out _, out _);
+    public bool Accepts(string a, string b) => Accepts(a, b, out _);
+
+    /// <summary>The detector needs an exact distance only for accepted keys, to score them. Explanations
+    /// use the public overload above, which still measures rejected keys beyond the budget.</summary>
+    internal bool Accepts(string a, string b, out int distance)
+    {
+        ArgumentNullException.ThrowIfNull(a);
+        ArgumentNullException.ThrowIfNull(b);
+
+        int budget = BudgetFor(Math.Min(a.Length, b.Length));
+        distance = Similarity.DistanceWithin(a, b, budget);
+        return distance <= budget;
+    }
 
     /// <summary>
     /// A digest of the rule, for the manifest. Two corpora redacted with different budgets were

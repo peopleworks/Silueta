@@ -11,7 +11,8 @@ namespace Silueta.Core;
 /// </para>
 /// <para>
 /// Cost is words × known values. A four-hour shift is on the order of 40,000 words and a record has a few
-/// dozen known values, so this is a few million key comparisons — milliseconds, and no model to load.
+/// dozen known values, so this is a few million key comparisons. Keys are reused within a call and edit
+/// distance stops at the matching budget; the reproducible cost probe lives in tools/Silueta.Performance.
 /// </para>
 /// </summary>
 public sealed class KnownValueDetector : IDetector, IDetectorProvenance
@@ -164,7 +165,7 @@ public sealed class KnownValueDetector : IDetector, IDetectorProvenance
                 continue;
             }
 
-            if (numeric || !_tolerance.Accepts(found, wanted))
+            if (numeric || !_tolerance.Accepts(found, wanted, out int distance))
             {
                 return 0;
             }
@@ -172,7 +173,7 @@ public sealed class KnownValueDetector : IDetector, IDetectorProvenance
             // The confidence still says how close, in the same units it always did; what changed is who
             // decides. A budget of one edit on a four-character key is 0.75, which is the least confident
             // a match can now be and still be one, and it clears the policy's floor of 0.7.
-            weakest = Math.Min(weakest, Similarity.Ratio(found, wanted));
+            weakest = Math.Min(weakest, 1.0 - (double)distance / Math.Max(found.Length, wanted.Length));
         }
 
         return weakest;

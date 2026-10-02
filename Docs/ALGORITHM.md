@@ -109,6 +109,15 @@ cannot inherit an allowance from whatever long word it met. `MatchTolerance` is 
 this rule, its digest goes into the manifest, and `explain_name_match` quotes its numbers rather than
 working them out again.
 
+**The cost of comparing keys.** Within one call, repeated spellings reuse their phonetic key; nothing
+is cached across records. The detector computes edit distance only inside the band permitted by the
+budget and stops when no path can still fit it. With at most two edits, each rolling row needs at most
+five integers on the stack, rather than a heap array for every word–roster comparison. An accepted
+distance is still exact and is reused for confidence instead of calculated a second time. The public
+explanation overload still measures rejected pairs beyond the budget. The rules and their fingerprints
+are unchanged; [the cost probe](../tools/Silueta.Performance/README.md) records time, allocation and
+hashes of the ordered detections, including confidence, separately from the published leak rate.
+
 **One rule deliberately absent:** Spanish `ll` is *not* mapped to the y-sound. Doing it buys `Guillermo`
 ≈ `Giyermo` and costs `Ellenor` ≈ `Eleanor`, and English doubled letters are judged more common in this
 corpus than Spanish *ll*. It is a trade, it is measurable, and nobody has measured it: the corpus that

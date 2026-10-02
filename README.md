@@ -707,6 +707,7 @@ claim than "PII redaction", and it is the one this repository can defend.
 | `corpus-synthetic/` | The gold corpus the published number is measured on. Synthetic, and nothing real is ever committed. |
 | `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |
 | `tools/Silueta.Calibration` | Re-measures this build against that corpus and writes both copies of the number: the JSON embedded in `Silueta.Core`, and the table above. |
+| [`tools/Silueta.Performance`](tools/Silueta.Performance/README.md) | Reproducible synthetic probes of matching time and managed allocation, with detection hashes to check that an optimization finds the same spans. |
 | `src/Silueta.Web` | The browser demo, deployed to GitHub Pages. One page, no server, no HTTP client. |
 | `tests/Silueta.Core.Tests` | The tests — including the ones that hold this README's demo and numbers to the code. |
 | `Docs/` | `ALGORITHM.md`, every decision and what it costs; and the brand. |

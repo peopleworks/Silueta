@@ -1,0 +1,51 @@
+{
+  "runtime": ".NET 10.0.10",
+  "architecture": "X64",
+  "processors": 16,
+  "configuration": "Release",
+  "iterations": 15,
+  "warmups": 2,
+  "rosterValues": 30,
+  "measurements": [
+    {
+      "name": "detector/repeated",
+      "words": 40000,
+      "characters": 344999,
+      "medianMs": 88.8994,
+      "medianAllocatedBytes": 96057584,
+      "detections": 0,
+      "detectionSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "outputSha256": null
+    },
+    {
+      "name": "detector/distinct",
+      "words": 40000,
+      "characters": 399999,
+      "medianMs": 99.7048,
+      "medianAllocatedBytes": 93644744,
+      "detections": 0,
+      "detectionSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "outputSha256": null
+    },
+    {
+      "name": "detector/matches",
+      "words": 40000,
+      "characters": 298177,
+      "medianMs": 94.1354,
+      "medianAllocatedBytes": 103890856,
+      "detections": 32727,
+      "detectionSha256": "fd97bb8969af74885d26db93fd6c14ada5b5c52e2fdb26209688e84184d48674",
+      "outputSha256": null
+    },
+    {
+      "name": "engine/repeated",
+      "words": 40000,
+      "characters": 344999,
+      "medianMs": 421.8992,
+      "medianAllocatedBytes": 203546416,
+      "detections": 0,
+      "detectionSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "outputSha256": "7ea38889f2b2c5bb0652485095c119d60c72d4d72db57f7153c35d6edb681590"
+    }
+  ]
+}

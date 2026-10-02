@@ -231,6 +231,12 @@ gets hold of it.
 Those invented names, and the labels around them, come from a **lineage** — see below. Nothing about the
 words is compiled in.
 
+The public API and stored-file contracts, migration from preview.3, and vault writer coordination are
+documented in [Docs/COMPATIBILITY.md](Docs/COMPATIBILITY.md). A vault save now refuses to discard
+assignments made by another run. CLI reports this with exit 5; MCP returns a tool error. Reload the
+vault and repeat the complete operation before emitting output. Its empty `.lock` sidecar stays in
+place and can be reused after the writer closes or exits.
+
 ## Bring your own dictionaries: the lineage
 
 A clinic, a call centre and a law firm do not redact the same things, do not speak the same language, and
@@ -740,6 +746,7 @@ claim than "PII redaction", and it is the one this repository can defend.
 | `tools/corpus/` | How that corpus was made: scripts, voices, degradation, Whisper, alignment and its review. |
 | `tools/Silueta.Calibration` | Re-measures this build against that corpus and writes both copies of the number: the JSON embedded in `Silueta.Core`, and the table above. |
 | [`tools/Silueta.Performance`](tools/Silueta.Performance/README.md) | Reproducible synthetic probes of matching and full-pipeline cost, including dense overlaps, surrogate minting and ambiguous attribution; result hashes guard equivalent output. |
+| `tools/Silueta.PersistenceProbe` | Cross-process vault checks: contention, process-death recovery, stale saves and reload/retry. |
 | `src/Silueta.Web` | The browser demo, deployed to GitHub Pages. One page, no server, no HTTP client. |
 | `tests/Silueta.Core.Tests` | The tests — including the ones that hold this README's demo and numbers to the code. |
 | `Docs/` | `ALGORITHM.md`, every decision and what it costs; and the brand. |

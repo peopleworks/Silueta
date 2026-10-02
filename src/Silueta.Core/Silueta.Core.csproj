@@ -23,6 +23,11 @@
     <RepositoryUrl>https://github.com/peopleworks/Silueta</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- Public API compatibility against the last published package, including named arguments.
+         This downloads a validation baseline; it is not a dependency of the shipped library. -->
+    <EnablePackageValidation>true</EnablePackageValidation>
+    <PackageValidationBaselineVersion>0.3.0-preview.3</PackageValidationBaselineVersion>
+    <ApiCompatEnableRuleCannotChangeParameterName>true</ApiCompatEnableRuleCannotChangeParameterName>
   </PropertyGroup>
 
   <ItemGroup>

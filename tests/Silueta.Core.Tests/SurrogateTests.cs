@@ -328,6 +328,7 @@ public class SurrogateTests
         finally
         {
             File.Delete(path);
+            File.Delete(path + ".lock");
         }
     }
 

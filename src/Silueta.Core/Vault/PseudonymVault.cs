@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text;
 
 namespace Silueta.Core;
 
@@ -286,10 +287,18 @@ public sealed class PseudonymVault
     public static PseudonymVault FromJson(string json, SurrogatePools? pools = null)
     {
         var vault = new PseudonymVault(pools);
-        VaultFile? file = JsonSerializer.Deserialize(json, SiluetaJsonContext.Default.VaultFile);
-        if (file is null)
+        VaultFile file;
+        try
         {
-            return vault;
+            using JsonDocument document = JsonDocument.Parse(json);
+            ValidateEnvelope(document.RootElement);
+            file = JsonSerializer.Deserialize(document.RootElement, SiluetaJsonContext.Default.VaultFile)
+                ?? throw InvalidFile();
+        }
+        catch (JsonException)
+        {
+            // JSON diagnostics can include property names copied from this private file.
+            throw InvalidFile();
         }
 
         if (file.Version != FileVersion)
@@ -298,23 +307,20 @@ public sealed class PseudonymVault
             // config — became a valid, empty vault. Paired with an atomic writer that then replaced the
             // file, one mistyped path re-minted every surrogate and destroyed whatever the file was.
             throw new InvalidOperationException(
-                file.Version.Length == 0
-                    ? "This is not a vault: it carries no version. Refusing, rather than reading it as an " +
-                      "empty one, because the next thing that happens is a vault being written over it."
-                    : $"This vault is version '{file.Version}'; this build reads version {FileVersion}. " +
-                      "Version 1 stored only the re-identification code, not the invented name, so the two " +
-                      "cannot be reconciled automatically — redact the corpus again with a new vault.");
+                "Unsupported or missing vault version. This build reads version 2. Version 1 stored " +
+                "only the re-identification code, not the invented name; use a new vault and redact again.");
         }
 
         foreach ((string subjectId, VaultEntry entry) in file.Subjects)
         {
-            if (string.IsNullOrWhiteSpace(entry.Pseudonym))
+            if (string.IsNullOrWhiteSpace(subjectId) || entry is null ||
+                string.IsNullOrWhiteSpace(entry.Pseudonym) || entry.Retired is null ||
+                !vault._bySubject.TryAdd(entry.Pseudonym, subjectId))
             {
-                continue;
+                throw InvalidFile();
             }
 
             vault._codes[subjectId] = entry.Pseudonym;
-            vault._bySubject[entry.Pseudonym] = subjectId;
 
             if (!string.IsNullOrWhiteSpace(entry.Surrogate))
             {
@@ -324,11 +330,15 @@ public sealed class PseudonymVault
                 // so the vault would cheerfully hand the same name to a second subject.
                 string stored = entry.Surrogate.Trim();
                 vault._surrogates[subjectId] = stored;
-                vault.Remember(stored, subjectId);
+                vault.RememberStored(stored, subjectId);
             }
 
-            foreach (string retired in entry.Retired.Where(name => !string.IsNullOrWhiteSpace(name)))
+            foreach (string retired in entry.Retired)
             {
+                if (string.IsNullOrWhiteSpace(retired))
+                {
+                    throw InvalidFile();
+                }
                 string stored = retired.Trim();
                 if (!vault._retired.TryGetValue(subjectId, out List<string>? history))
                 {
@@ -336,7 +346,7 @@ public sealed class PseudonymVault
                 }
 
                 history.Add(stored);
-                vault.Remember(stored, subjectId);
+                vault.RememberStored(stored, subjectId);
             }
         }
 
@@ -349,20 +359,81 @@ public sealed class PseudonymVault
     public static PseudonymVault LoadOrCreate(string path, SurrogatePools? pools = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-        return File.Exists(path) ? FromJson(File.ReadAllText(path), pools) : new PseudonymVault(pools);
+        string? json = ReadStored(path);
+        return json is null ? new PseudonymVault(pools) : FromJson(json, pools);
     }
 
-    /// <summary>Whether this text is a vault this build wrote. Asked before overwriting a file.</summary>
-    private static bool IsAVault(string text)
+    private static string? ReadStored(string path)
     {
         try
         {
-            return JsonSerializer.Deserialize(text, SiluetaJsonContext.Default.VaultFile)?.Version == FileVersion;
+            // A reader holds one complete generation while a writer can atomically rename the next.
+            // File.Exists would also report false for some access errors; only absence means empty.
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+            return reader.ReadToEnd();
         }
-        catch (JsonException)
+        catch (FileNotFoundException) { return null; }
+        catch (DirectoryNotFoundException) { return null; }
+    }
+
+    private static InvalidOperationException InvalidFile() => new(
+        "Invalid vault file: version 2 requires an object of subjects with nonempty unique codes " +
+        "and invented names belonging to only one subject. No entries were loaded.");
+
+    private static void ValidateEnvelope(JsonElement root)
+    {
+        if (root.ValueKind != JsonValueKind.Object)
         {
-            return false;
+            throw InvalidFile();
         }
+        var properties = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        bool hasSubjects = false;
+        foreach (JsonProperty property in root.EnumerateObject())
+        {
+            if (!properties.Add(property.Name))
+            {
+                throw InvalidFile();
+            }
+            if (!property.Name.Equals("subjects", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+            hasSubjects = true;
+            if (property.Value.ValueKind != JsonValueKind.Object)
+            {
+                throw InvalidFile();
+            }
+            var subjects = new HashSet<string>(StringComparer.Ordinal);
+            foreach (JsonProperty subject in property.Value.EnumerateObject())
+            {
+                if (!subjects.Add(subject.Name) || subject.Value.ValueKind != JsonValueKind.Object)
+                {
+                    throw InvalidFile();
+                }
+                var fields = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (JsonProperty field in subject.Value.EnumerateObject())
+                {
+                    if (!fields.Add(field.Name))
+                    {
+                        throw InvalidFile();
+                    }
+                }
+            }
+        }
+        if (!hasSubjects)
+        {
+            throw InvalidFile();
+        }
+    }
+
+    private void RememberStored(string name, string subjectId)
+    {
+        if (_bySurrogate.TryGetValue(name, out string? owner) && owner != subjectId)
+        {
+            throw InvalidFile();
+        }
+        Remember(name, subjectId);
     }
 
     /// <summary>
@@ -374,33 +445,94 @@ public sealed class PseudonymVault
     /// entitled to identify them. There is no second copy by design.
     /// </para>
     /// </summary>
+    /// <exception cref="VaultWriteConflictException">Another writer holds the sidecar, or the proposed
+    /// state would discard stored assignments/history. Reload and repeat the complete operation.</exception>
     public void SaveTo(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
-
-        // Refuse to replace something that is not a vault. The atomic write below is careful about
-        // interruption and says nothing about aim: pointed at the wrong file, it destroyed it perfectly.
-        if (File.Exists(path) && !IsAVault(File.ReadAllText(path)))
+        string fullPath = Path.GetFullPath(path);
+        string directory = Path.GetDirectoryName(fullPath)!;
+        Directory.CreateDirectory(directory);
+        // Keep the empty sidecar: removing it lets a Unix waiter lock the old inode while a third
+        // writer locks a newly-created one. The handle, rather than the file's presence, is the lock.
+        using FileStream writerLock = AcquireWriter(fullPath + ".lock");
+        string? stored = ReadStored(fullPath);
+        if (stored is not null)
         {
-            throw new InvalidOperationException(
-                $"'{path}' exists and is not a vault this build wrote. Refusing to replace it — a vault has " +
-                "no second copy, and neither, probably, does that file.");
+            EnsurePreserves(FromJson(stored, Pools));
         }
 
-        string directory = Path.GetDirectoryName(Path.GetFullPath(path)) ?? ".";
-        Directory.CreateDirectory(directory);
-
-        string temporary = Path.Combine(directory, $".{Path.GetFileName(path)}.{Guid.NewGuid():N}.tmp");
-        File.WriteAllText(temporary, ToJson());
-
+        string temporary = Path.Combine(directory, $".{Path.GetFileName(fullPath)}.{Guid.NewGuid():N}.tmp");
         try
         {
-            File.Move(temporary, path, overwrite: true);
+            using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write,
+                FileShare.None, 4_096, FileOptions.WriteThrough))
+            {
+                using (var writer = new StreamWriter(stream, new UTF8Encoding(false), leaveOpen: true))
+                {
+                    writer.Write(ToJson());
+                }
+                stream.Flush(flushToDisk: true);
+            }
+            File.Move(temporary, fullPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
+    }
+
+    private static FileStream AcquireWriter(string lockPath)
+    {
+        FileStream stream;
+        try
+        {
+            stream = new FileStream(lockPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        catch (IOException)
+        {
+            throw new VaultWriteConflictException();
+        }
+        try
+        {
+            // A pre-existing data file is not our empty writer sidecar.
+            if (stream.Length != 0) throw new VaultWriteConflictException();
+            return stream;
         }
         catch
         {
-            File.Delete(temporary);
+            stream.Dispose();
             throw;
+        }
+    }
+
+    private void EnsurePreserves(PseudonymVault stored)
+    {
+        foreach ((string subject, string code) in stored._codes)
+        {
+            if (!_codes.TryGetValue(subject, out string? proposed) || proposed != code)
+            {
+                throw new VaultWriteConflictException();
+            }
+        }
+        foreach ((string name, string owner) in stored._bySurrogate)
+        {
+            if (!_bySurrogate.TryGetValue(name, out string? proposed) || proposed != owner)
+            {
+                throw new VaultWriteConflictException();
+            }
+        }
+        // A name already retired must stay retired, not become current through a stale save.
+        foreach ((string subject, List<string> history) in stored._retired)
+        {
+            if (!_retired.TryGetValue(subject, out List<string>? proposed) ||
+                history.Any(name => !proposed.Contains(name, StringComparer.OrdinalIgnoreCase)))
+            {
+                throw new VaultWriteConflictException();
+            }
         }
     }
 

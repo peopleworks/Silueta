@@ -40,6 +40,11 @@ public static class Commands
             error.WriteLine("Redaction cancelled before writing artifacts.");
             return 130;
         }
+        catch (VaultWriteConflictException ex)
+        {
+            error.WriteLine(ex.Message);
+            return 5;
+        }
     }
 
     private static int RedactCore(IReadOnlyDictionary<string, string> options, TextWriter output, TextWriter error,
@@ -55,6 +60,11 @@ public static class Commands
             return 2;
         }
         var limits = new RedactionLimits { MaxInputCharacters = characters, MaxDetections = detections };
+        if (!PersistencePathsAreDistinct(options))
+        {
+            error.WriteLine("Vault, vault lock, output and manifest paths must be distinct from each other and from input/configuration files.");
+            return 2;
+        }
         if (!options.TryGetValue("in", out string? inputPath) || !File.Exists(inputPath))
         {
             error.WriteLine("silueta redact needs --in <transcript.txt>.");
@@ -234,6 +244,25 @@ public static class Commands
         }
 
         return 0;
+    }
+
+    private static bool PersistencePathsAreDistinct(IReadOnlyDictionary<string, string> options)
+    {
+        StringComparer comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var sources = new HashSet<string>(comparer);
+        foreach (string key in new[] { "in", "context", "lineage" })
+        {
+            if (options.TryGetValue(key, out string? path)) sources.Add(Path.GetFullPath(path));
+        }
+        var destinations = new HashSet<string>(comparer);
+        foreach (string key in new[] { "vault", "out", "manifest" })
+        {
+            if (!options.TryGetValue(key, out string? path)) continue;
+            string full = Path.GetFullPath(path);
+            if (sources.Contains(full) || !destinations.Add(full)) return false;
+            if (key == "vault" && (sources.Contains(full + ".lock") || !destinations.Add(full + ".lock"))) return false;
+        }
+        return true;
     }
 
     /// <summary>
@@ -474,6 +503,8 @@ public static class Commands
                   --max-detections   Positive candidate ceiling per pass (default 100000).
                   Ctrl+C cancels processing. Limits fail the whole run, never truncate it.
                   Exit 4: resource limit; exit 130: cancelled before writing artifacts.
+                  Exit 5: vault write conflict; reload and repeat the complete operation.
+                  Output, manifest, vault and lock paths must not alias input/config files.
 
               silueta lineage
 

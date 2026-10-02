@@ -65,10 +65,12 @@ public static class RedactionTools
         // the work, and it is one typo away when the model writes both paths.
         if (resolvedVault is not null &&
             (string.Equals(resolvedVault, Resolve(transcriptPath, nameof(transcriptPath)), StringComparison.OrdinalIgnoreCase) ||
-             string.Equals(resolvedVault, resolvedOutput, StringComparison.OrdinalIgnoreCase)))
+             string.Equals(resolvedVault, resolvedOutput, StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(resolvedVault + ".lock", Resolve(transcriptPath, nameof(transcriptPath)), StringComparison.OrdinalIgnoreCase) ||
+             string.Equals(resolvedVault + ".lock", resolvedOutput, StringComparison.OrdinalIgnoreCase)))
         {
             throw new McpException(
-                "The vault cannot also be the transcript or the output. It is the only artefact that can " +
+                "The vault and its writer lock cannot also be the transcript or the output. The vault is the only artefact that can " +
                 "undo this work and there is no second copy of it.");
         }
 
@@ -88,7 +90,14 @@ public static class RedactionTools
         // wrote the transcript and then failed to write the vault leaves a corpus nobody can trace back.
         if (resolvedVault is not null)
         {
-            vault.SaveTo(resolvedVault);
+            try
+            {
+                vault.SaveTo(resolvedVault);
+            }
+            catch (VaultWriteConflictException ex)
+            {
+                throw new McpException(ex.Message);
+            }
         }
 
         // Nothing is written when the run did not hold. On disk with a warning beside it is a file

@@ -1,5 +1,11 @@
 # Silueta.Mcp
 
+Vault saves preserve every existing code/name/history association. A busy or stale writer returns a
+sanitized tool error before any output is written; reload and repeat the complete operation. Reserve
+the adjacent empty `<vault-path>.lock` file and leave it in place while the vault is in use. The file's
+presence alone does not hold a lock. See [compatibility and persistence](../../Docs/COMPATIBILITY.md)
+for the supported writer model and migration from preview.3.
+
 The [Silueta](https://github.com/peopleworks/Silueta) de-identification engine as an MCP server:
 four tools for Claude Desktop, Claude Code, VS Code, or any Model Context Protocol client.
 

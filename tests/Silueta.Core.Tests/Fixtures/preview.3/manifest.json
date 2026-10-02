@@ -1,0 +1,56 @@
+{
+  "recordId": "fixture-r1",
+  "policy": "safe-harbor",
+  "policyVersion": "0.3",
+  "policyFingerprint": "f8a3e4af18df78a5",
+  "lineage": "compat-fixture",
+  "lineageVersion": "1",
+  "lineageLanguage": "es-MX",
+  "lineageFingerprint": "0522668f6a7bde6d",
+  "lineageKeysSkipped": [],
+  "surrogatesUnavailable": [],
+  "engineVersion": "0.3.0.0",
+  "runUtc": "2026-09-22T00:00:00+00:00",
+  "textLength": 41,
+  "subjects": 1,
+  "byKind": {
+    "PatientName": 1,
+    "City": 1,
+    "Phone": 1
+  },
+  "byDetector": {
+    "known-value": 2,
+    "pattern:fixture-phone": 1
+  },
+  "byMatch": {
+    "Exact": 2,
+    "Pattern": 1
+  },
+  "residualSpans": 0,
+  "inputSha256": "38e0909071c883ab0a3e5a159d33a46b19990287f226b2bbce8a454196012f86",
+  "outputSha256": "3ae6ac41c97a99d0c0e9f83938edb1da19dee47014c6a0e3ed7f4ab0c047c929",
+  "detectorFingerprints": {
+    "known-value": "1e5061904f98fea1",
+    "pattern": "4a95ba109581b728"
+  },
+  "detectorRulesLoaded": {
+    "known-value": 1,
+    "pattern": 1
+  },
+  "detectorRulesSkipped": {
+    "known-value": [],
+    "pattern": []
+  },
+  "keptKinds": [
+    "State"
+  ],
+  "measuredLeakRate": "Measured on silueta-tts-asr (10 tts-asr/clean, 10 tts-asr/noisy-phone, 10 tts-asr/phone), 2026-09-22, engine 0.3.0.0: 83.3% of 30 transcripts (95% CI 66.4%\u201392.7%) left something of a kind this build has a way to find, and 86.7% of 30 transcripts (95% CI 70.3%\u201394.7%) left something of any kind the annotators marked. That is this build\u0027s rate on that corpus, not this run\u0027s.",
+  "ambiguousAttributions": 0,
+  "unrosteredPeople": 0,
+  "relativesRule": "kinship/1 61a8db65716b008a",
+  "ageReference": "2026-09-22 (record date)",
+  "birthYearRule": "birth-year/1 e3e723fc949bc677",
+  "spokenDigitsRule": "spoken-digits/2 813ce9eff23e0933",
+  "departuresFromSafeHarbor": [],
+  "postalCodeTable": "zip3/census-2020 7b115ccec7ba11ab"
+}

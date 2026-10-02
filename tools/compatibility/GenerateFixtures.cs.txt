@@ -1,0 +1,42 @@
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Silueta.Core;
+
+string destination = args[0];
+Directory.CreateDirectory(destination);
+const string lineageJson = """
+{
+  "lineage": "compat-fixture", "version": "1", "language": "es-MX",
+  "pools": { "given": ["Ale", "Noa"], "family": ["Bravo"] },
+  "labels": { "PatientName": "[PERSON]", "City": "[CITY]" },
+  "generalizations": { "AgeOver89": "90 or older" },
+  "values": { "City": ["Mesa"] },
+  "lists": { "fixture-road": ["calle", "avenida"] },
+  "patterns": [{ "id": "fixture-phone", "kind": "Phone", "regex": "\\b555-\\d{4}\\b", "confidence": 0.9 }],
+  "policies": { "review": { "version": "1", "minConfidence": 0.7, "actions": { "StaffName": "Keep" } } }
+}
+""";
+SiluetaLineage lineage = SiluetaLineage.FromJson(lineageJson);
+var vault = new PseudonymVault(lineage.Pools).Assign("s-1", "Ale Bravo");
+vault.Remint("s-1", static _ => false);
+JsonNode vaultJson = JsonNode.Parse(vault.ToJson())!;
+vaultJson["subjects"]!["s-1"]!["pseudonym"] = "SIL-00000000000000000000000000000001";
+vault = PseudonymVault.FromJson(vaultJson.ToJsonString(), lineage.Pools);
+var context = new DeidentificationContext("fixture-r1") { RecordedOn = new DateOnly(2026, 9, 22) };
+context.AddPerson("s-1", "Sofia Reyes", IdentifierKind.PatientName);
+const string source = "Sofia Reyes moved to Mesa. Call 555-0147.";
+RedactionResult result = SiluetaEngine.FromLineage(lineage, vault).Redact(source, context);
+if (result.Residue.Count != 0) throw new InvalidOperationException("Fixture has residue.");
+result.Manifest.RunUtc = new DateTimeOffset(2026, 9, 22, 0, 0, 0, TimeSpan.Zero);
+void Write(string name, string content) => File.WriteAllText(Path.Combine(destination, name), content + "\n", new UTF8Encoding(false));
+Write("vault-v2.json", vault.ToJson());
+Write("lineage.json", lineageJson);
+Write("manifest.json", JsonSerializer.Serialize(result.Manifest, SiluetaJsonContext.Default.RedactionManifest));
+Write("input.txt", source);
+Write("output.txt", result.Text);
+Write("fingerprints.json", JsonSerializer.Serialize(new {
+    lineage = lineage.Fingerprint, policy = lineage.Policy("review").Fingerprint,
+    defaultPolicy = result.Manifest.PolicyFingerprint,
+    detectors = result.Manifest.DetectorFingerprints }, new JsonSerializerOptions { WriteIndented = true }));
+Console.WriteLine($"Generated with packaged Core {typeof(PseudonymVault).Assembly.GetName().Version}: {result.Text}");

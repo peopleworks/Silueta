@@ -50,6 +50,55 @@ public sealed class CliTests : IDisposable
     private int Redact(params string[] arguments) =>
         Commands.Redact(Commands.ParseOptions(arguments), _output, _error);
 
+    [Theory]
+    [InlineData("out", false)]
+    [InlineData("manifest", false)]
+    [InlineData("out", true)]
+    [InlineData("manifest", true)]
+    public void Artifacts_cannot_overwrite_the_vault_or_its_writer_lock(string destinationKey, bool lockFile)
+    {
+        string input = Write("alias-input.txt", "Nothing identifying here.");
+        string vault = Path("alias-vault.json");
+        new PseudonymVault().Assign("s-1", "Ale Bravo").SaveTo(vault);
+        string committed = File.ReadAllText(vault);
+        Assert.Equal(2, Redact("--in", input, "--record", "r-alias", "--vault", vault,
+            "--" + destinationKey, lockFile ? vault + ".lock" : vault));
+        Assert.Equal(committed, File.ReadAllText(vault));
+        Assert.Equal(0, new FileInfo(vault + ".lock").Length);
+        Assert.Equal("", _output.ToString());
+    }
+
+    [Fact]
+    public void The_manifest_and_output_cannot_be_the_same_file()
+    {
+        string input = Write("pair-input.txt", "Nothing identifying here.");
+        string destination = Write("pair-output.txt", "existing output");
+        Assert.Equal(2, Redact("--in", input, "--record", "r-pair", "--out", destination, "--manifest", destination));
+        Assert.Equal("existing output", File.ReadAllText(destination));
+    }
+
+    [Fact]
+    public void A_vault_write_conflict_emits_no_transcript_or_manifest()
+    {
+        string input = Write("busy-input.txt", "Ellenor Vasques rested well.");
+        string roster = Roster("busy-roster.json", [Person("patient-1", "Eleanor Vasquez", IdentifierKind.PatientName)]);
+        string vault = Path("busy-vault.json");
+        new PseudonymVault().Assign("patient-1", "Ale Bravo").SaveTo(vault);
+        string committed = File.ReadAllText(vault);
+        string destination = Write("busy-output.txt", "existing output");
+        string manifest = Write("busy-manifest.json", "existing manifest");
+        using var held = new FileStream(vault + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        Assert.Equal(5, Redact("--in", input, "--record", "r-busy", "--context", roster,
+            "--vault", vault, "--out", destination, "--manifest", manifest));
+        Assert.Equal(committed, File.ReadAllText(vault));
+        Assert.Equal("existing output", File.ReadAllText(destination));
+        Assert.Equal("existing manifest", File.ReadAllText(manifest));
+        Assert.Equal("", _output.ToString());
+        Assert.Contains("repeat the complete operation", _error.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("Ellenor", _error.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void An_input_limit_failure_preserves_all_existing_artifacts()
     {

@@ -41,6 +41,12 @@ jobs:
       - name: Test
         run: dotnet test Silueta.slnx -c Release --no-build --nologo
 
+      - name: The Core package preserves the published API
+        run: dotnet pack src/Silueta.Core -c Release --no-build --nologo -o artifacts/packages
+
+      - name: Vault writers preserve assignments across processes
+        run: dotnet run --project tools/Silueta.PersistenceProbe -c Release --no-build
+
       # Synthetic dense-overlap fixtures must stay reproducible and residue-free. This checks the
       # results across warmups/calls; elapsed time is reported without an environment-specific gate.
       - name: The performance fixtures stay stable and residue-free

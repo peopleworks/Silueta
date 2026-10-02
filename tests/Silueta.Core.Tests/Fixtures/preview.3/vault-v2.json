@@ -1,0 +1,12 @@
+{
+  "version": "2",
+  "subjects": {
+    "s-1": {
+      "pseudonym": "SIL-00000000000000000000000000000001",
+      "surrogate": "Noa Bravo",
+      "retired": [
+        "Ale Bravo"
+      ]
+    }
+  }
+}

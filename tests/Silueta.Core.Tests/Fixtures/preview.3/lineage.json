@@ -1,0 +1,10 @@
+{
+  "lineage": "compat-fixture", "version": "1", "language": "es-MX",
+  "pools": { "given": ["Ale", "Noa"], "family": ["Bravo"] },
+  "labels": { "PatientName": "[PERSON]", "City": "[CITY]" },
+  "generalizations": { "AgeOver89": "90 or older" },
+  "values": { "City": ["Mesa"] },
+  "lists": { "fixture-road": ["calle", "avenida"] },
+  "patterns": [{ "id": "fixture-phone", "kind": "Phone", "regex": "\\b555-\\d{4}\\b", "confidence": 0.9 }],
+  "policies": { "review": { "version": "1", "minConfidence": 0.7, "actions": { "StaffName": "Keep" } } }
+}

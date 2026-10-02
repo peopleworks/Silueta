@@ -40,6 +40,66 @@ public sealed class McpBoundaryTests : IDisposable
         """);
 
     [Theory]
+    [InlineData("redact_transcript", "outputPath,recordId,rosterPath,transcriptPath,vaultPath", "recordId,transcriptPath")]
+    [InlineData("redact_text", "recordId,roster,text", "recordId,text")]
+    [InlineData("explain_name_match", "a,b,kind", "a,b")]
+    [InlineData("list_pattern_rules", "kind", "")]
+    public void Existing_tool_names_arguments_and_required_fields_remain_compatible(
+        string name, string arguments, string required)
+    {
+        System.Reflection.MethodInfo method = name switch
+        {
+            "redact_transcript" => typeof(RedactionTools).GetMethod(nameof(RedactionTools.RedactTranscript))!,
+            "redact_text" => typeof(RedactionTools).GetMethod(nameof(RedactionTools.RedactText))!,
+            "explain_name_match" => typeof(MatchingTools).GetMethod(nameof(MatchingTools.ExplainNameMatch))!,
+            _ => typeof(MatchingTools).GetMethod(nameof(MatchingTools.ListPatternRules))!
+        };
+        var tool = ModelContextProtocol.Server.McpServerTool.Create(method).ProtocolTool;
+        Assert.Equal(name, tool.Name);
+        System.Text.Json.JsonElement properties = tool.InputSchema.GetProperty("properties");
+        foreach (string argument in arguments.Split(','))
+        {
+            Assert.True(properties.TryGetProperty(argument, out _), $"Missing argument '{argument}'.");
+        }
+        string actualRequired = tool.InputSchema.TryGetProperty("required", out var fields)
+            ? string.Join(',', fields.EnumerateArray().Select(field => field.GetString()).Order(StringComparer.Ordinal)) : "";
+        // New optional arguments are additive; making one mandatory breaks existing calls.
+        Assert.Equal(required, actualRequired);
+    }
+
+    [Fact]
+    public void The_output_cannot_overwrite_the_vault_writer_lock()
+    {
+        string transcript = Write("lock-input.txt", "Ellenor Vasques rested well.");
+        string vault = Path.Combine(_root, "lock-vault.json");
+        new PseudonymVault().Assign("patient-1", "Ale Bravo").SaveTo(vault);
+        string committed = File.ReadAllText(vault);
+        Assert.Throws<ModelContextProtocol.McpException>(() =>
+            RedactionTools.RedactTranscript(transcript, "r-lock", Roster(), vault, vault + ".lock"));
+        Assert.Equal(committed, File.ReadAllText(vault));
+        Assert.Equal(0, new FileInfo(vault + ".lock").Length);
+    }
+
+    [Fact]
+    public void A_vault_write_conflict_is_a_sanitized_tool_error_and_preserves_output()
+    {
+        string transcript = Write("busy-input.txt", "Ellenor Vasques rested well.");
+        string vault = Path.Combine(_root, "busy-vault.json");
+        new PseudonymVault().Assign("patient-1", "Ale Bravo").SaveTo(vault);
+        string committed = File.ReadAllText(vault);
+        string destination = Write("busy-output.txt", "existing output");
+        using var held = new FileStream(vault + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+
+        var error = Assert.Throws<ModelContextProtocol.McpException>(() =>
+            RedactionTools.RedactTranscript(transcript, "r-busy", Roster(), vault, destination));
+        Assert.Equal(committed, File.ReadAllText(vault));
+        Assert.Equal("existing output", File.ReadAllText(destination));
+        Assert.Contains("repeat the complete operation", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Ellenor", error.ToString(), StringComparison.Ordinal);
+        Assert.Null(error.InnerException);
+    }
+
+    [Theory]
     [InlineData(nameof(RedactionTools.RedactTranscript))]
     [InlineData(nameof(RedactionTools.RedactText))]
     public void The_protocol_binds_cancellation_without_exposing_it_or_limits_as_arguments(string methodName)

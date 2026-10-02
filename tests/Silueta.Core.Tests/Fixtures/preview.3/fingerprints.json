@@ -1,0 +1,9 @@
+{
+  "lineage": "0522668f6a7bde6d",
+  "policy": "9c76f6dfe1379796",
+  "defaultPolicy": "f8a3e4af18df78a5",
+  "detectors": {
+    "known-value": "1e5061904f98fea1",
+    "pattern": "4a95ba109581b728"
+  }
+}

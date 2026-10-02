@@ -339,7 +339,7 @@ public sealed partial class SiluetaEngine
         {
             cancellationToken.ThrowIfCancellationRequested();
             sb.Append(text, cursor, detection.Start - cursor);
-            sb.Append(Replacement(detection, text, WouldBeFound, policy, unavailable));
+            sb.Append(Replacement(detection, text, WouldBeFound, policy, unavailable, cancellationToken));
             cursor = detection.End;
 
             if (detection.SubjectId is { Length: > 0 } subjectId && subjects.Add(subjectId))
@@ -724,14 +724,15 @@ public sealed partial class SiluetaEngine
     /// <summary>The original text is read here, from the transcript the caller passed in, rather than
     /// carried on the detection: see <see cref="Detection"/> for why that matters.</summary>
     private string Replacement(
-        Detection detection, string source, Func<string, bool> wouldBeFound, SiluetaPolicy policy, ISet<string> unavailable)
+        Detection detection, string source, Func<string, bool> wouldBeFound, SiluetaPolicy policy,
+        ISet<string> unavailable, CancellationToken cancellationToken)
     {
         string original = detection.TextIn(source);
 
         return policy.ActionFor(detection.Kind) switch
         {
             RedactionAction.Surrogate when detection.SubjectId is { Length: > 0 } subjectId =>
-                SurrogateOrLabel(detection.Kind, subjectId, original, wouldBeFound, unavailable),
+                SurrogateOrLabel(detection.Kind, subjectId, original, wouldBeFound, unavailable, cancellationToken),
             RedactionAction.YearOnly => YearOf(original),
             RedactionAction.Generalize => Generalized(detection.Kind, original),
             RedactionAction.Keep => original,
@@ -754,7 +755,8 @@ public sealed partial class SiluetaEngine
     /// </para>
     /// </summary>
     private string SurrogateOrLabel(
-        IdentifierKind kind, string subjectId, string original, Func<string, bool> wouldBeFound, ISet<string> unavailable)
+        IdentifierKind kind, string subjectId, string original, Func<string, bool> wouldBeFound,
+        ISet<string> unavailable, CancellationToken cancellationToken)
     {
         if (!Vault.TryGetSurrogate(subjectId, out _) && !Vault.Pools.Has(kind))
         {
@@ -762,7 +764,8 @@ public sealed partial class SiluetaEngine
             return LabelFor(kind);
         }
 
-        return Vault.Pools.Fit(Vault.SurrogateFor(subjectId, kind, wouldBeFound), Tokenizer.Tokenize(original).Count);
+        return Vault.Pools.Fit(Vault.SurrogateFor(subjectId, kind, wouldBeFound),
+            Tokenizer.CountUpTo(original, 2, cancellationToken));
     }
 
     /// <summary>Safe Harbor keeps the year and nothing finer. A date with no year loses everything. The shape

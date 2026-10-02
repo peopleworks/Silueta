@@ -5,6 +5,83 @@ namespace Silueta.Core.Tests;
 public class MatchingCostTests
 {
     [Fact]
+    public void Repeated_replacements_do_not_materialize_words_for_every_mention()
+    {
+        const int mentions = 10_000;
+        const string phrase = "Carmen Alvarez. ";
+        string source = string.Concat(Enumerable.Repeat(phrase, mentions));
+        Detection[] matches = Enumerable.Range(0, mentions)
+            .Select(i => new Detection(i * phrase.Length, 14, IdentifierKind.PatientName,
+                "fixture", 1, "subject-1", MatchKind.Exact)).ToArray();
+        var vault = new PseudonymVault().Assign("subject-1", "Ale Bravo");
+        var engine = new SiluetaEngine([new FixtureDetector(source, matches)], vault);
+        var context = new DeidentificationContext("allocation-fixture");
+        engine.Redact(source, context);
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        RedactionResult result = engine.Redact(source, context);
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(mentions, result.Applied.Count);
+        Assert.Empty(result.Residue);
+        Assert.Equal(string.Concat(Enumerable.Repeat("Ale Bravo. ", mentions)), result.Text);
+        Assert.True(allocated < 9_500_000, $"Replacing {mentions:N0} mentions allocated {allocated:N0} bytes.");
+    }
+
+    private sealed class FixtureDetector(string source, Detection[] matches) : IDetector
+    {
+        public string Id => "fixture";
+        public IEnumerable<Detection> Detect(string text, DeidentificationContext context) =>
+            ReferenceEquals(text, source) ? matches : [];
+    }
+
+    [Theory]
+    [InlineData("Sofi\u0301a")]
+    [InlineData("\U00010400\U00010428")]
+    [InlineData("Na'vi")]
+    [InlineData("Ana‐Maria")]
+    [InlineData("O’Neil")]
+    [InlineData("Ab-7")]
+    [InlineData("Ana--Maria")]
+    [InlineData("Ana\U0001F600Maria")]
+    [InlineData("Ana\ud800Maria")]
+    [InlineData("\u0301")]
+    [InlineData(" - ' ")]
+    [InlineData("  Ana Maria  ")]
+    public void Replacement_word_shape_uses_the_tokenizers_unicode_and_joiner_rules(string mention)
+    {
+        AssertReplacementShape(mention);
+    }
+
+    [Fact]
+    public void Replacement_word_shape_agrees_with_tokenization_for_mixed_unicode_sequences()
+    {
+        string[] pieces = ["Ana", "7", "\u0301", "\U00010400", "\U0001F600", "\ud800", " ",
+            "'", "’", "-", "‐", ".", "\n", "ماريا"];
+        var random = new Random(73);
+        for (int i = 0; i < 500; i++)
+        {
+            string mention = string.Concat(Enumerable.Range(0, random.Next(1, 20))
+                .Select(_ => pieces[random.Next(pieces.Length)]));
+            AssertReplacementShape(mention);
+        }
+    }
+
+    private static void AssertReplacementShape(string mention)
+    {
+        var pools = new SurrogatePools(["María José"], ["De la Cruz"]);
+        var vault = new PseudonymVault(pools).Assign("subject-1", "María José De la Cruz");
+        Detection[] matches = [new(0, mention.Length, IdentifierKind.PatientName,
+            "fixture", 1, "subject-1", MatchKind.Exact)];
+        var engine = new SiluetaEngine([new FixtureDetector(mention, matches)], vault);
+
+        RedactionResult result = engine.Redact(mention, new DeidentificationContext("word-shape"));
+
+        Assert.Equal(pools.Fit("María José De la Cruz", Tokenizer.Tokenize(mention).Count), result.Text);
+        Assert.Empty(result.Residue);
+    }
+
+    [Fact]
     public void The_fast_verdict_agrees_with_full_distance_across_edit_budgets()
     {
         MatchTolerance[] tolerances = [MatchTolerance.Default,

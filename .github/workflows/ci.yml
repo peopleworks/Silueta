@@ -41,6 +41,11 @@ jobs:
       - name: Test
         run: dotnet test Silueta.slnx -c Release --no-build --nologo
 
+      # Synthetic dense-overlap fixtures must stay reproducible and residue-free. This checks the
+      # results across warmups/calls; elapsed time is reported without an environment-specific gate.
+      - name: The performance fixtures stay stable and residue-free
+        run: dotnet run --project tools/Silueta.Performance -c Release --no-build -- --iterations 1
+
       # The canary. Every name and number below is in the demo's input; none may survive into its
       # output. A refactor that silently disables a detector passes the unit tests far more easily
       # than it passes this, because this reads the artefact a user sees.

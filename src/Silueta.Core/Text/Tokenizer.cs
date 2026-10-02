@@ -41,13 +41,28 @@ public static class Tokenizer
 
     public static List<Token> Tokenize(string text, CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
         var tokens = new List<Token>();
+        Scan(text, tokens, int.MaxValue, cancellationToken);
+        return tokens;
+    }
+
+    /// <summary>Counts only as far as the caller needs, using the same word boundaries without
+    /// creating token strings or a list. Replacement fitting only distinguishes one word from many.</summary>
+    internal static int CountUpTo(string text, int limit, CancellationToken cancellationToken)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(limit, 1);
+        return Scan(text, null, limit, cancellationToken);
+    }
+
+    private static int Scan(string text, List<Token>? tokens, int limit, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
         if (string.IsNullOrEmpty(text))
         {
-            return tokens;
+            return 0;
         }
 
+        int count = 0;
         int start = -1;
         int i = 0;
         int nextCheck = 0;
@@ -81,8 +96,13 @@ public static class Tokenizer
             }
             else if (start >= 0)
             {
-                tokens.Add(new Token(start, i - start, text[start..i]));
+                tokens?.Add(new Token(start, i - start, text[start..i]));
                 start = -1;
+                if (++count == limit)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    return count;
+                }
             }
 
             i += width;
@@ -90,11 +110,12 @@ public static class Tokenizer
 
         if (start >= 0)
         {
-            tokens.Add(new Token(start, text.Length - start, text[start..]));
+            tokens?.Add(new Token(start, text.Length - start, text[start..]));
+            count++;
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        return tokens;
+        return count;
     }
 
     /// <summary>Whether a letter or digit follows at <paramref name="index"/>, so a joiner has a word on

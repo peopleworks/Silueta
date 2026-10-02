@@ -19,6 +19,7 @@ silueta evaluate --gold corpus-synthetic --out report.json
   "source": "readme-demo",             // where the text came from; reports break results down by it
   "language": "en",
   "speaker": null,                     // for splits by speaker, when a corpus has them
+  "recordedOn": "2026-10-02",          // optional fixed age reference; missing = day of evaluation
   "text": "Shift report. Sophia Rays was with …",
   "roster": [                          // who the document is about, as the organisation writes them
     { "value": "Sofía Reyes", "kind": "StaffName", "subjectId": "staff-1" }
@@ -35,6 +36,10 @@ silueta evaluate --gold corpus-synthetic --out report.json
 The loader refuses, by file and position and never by quoting the text: a span outside the text, a kind
 it cannot read, a span with no annotator, a roster entry with no `subjectId`, two documents with one id.
 Each of those would still produce a number, which is why each is an error.
+
+New evaluation documents should set `recordedOn` so birth-year handling is reproducible. Existing
+files without it keep their previous run-date behavior. Preparation of a separate challenge set and
+blind reviewer packets is documented in [`tools/blind-evaluation`](../tools/blind-evaluation/README.md).
 
 ## What the numbers mean, and do not
 

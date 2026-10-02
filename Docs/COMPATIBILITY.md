@@ -116,6 +116,11 @@ check on the exact packages that await approval, and includes their hashes and v
 with the artifacts. This complements API validation by exercising bundled resources, tool entry
 points, historical files and the MCP protocol outside the repository.
 
+Gold-corpus documents may now include an optional `recordedOn` date (`yyyy-MM-dd`). The evaluator
+uses it as the age reference, matching normal engine contexts. Missing dates retain the previous
+run-date behavior. Existing `GoldDocument` constructors/deconstruction remain unchanged; its new
+`RecordedOn` property is additive. New blinded evaluation sets should freeze a record date.
+
 ## Migrating from preview.3
 
 Existing valid version-2 vaults and lineage files remain usable. Preserve their files and retired names;

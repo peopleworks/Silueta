@@ -55,6 +55,9 @@ jobs:
       - name: Test
         run: dotnet test Silueta.slnx -c Release --nologo
 
+      - name: Blind annotation preparation rejects invalid or changed data
+        run: python3 -B -m unittest discover -s tools/blind-evaluation -p 'test_*.py'
+
       - name: Pack
         run: |
           dotnet pack src/Silueta.Core -c Release -o out

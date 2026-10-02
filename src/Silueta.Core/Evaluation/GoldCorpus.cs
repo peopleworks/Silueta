@@ -30,6 +30,9 @@ public sealed record GoldDocument(
     IReadOnlyList<GoldRosterEntry> Roster,
     IReadOnlyList<GoldSpan> Spans)
 {
+    /// <summary>Optional fixed age reference for reproducible evaluation. Legacy documents use run date.</summary>
+    public DateOnly? RecordedOn { get; init; }
+
     /// <summary>The distinct annotators of this document, in a stable order.</summary>
     public IReadOnlyList<string> Annotators =>
         [.. Spans.Select(span => span.Annotator).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
@@ -37,7 +40,7 @@ public sealed record GoldDocument(
     /// <summary>The roster as the engine takes it. The record id is the document id, which is not a name.</summary>
     public DeidentificationContext ToContext()
     {
-        var context = new DeidentificationContext(DocumentId);
+        var context = new DeidentificationContext(DocumentId) { RecordedOn = RecordedOn };
         foreach (GoldRosterEntry entry in Roster)
         {
             context.AddPerson(entry.SubjectId, entry.Value, entry.Kind);
@@ -183,7 +186,7 @@ public sealed class GoldCorpus
             string.IsNullOrWhiteSpace(file.Speaker) ? null : file.Speaker.Trim(),
             file.Text,
             roster,
-            spans);
+            spans) { RecordedOn = file.RecordedOn };
     }
 }
 

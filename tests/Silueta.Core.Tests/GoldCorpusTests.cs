@@ -49,6 +49,20 @@ public sealed class GoldCorpusTests : IDisposable
         Assert.Equal("a", document.Spans.Single().Annotator);
     }
 
+    [Fact]
+    public void A_record_date_controls_the_evaluation_instead_of_the_day_it_runs()
+    {
+        Write("dated.json", """
+            { "documentId": "dated-1", "source": "synthetic", "recordedOn": "2000-06-01",
+              "text": "Born in 1930.", "roster": [], "spans": [] }
+            """);
+        GoldCorpus corpus = GoldCorpus.Load(_directory);
+        Assert.Equal(new DateOnly(2000, 6, 1), corpus.Documents.Single().ToContext().RecordedOn);
+        // At the record date this is age 70; replacing its year today would be over-redaction.
+        var report = Evaluation.Run(corpus, EvaluationConfiguration.Silueta);
+        Assert.Equal(0, report.Configurations.Single().OverRedactedCharacters);
+    }
+
     [Theory]
     [InlineData("""{ "source": "s", "text": "x", "spans": [], "roster": [] }""", "documentId")]
     [InlineData("""{ "documentId": "g", "text": "x", "spans": [], "roster": [] }""", "source")]

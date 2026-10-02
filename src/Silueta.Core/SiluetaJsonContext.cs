@@ -90,6 +90,8 @@ public sealed class GoldDocumentFile
 {
     public string DocumentId { get; set; } = string.Empty;
 
+    public DateOnly? RecordedOn { get; set; }
+
     public string Source { get; set; } = string.Empty;
 
     public string? Language { get; set; }

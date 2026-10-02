@@ -41,6 +41,9 @@ jobs:
       - name: Test
         run: dotnet test Silueta.slnx -c Release --no-build --nologo
 
+      - name: Blind annotation preparation rejects invalid or changed data
+        run: python3 -B -m unittest discover -s tools/blind-evaluation -p 'test_*.py'
+
       # Core pack includes the published API baseline check. Then consume the same three artifacts
       # from outside the repository, without project references or any shared NuGet/tool cache.
       - name: Pack all three packages

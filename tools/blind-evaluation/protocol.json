@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "studyId": "assisted-redaction-pilot-1",
+  "scope": "assisted redaction with human review before sharing",
+  "phase": "synthetic challenge preparation; no release decision",
+  "documents": 24,
+  "recordedOn": "2026-10-02",
+  "perScenario": 4,
+  "languagesPerScenario": { "en": 2, "es": 2 },
+  "scenarios": ["common-words", "aliases", "roles", "continuity", "patterns", "roster-gaps"],
+  "kinds": ["Other", "PatientName", "FamilyName", "StaffName", "OtherName", "Phone", "Email", "Url", "IpAddress", "Address", "PostalCode", "Date", "AgeOver89", "RecordNumber", "AccountNumber", "DeviceId", "Organization", "Product", "ClientName", "City", "State"],
+  "numericReleaseCriteria": null
+}

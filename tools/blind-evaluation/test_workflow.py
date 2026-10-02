@@ -1,0 +1,141 @@
+import copy
+import json
+from pathlib import Path
+import tempfile
+import unittest
+import zipfile
+
+import workflow as w
+
+
+class BlindWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix="silueta-blind-tests-")
+        self.root = Path(self.temp.name)
+        self.protocol = w.load(w.PROTOCOL)
+        self.data = {"studyId": self.protocol["studyId"], "provenance": {
+            "authorId": "fixture-author", "authorType": "model", "synthetic": True,
+            "consultedImplementation": False, "consultedEngineOutput": False}, "documents": []}
+        for scenario in self.protocol["scenarios"]:
+            for language in ("en", "es"):
+                for index in range(2):
+                    key = f"fixture-{scenario}-{language}-{index}"
+                    self.data["documents"].append({"documentId": key, "caseGroup": key,
+                        "scenario": scenario, "language": language, "source": "synthetic-manual",
+                        "recordedOn": self.protocol["recordedOn"], "text": "🩺 Sofia rested. Sofia slept.", "roster": []})
+        self.input = self.root / "input.json"
+        w.write(self.input, self.data)
+        self.package = self.root / "fixture.nupkg"
+        with zipfile.ZipFile(self.package, "w") as archive:
+            archive.writestr("tools/net10.0/any/Silueta.Core.dll", b"fixture-core-not-a-real-assembly")
+            archive.writestr("tools/net10.0/any/silueta.dll", b"fixture-cli-not-a-real-assembly")
+        self.study = self.root / "study"
+        self.lock = w.freeze(self.input, self.study, self.package, "a" * 40)
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def review(self, reviewer="review-a", spans=None):
+        return {"studySha256": self.lock["studySha256"], "reviewerId": reviewer, "reviewerType": "model",
+                "blind": True, "documents": [{"documentId": d["documentId"], "complete": True,
+                    "notes": "", "spans": copy.deepcopy(spans or [])} for d in self.data["documents"]]}
+
+    def check(self, value):
+        path = self.root / "review.json"
+        w.write(path, value)
+        return w.annotation(self.study, path)
+
+    def test_freeze_cannot_replace_an_existing_study(self):
+        with self.assertRaises(FileExistsError):
+            w.freeze(self.input, self.study, self.package, "a" * 40)
+
+    def test_text_tampering_is_rejected_before_annotation(self):
+        data = w.load(self.study / "candidates.json")
+        data["documents"][0]["text"] += " Altered."
+        w.write(self.study / "candidates.json", data)
+        with self.assertRaisesRegex(ValueError, "Frozen study content changed"):
+            self.check(self.review())
+
+    def test_packet_hides_intent_answers_and_engine(self):
+        output = self.root / "packet"
+        w.packet(self.study, output, "review-a")
+        self.assertEqual({"documents.json", "annotations.json", "ANNOTATION.md"}, {p.name for p in output.iterdir()})
+        doc = w.load(output / "documents.json")["documents"][0]
+        self.assertNotIn("scenario", doc)
+        self.assertNotIn("caseGroup", doc)
+        self.assertNotIn("spans", doc)
+        with self.assertRaisesRegex(ValueError, "incomplete"):
+            w.annotation(self.study, output / "annotations.json")
+
+    def test_candidates_cannot_contain_answer_keys(self):
+        self.data["documents"][0]["spans"] = []
+        with self.assertRaisesRegex(ValueError, "Unexpected document"):
+            w.candidates(self.data, self.protocol)
+
+    def test_author_cannot_be_its_own_blind_reviewer(self):
+        with self.assertRaisesRegex(ValueError, "differ"):
+            w.packet(self.study, self.root / "packet", "fixture-author")
+
+    def test_explicit_completed_negatives_are_accepted(self):
+        self.assertEqual(24, len(self.check(self.review())["documents"]))
+
+    def test_missing_document_cannot_be_counted_as_a_negative(self):
+        review = self.review()
+        review["documents"].pop()
+        with self.assertRaisesRegex(ValueError, "Every document"):
+            self.check(review)
+
+    def test_utf16_offsets_handle_emoji_and_repeated_mentions(self):
+        text = self.data["documents"][0]["text"]
+        first, second = text.index("Sofia"), text.rindex("Sofia")
+        spans = [{"start": len(text[:p].encode("utf-16-le")) // 2, "length": 5,
+                  "kind": "PatientName", "quote": "Sofia"} for p in (first, second)]
+        self.check(self.review(spans=spans))
+        bad = self.review(spans=[{**spans[0], "start": first}])
+        with self.assertRaisesRegex(ValueError, "quote"):
+            self.check(bad)
+
+    def test_span_cannot_split_a_surrogate_pair(self):
+        with self.assertRaisesRegex(ValueError, "splits a Unicode"):
+            self.check(self.review(spans=[{"start": 0, "length": 1, "kind": "Other", "quote": "x"}]))
+
+    def test_duplicate_spans_and_wrong_study_are_rejected(self):
+        span = {"start": 3, "length": 5, "kind": "PatientName", "quote": "Sofia"}
+        with self.assertRaisesRegex(ValueError, "Duplicate annotated span"):
+            self.check(self.review(spans=[span, span]))
+        review = self.review()
+        review["studySha256"] = "0" * 64
+        with self.assertRaisesRegex(ValueError, "different study"):
+            self.check(review)
+
+    def test_disagreements_are_not_merged_into_gold(self):
+        a, b = self.root / "a.json", self.root / "b.json"
+        w.write(a, self.review("review-a", [{"start": 3, "length": 5, "kind": "PatientName", "quote": "Sofia"}]))
+        w.write(b, self.review("review-b"))
+        result = w.compare(self.study, a, b)
+        self.assertEqual(24, result["disagreements"])
+        self.assertEqual("pre-adjudication-not-gold", result["stage"])
+        self.assertTrue(all("spans" not in d for d in result["documents"]))
+        self.assertNotIn("Sofia", json.dumps(result))
+        w.write(b, self.review("review-a"))
+        with self.assertRaisesRegex(ValueError, "different reviewers"):
+            w.compare(self.study, a, b)
+
+    def test_duplicate_json_fields_are_not_silently_overwritten(self):
+        path = self.root / "duplicate.json"
+        path.write_text('{"text":"private-marker","text":"other"}')
+        with self.assertRaisesRegex(ValueError, "Duplicate JSON") as failure:
+            w.load(path)
+        self.assertNotIn("private-marker", str(failure.exception))
+
+    def test_subjects_cannot_cross_case_groups_or_change_identity(self):
+        for value in ("Fixture Name", "Different Name"):
+            data = copy.deepcopy(self.data)
+            data["documents"][0]["roster"] = [{"value": "Fixture Name", "kind": "PatientName", "subjectId": "p-1"}]
+            data["documents"][1]["roster"] = [{"value": value, "kind": "PatientName", "subjectId": "p-1"}]
+            with self.assertRaisesRegex(ValueError, "changed identity or crossed"):
+                w.candidates(data, self.protocol)
+
+
+if __name__ == "__main__":
+    unittest.main()

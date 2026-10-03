@@ -99,6 +99,55 @@ public sealed class CliTests : IDisposable
         Assert.DoesNotContain("Ellenor", _error.ToString(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("null")]
+    [InlineData("{ \"version\": \"2\", \"subjects\": ")]
+    [InlineData("{ \"version\": \"2\", \"subjects\": { \"a\": { \"pseudonym\": \"P-1\" }, \"a\": { \"pseudonym\": \"P-2\" } } }")]
+    public void A_vault_that_cannot_be_read_is_refused_with_exit_2_before_anything_is_written(string stored)
+    {
+        string input = Write("invalid-vault-input.txt", "Ellenor Vasques rested well.");
+        string roster = Roster("invalid-vault-roster.json", [Person("patient-1", "Eleanor Vasquez", IdentifierKind.PatientName)]);
+        string vault = Write("invalid-vault.json", stored);
+        Assert.Equal(2, Redact("--in", input, "--record", "r-invalid", "--context", roster,
+            "--vault", vault, "--out", Path("invalid-output.txt"), "--manifest", Path("invalid-manifest.json")));
+        Assert.Equal(stored, File.ReadAllText(vault));
+        Assert.False(File.Exists(Path("invalid-output.txt")));
+        Assert.False(File.Exists(Path("invalid-manifest.json")));
+        Assert.Equal("", _output.ToString());
+        Assert.Contains("vault", _error.ToString(), StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Ellenor", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_vault_path_that_is_a_directory_is_refused_with_exit_2()
+    {
+        string input = Write("directory-vault-input.txt", "Nothing identifying here.");
+        string vault = Path("directory-vault.json");
+        Directory.CreateDirectory(vault);
+        Assert.Equal(2, Redact("--in", input, "--record", "r-directory", "--vault", vault, "--out", Path("directory-output.txt")));
+        Assert.True(Directory.Exists(vault));
+        Assert.False(File.Exists(Path("directory-output.txt")));
+        Assert.Equal("", _output.ToString());
+    }
+
+    [Fact]
+    public void A_vault_that_cannot_be_written_is_exit_2_and_nothing_else_is_written()
+    {
+        // The vault's folder is a file. Depending on the platform this fails when the vault is read or when
+        // it is saved; either way the run stops before the manifest and the transcript.
+        string input = Write("unwritable-vault-input.txt", "Ellenor Vasques rested well.");
+        string roster = Roster("unwritable-vault-roster.json", [Person("patient-1", "Eleanor Vasquez", IdentifierKind.PatientName)]);
+        string notAFolder = Write("not-a-folder", "a file");
+        Assert.Equal(2, Redact("--in", input, "--record", "r-unwritable", "--context", roster,
+            "--vault", System.IO.Path.Combine(notAFolder, "vault.json"),
+            "--out", Path("unwritable-output.txt"), "--manifest", Path("unwritable-manifest.json")));
+        Assert.Equal("a file", File.ReadAllText(notAFolder));
+        Assert.False(File.Exists(Path("unwritable-output.txt")));
+        Assert.False(File.Exists(Path("unwritable-manifest.json")));
+        Assert.DoesNotContain("Ellenor", _error.ToString(), StringComparison.Ordinal);
+    }
+
     [Fact]
     public void An_input_limit_failure_preserves_all_existing_artifacts()
     {

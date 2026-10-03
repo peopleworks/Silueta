@@ -234,7 +234,8 @@ words is compiled in.
 The public API and stored-file contracts, migration from preview.3, and vault writer coordination are
 documented in [Docs/COMPATIBILITY.md](Docs/COMPATIBILITY.md). A vault save now refuses to discard
 assignments made by another run. CLI reports this with exit 5; MCP returns a tool error. Reload the
-vault and repeat the complete operation before emitting output. Its empty `.lock` sidecar stays in
+vault and repeat the complete operation before emitting output. A vault file that fails its checks, or
+a vault path that cannot be read or written, is exit 2, and nothing after the vault is written. Its empty `.lock` sidecar stays in
 place and can be reused after the writer closes or exits.
 
 ## Bring your own dictionaries: the lineage

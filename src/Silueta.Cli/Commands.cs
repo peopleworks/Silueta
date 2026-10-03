@@ -181,9 +181,19 @@ public static class Commands
         // then overwrite --vault, so the second transcript of a corpus silently discarded the first one's
         // assignments — the same person became two people, and neither could be traced back.
         options.TryGetValue("vault", out string? vaultPath);
-        PseudonymVault vault = vaultPath is null
-            ? new PseudonymVault(lineage.Pools)
-            : PseudonymVault.LoadOrCreate(vaultPath, lineage.Pools);
+        PseudonymVault vault;
+        try
+        {
+            vault = vaultPath is null
+                ? new PseudonymVault(lineage.Pools)
+                : PseudonymVault.LoadOrCreate(vaultPath, lineage.Pools);
+        }
+        catch (Exception ex) when (VaultUnusable(ex))
+        {
+            // The vault's own messages name the rule and never a subject, as the lineage's do.
+            error.WriteLine($"That vault cannot be used: {ex.Message}");
+            return 2;
+        }
 
         var engine = SiluetaEngine.FromLineage(lineage, vault, limits);
         RedactionResult result = engine.Redact(text, context, policy, cancellationToken);
@@ -197,7 +207,15 @@ public static class Commands
         // then failed to write the vault would leave a corpus nobody — not even the agency — can trace back.
         if (vaultPath is not null)
         {
-            engine.Vault.SaveTo(vaultPath);
+            try
+            {
+                engine.Vault.SaveTo(vaultPath);
+            }
+            catch (Exception ex) when (VaultUnusable(ex))
+            {
+                error.WriteLine($"The vault could not be written, so nothing else was: {ex.Message}");
+                return 2;
+            }
             output.WriteLine(
                 $"Wrote {vaultPath} — {engine.Vault.Count} subjects. Keep it inside the agency: it is the only way back.");
         }
@@ -245,6 +263,12 @@ public static class Commands
 
         return 0;
     }
+
+    /// <summary>A vault file that fails its own checks, or a path the vault cannot be read from or written
+    /// to. A write conflict is not one of these: it means "repeat", and it keeps its own exit code.</summary>
+    private static bool VaultUnusable(Exception ex) =>
+        ex is IOException or UnauthorizedAccessException ||
+        ex is InvalidOperationException and not VaultWriteConflictException;
 
     private static bool PersistencePathsAreDistinct(IReadOnlyDictionary<string, string> options)
     {
@@ -502,6 +526,8 @@ public static class Commands
                   --max-input-chars  Positive UTF-16 character ceiling (default 1000000).
                   --max-detections   Positive candidate ceiling per pass (default 100000).
                   Ctrl+C cancels processing. Limits fail the whole run, never truncate it.
+                  Exit 2: refused arguments or files, including a vault that cannot be
+                  read or written; nothing is written after the vault fails.
                   Exit 4: resource limit; exit 130: cancelled before writing artifacts.
                   Exit 5: vault write conflict; reload and repeat the complete operation.
                   Output, manifest, vault and lock paths must not alias input/config files.

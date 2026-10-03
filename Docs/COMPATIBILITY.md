@@ -81,7 +81,8 @@ before emitting any output. Saving an already-redacted transcript after independ
 names would detach the transcript from its vault. The library does not automatically merge or retry.
 
 CLI reports conflicts with exit **5**; MCP reports a sanitized tool error. Both save the vault before
-writing output. A conflict emits no new transcript or manifest and preserves existing destinations.
+writing output. A vault that fails validation, or a path it cannot be read from or written to, is CLI
+exit **2** with the reason, and nothing after the vault is written. A conflict emits no new transcript or manifest and preserves existing destinations.
 CLI also refuses aliases between writable destinations and input/configuration files; vault and lock
 paths must be distinct from emitted artifacts. MCP refuses a transcript/output that aliases its vault
 or lock. A nonempty pre-existing lock-path file is refused and preserved.
@@ -128,6 +129,8 @@ run-date behavior. Existing `GoldDocument` constructors/deconstruction remain un
 Existing valid version-2 vaults and lineage files remain usable. Preserve their files and retired names;
 do not create an empty vault over an existing corpus. Upgrade every writer, reserve the `.lock` path,
 handle exit 5/the conflict exception, and rerun the whole operation after reloading on a conflict.
+The CLI now also exits 2 for an invalid or unreachable vault (preview.3 ended with an unhandled
+exception), 4 for a resource limit and 130 when cancelled.
 Files that were previously accepted by discarding invalid/ambiguous entries now fail instead.
 Malformed JSON now produces a sanitized `InvalidOperationException`, rather than exposing a
 `JsonException` diagnostic; callers that caught only `JsonException` should update that handling.

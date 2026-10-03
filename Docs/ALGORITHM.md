@@ -554,7 +554,7 @@ person in every table downstream.
 The vault is the only artefact that can undo the work, so it stays where the identified data is allowed
 to be, it never travels with the corpus, and every re-identification is the caller's to log. It is also
 the thing that has to survive: it is read before a run and written afterwards, through a temporary file
-moved over the original, because a process killed halfway through a direct write leaves a truncated vault
+that then replaces the original, because a process killed halfway through a direct write leaves a truncated vault
 — and a truncated vault is a set of people who can no longer be identified by the one party entitled to
 identify them. There is no second copy by design.
 

@@ -65,8 +65,10 @@ new vault path if regeneration is appropriate for the caller's workflow.
 
 `SaveTo` acquires an exclusive handle on an adjacent, empty `<vault-path>.lock` file, checks the
 current vault, writes and flushes a temporary file in the same directory, then replaces the vault.
-Readers can hold a complete previous generation while that replacement occurs. Handled write
-failures clean up the temporary file when filesystem permissions allow it.
+Readers can hold a complete previous generation while that replacement occurs. On Windows, a
+program that holds the vault open without delete sharing (an editor, a backup) blocks the replacement:
+that save is a conflict, and the vault is left as it was. Handled write failures clean up the temporary
+file when filesystem permissions allow it.
 
 The proposed state must retain every existing subject/code association, every active or retired
 name's owner, and all retirement history. A remint can change the active name while retaining the

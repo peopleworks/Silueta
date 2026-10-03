@@ -46,6 +46,53 @@ public sealed class VaultFileTests : IDisposable
     }
 
     [Fact]
+    public void A_run_still_reading_the_vault_does_not_stop_the_next_save()
+    {
+        // The handle LoadOrCreate holds while it reads. On Windows an overwriting move fails against it
+        // even though it shares delete access, and a CLI run then crashed in the middle of persisting.
+        string path = Path("read-while-saving.json");
+        var vault = new PseudonymVault().Assign("s-1", "Ale Bravo");
+        vault.SaveTo(path);
+        string previous = File.ReadAllText(path);
+        vault.Assign("s-2", "Noa Toledo");
+        using (var reader = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete))
+        {
+            vault.SaveTo(path);
+            Assert.Equal(previous, new StreamReader(reader).ReadToEnd());
+        }
+        Assert.Equal(2, PseudonymVault.LoadOrCreate(path).Count);
+        Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
+    }
+
+    [Fact]
+    public void A_program_holding_the_vault_without_sharing_it_is_a_conflict_not_a_crash()
+    {
+        // An editor or a backup that opens the file without delete sharing. Windows will not swap the file
+        // under it; elsewhere a rename never waits on another process's handle, and the save goes through.
+        string path = Path("held-by-another-program.json");
+        var vault = new PseudonymVault().Assign("s-1", "Ale Bravo");
+        vault.SaveTo(path);
+        string committed = File.ReadAllText(path);
+        vault.Assign("s-2", "Noa Toledo");
+        using (var holder = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                VaultWriteConflictException conflict = Assert.Throws<VaultWriteConflictException>(() => vault.SaveTo(path));
+                Assert.Null(conflict.InnerException);
+                Assert.Equal(committed, File.ReadAllText(path));
+            }
+            else
+            {
+                vault.SaveTo(path);
+            }
+        }
+        Assert.Empty(Directory.GetFiles(_directory, "*.tmp"));
+        vault.SaveTo(path);
+        Assert.Equal(2, PseudonymVault.LoadOrCreate(path).Count);
+    }
+
+    [Fact]
     public void A_directory_is_refused_as_a_vault_without_leaving_temporary_files()
     {
         string path = Path("directory.json");

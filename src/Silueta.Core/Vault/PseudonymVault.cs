@@ -367,7 +367,7 @@ public sealed class PseudonymVault
     {
         try
         {
-            // A reader holds one complete generation while a writer can atomically rename the next.
+            // A reader holds one complete generation while a writer atomically replaces it with the next.
             // File.Exists would also report false for some access errors; only absence means empty.
             using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
             using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
@@ -439,14 +439,15 @@ public sealed class PseudonymVault
     /// <summary>
     /// Writes the vault, replacing any previous one only once the new file is complete.
     /// <para>
-    /// Written to a neighbouring temporary file and moved over the original, because the failure this
+    /// Written to a neighbouring temporary file that then replaces the original, because the failure this
     /// prevents is unrecoverable: a process killed halfway through a direct write leaves a truncated
     /// vault, and a truncated vault is a set of people who can no longer be identified by the one party
     /// entitled to identify them. There is no second copy by design.
     /// </para>
     /// </summary>
-    /// <exception cref="VaultWriteConflictException">Another writer holds the sidecar, or the proposed
-    /// state would discard stored assignments/history. Reload and repeat the complete operation.</exception>
+    /// <exception cref="VaultWriteConflictException">Another writer holds the sidecar, another program holds
+    /// the vault without sharing it (Windows), or the proposed state would discard stored assignments/history.
+    /// Reload and repeat the complete operation.</exception>
     public void SaveTo(string path)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
@@ -474,7 +475,25 @@ public sealed class PseudonymVault
                 }
                 stream.Flush(flushToDisk: true);
             }
-            File.Move(temporary, fullPath, overwrite: true);
+            if (stored is null)
+            {
+                // Replace needs a file to replace. Without overwrite, a vault that appeared after the read,
+                // outside this lock, is refused rather than discarded.
+                File.Move(temporary, fullPath);
+            }
+            else
+            {
+                // Not an overwriting move: on Windows that fails while any reader holds the vault open, even
+                // one sharing delete access, which is how LoadOrCreate reads it. Replace swaps the file, keeps
+                // its permissions, and leaves that reader its complete previous generation.
+                File.Replace(temporary, fullPath, destinationBackupFileName: null, ignoreMetadataErrors: true);
+            }
+        }
+        catch (IOException ex) when (HeldWithoutSharing(ex))
+        {
+            // A program that opened the vault without delete sharing — an editor, a backup — is in the way of
+            // this generation, not a reason to doubt it. Nothing was replaced; the next attempt can succeed.
+            throw new VaultWriteConflictException();
         }
         finally
         {
@@ -484,6 +503,11 @@ public sealed class PseudonymVault
             }
         }
     }
+
+    // ERROR_SHARING_VIOLATION and ERROR_LOCK_VIOLATION. Only Windows makes a rename wait on another
+    // process's handle; elsewhere the same low bits are unrelated error numbers.
+    private static bool HeldWithoutSharing(IOException ex) =>
+        OperatingSystem.IsWindows() && (ex.HResult & 0xFFFF) is 32 or 33;
 
     private static FileStream AcquireWriter(string lockPath)
     {

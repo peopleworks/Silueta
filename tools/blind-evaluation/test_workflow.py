@@ -216,6 +216,75 @@ class BlindWorkflowTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             self.export()
 
+    # C3: after the operator's review, does any gold identifier survive in a final artifact?
+
+    def c3(self, text, spans, final, engine=None, minutes=None):
+        """One gold document and an operator packet whose final artifact is `final`."""
+        gold, packet = self.root / "gold", self.root / "packet"
+        gold.mkdir()
+        (packet / "final").mkdir(parents=True)
+        (packet / "engine-output").mkdir()
+        located = []
+        for quote, kind in spans:
+            start = len(text[:text.index(quote)].encode("utf-16-le")) // 2
+            located.append({"start": start, "length": len(quote.encode("utf-16-le")) // 2, "kind": kind, "annotator": "adj"})
+        w.write(gold / "doc-1.json", {"documentId": "doc-1", "source": "synthetic-manual", "language": "en",
+            "speaker": None, "recordedOn": "2026-10-02", "text": text, "roster": [], "spans": located, "annotation": {}})
+        engine = final if engine is None else engine
+        (packet / "engine-output" / "doc-1.txt").write_text(engine, encoding="utf-8")
+        (packet / "final" / "doc-1.txt").write_text(final, encoding="utf-8")
+        w.write(packet / "packet.json", {"coreSha256": "0" * 64,
+            "documents": [{"documentId": "doc-1", "engineOutputSha256": w.sha(engine.encode("utf-8")), "residualSpans": 0}]})
+        w.write(packet / "times.json", {"operatorId": "operator-1", "documents": [{"documentId": "doc-1", "minutes": minutes}]})
+        return gold, packet
+
+    def test_c3_finds_a_name_that_survived_review_whatever_its_case_or_accents(self):
+        gold, packet = self.c3("Sofía Reyes called.", [("Sofía Reyes", "PatientName")], "SOFIA REYES called.")
+        report = w.assess(gold, packet, self.root / "c3")
+        self.assertEqual(1, report["survivals"])
+        self.assertEqual("full", report["documents"][0]["survivals"][0]["match"])
+        self.assertNotIn("SOFIA", json.dumps(report).upper())
+        self.assertIn("SOFIA REYES", (self.root / "c3" / "c3-sheet.md").read_text(encoding="utf-8"))
+
+    def test_c3_reports_a_surname_left_behind(self):
+        gold, packet = self.c3("Sofía Reyes called.", [("Sofía Reyes", "PatientName")], "Noa Reyes called.")
+        survival = w.assess(gold, packet, self.root / "c3")["documents"][0]["survivals"][0]
+        self.assertEqual("partial", survival["match"])
+
+    def test_c3_sees_the_damaged_half_of_a_name_left_where_it_stood(self):
+        # From the public corpus: a recogniser turned a first name into "He fell"; the engine replaced only the
+        # surname. Ordinary words, lower case, still the person's name in that place.
+        gold, packet = self.c3("Nurse He fell Ramirez came.", [("He fell Ramirez", "StaffName")],
+                               "Nurse He fell Luca came.")
+        survival = w.assess(gold, packet, self.root / "c3")["documents"][0]["survivals"][0]
+        self.assertEqual("partial", survival["match"])
+
+    def test_c3_reads_a_number_through_other_separators(self):
+        gold, packet = self.c3("Call 602-555-0147 today.", [("602-555-0147", "Phone")], "Call 602 555 0147 today.")
+        self.assertEqual(1, w.assess(gold, packet, self.root / "c3")["survivals"])
+
+    def test_c3_does_not_flag_a_name_inside_another_word(self):
+        gold, packet = self.c3("Rose brought roses.", [("Rose", "FamilyName")], "Noa brought roses.")
+        self.assertEqual(0, w.assess(gold, packet, self.root / "c3")["survivals"])
+
+    def test_c3_counts_what_the_operator_changed_and_the_minutes_it_took(self):
+        gold, packet = self.c3("Sofía called 602-555-0147.", [("Sofía", "PatientName"), ("602-555-0147", "Phone")],
+                               "Noa called [PHONE].", engine="Noa called 602-555-0147.", minutes=2)
+        report = w.assess(gold, packet, self.root / "c3")
+        self.assertEqual((0, 1, 2), (report["survivals"], report["documents"][0]["operatorChangedWords"],
+                                     report["documents"][0]["minutes"]))
+
+    def test_c3_needs_every_final_artifact_and_an_untouched_engine_output(self):
+        gold, packet = self.c3("Sofía called.", [("Sofía", "PatientName")], "Noa called.")
+        (packet / "final" / "doc-1.txt").unlink()
+        with self.assertRaisesRegex(ValueError, "final artifact"):
+            w.assess(gold, packet, self.root / "c3")
+        (packet / "final" / "doc-1.txt").write_text("Noa called.", encoding="utf-8")
+        (packet / "engine-output" / "doc-1.txt").write_text("Edited.", encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "engine output"):
+            w.assess(gold, packet, self.root / "c3")
+        self.assertFalse((self.root / "c3").exists())
+
     def test_subjects_cannot_cross_case_groups_or_change_identity(self):
         for value in ("Fixture Name", "Different Name"):
             data = copy.deepcopy(self.data)

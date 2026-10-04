@@ -44,6 +44,13 @@ so even an external author does not make the entire study independent of that de
 6. Run the frozen engine on the adjudicated gold, then conduct the assisted-workflow pilot with a
    human operator who sees input, roster and redacted output but not gold labels. Preserve initial
    output, corrections and final output. An assessor compares both outputs against frozen gold.
+   [`tools/Silueta.ContinuityAudit`](../Silueta.ContinuityAudit/README.md) runs the frozen engine once for the
+   C2 audit and writes the operator packet from that same run (`--operator-packet`). Afterwards,
+   `workflow.py assess` checks gate C3. It aligns each input with its final artifact word by word, so a
+   damaged half of a name left where it stood is found, and it also searches the whole quote and its digits.
+   It reports the operator's changed words and minutes, and writes a shareable report with no text and a
+   private sheet with quotes for the assessor. On the public frozen corpus, with an operator who changes
+   nothing, it finds exactly the 26 documents `silueta evaluate` counts as leaking.
 
 The study stays blind only until its first engine results are inspected. If it informs detector fixes,
 it becomes development/regression evidence; reserve a new untouched set for the next release decision.
@@ -60,6 +67,7 @@ python tools/blind-evaluation/workflow.py packet --study <study-dir> --output <n
 python tools/blind-evaluation/workflow.py check --study <study-dir> --annotation <annotations-a.json>
 python tools/blind-evaluation/workflow.py compare --study <study-dir> --a <annotations-a.json> --b <annotations-b.json> --output <new-comparison.json>
 python tools/blind-evaluation/workflow.py export --study <study-dir> --a <annotations-a.json> --b <annotations-b.json> --issues <expediente.json> --decisions <decisions.json> --output <new-gold-dir>
+python tools/blind-evaluation/workflow.py assess --gold <gold-dir>/gold --packet <operator-packet-dir> --output <new-c3-dir>
 python -B -m unittest discover -s tools/blind-evaluation -p "test_*.py"
 ```
 

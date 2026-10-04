@@ -72,5 +72,7 @@ released as `1.0.0`. A change restarts the period.
   added after this file was committed;
 - ~~the C2 audit~~: [`tools/Silueta.ContinuityAudit`](../Silueta.ContinuityAudit/README.md), added after
   this file was committed;
-- the operator packet: redacted outputs made with the shared vault, without gold;
-- the C3 assessment of the operator's final artifacts against the gold.
+- ~~the operator packet: redacted outputs made with the shared vault, without gold~~: `--operator-packet` of the
+  C2 audit, added after this file was committed;
+- ~~the C3 assessment of the operator's final artifacts against the gold~~: `workflow.py assess`, added after
+  this file was committed.

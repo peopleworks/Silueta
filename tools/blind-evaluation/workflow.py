@@ -1,11 +1,13 @@
-"""Freeze synthetic candidates, validate blind annotations and export the human adjudication; never invoke the engine."""
+"""Freeze synthetic candidates, validate blind annotations, export the human adjudication and assess gate C3; never invoke the engine."""
 import argparse
 from collections import Counter
+import difflib
 import hashlib
 import json
 from pathlib import Path
 import re
 import shutil
+import unicodedata
 import zipfile
 
 HERE = Path(__file__).resolve().parent
@@ -277,6 +279,108 @@ def compare(study_path, a_path, b_path):
             "caveat": "Reviewer identities and blindness are declarations, not authenticated independence. Agreement is not accuracy."}
 
 
+def folded(text):
+    """Case and accents folded, so "SOFIA" in a final artifact is still "Sofía" from the gold."""
+    return "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn").casefold()
+
+
+def utf16_slice(text, start, length):
+    return text.encode("utf-16-le")[2 * start:2 * (start + length)].decode("utf-16-le")
+
+
+def words(text):
+    return [(m.start(), m.end(), folded(m.group())) for m in re.finditer(r"\w+", text)]
+
+
+def kept_in_place(text, final):
+    """The input's words still in the final artifact where they stood, mapped to where each one landed.
+
+    The final artifact is the engine's output as a person corrected it, so what identifies somebody in it was
+    copied from the input, damaged spelling included. Aligning the two word by word finds it in place, even as
+    ordinary lower-case words ("He fell" for a name a recogniser misheard), and does not mistake "roses"
+    elsewhere for "Rose".
+    """
+    source, target = words(text), words(final)
+    kept = {}
+    matcher = difflib.SequenceMatcher(None, [w for *_, w in source], [w for *_, w in target], autojunk=False)
+    for tag, i1, i2, j1, _ in matcher.get_opcodes():
+        if tag == "equal":
+            kept.update({i1 + k: target[j1 + k][0] for k in range(i2 - i1)})
+    return source, kept
+
+
+def survival(text, span, final, source, kept):
+    """Whole, in part, or not at all: how one gold identifier survives in a final artifact, and where."""
+    start = len(utf16_slice(text, 0, span["start"]))
+    end = start + len(utf16_slice(text, span["start"], span["length"]))
+    covered = [i for i, (s, e, _) in enumerate(source) if s < end and start < e]
+    in_place = [kept[i] for i in covered if i in kept]
+    if covered and len(in_place) == len(covered):
+        return "full", in_place[0]
+    # Text an operator moved is no longer in place; the whole quote, or its digits, still find it.
+    quote = utf16_slice(text, span["start"], span["length"])
+    found = re.search(r"(?<!\w)" + re.escape(folded(quote)) + r"(?!\w)", folded(final))
+    digits = re.findall(r"\d", quote)
+    if not found and len(digits) >= 4:
+        found = re.search(r"(?<!\d)" + r"[\s\-.()/]*".join(digits) + r"(?!\d)", final)
+    if found:
+        return "full", found.start()
+    return ("partial", in_place[0]) if in_place else (None, None)
+
+
+def assess(gold_dir, packet_dir, output):
+    """Gate C3: list every gold identifier that survives in the operator's final artifacts. Never runs the engine."""
+    gold_dir, packet_dir = Path(gold_dir), Path(packet_dir)
+    documents = [load(p) for p in sorted(gold_dir.glob("*.json"))]
+    require(documents, "No gold documents.")
+    manifest = {d["documentId"]: d for d in load(packet_dir / "packet.json")["documents"]}
+    require(set(manifest) == {d["documentId"] for d in documents}, "The packet and the gold hold different documents.")
+    times = load(packet_dir / "times.json")
+    minutes = {d["documentId"]: d.get("minutes") for d in times["documents"]}
+
+    results, sheet = [], ["# C3 assessor sheet — PRIVATE: quotes the records", ""]
+    for doc in documents:
+        doc_id = doc["documentId"]
+        engine_path, final_path = packet_dir / "engine-output" / f"{doc_id}.txt", packet_dir / "final" / f"{doc_id}.txt"
+        require(final_path.is_file(), "Every document needs its final artifact, negatives included.")
+        engine = engine_path.read_text(encoding="utf-8")
+        # The change count is only meaningful against the output the operator actually received.
+        require(sha(engine.encode("utf-8")) == manifest[doc_id]["engineOutputSha256"], "An engine output in the packet was edited.")
+        final = final_path.read_text(encoding="utf-8-sig")
+        survivals = []
+        source, kept = kept_in_place(doc["text"], final)
+        for span in doc["spans"]:
+            match, where = survival(doc["text"], span, final, source, kept)
+            if match:
+                quote = utf16_slice(doc["text"], span["start"], span["length"])
+                survivals.append({"start": span["start"], "length": span["length"], "kind": span["kind"], "match": match})
+                context = final[max(0, where - 60):where + len(quote) + 60]
+                sheet += [f"- [ ] `{doc_id}` {span['kind']} ({match}): \"{quote}\"",
+                          "  - final: …" + context.replace("\n", " ") + "…"]
+        opcodes = difflib.SequenceMatcher(None, engine.split(), final.split(), autojunk=False).get_opcodes()
+        changed = sum(max(i2 - i1, j2 - j1) for tag, i1, i2, j1, j2 in opcodes if tag != "equal")
+        results.append({"documentId": doc_id, "goldSpans": len(doc["spans"]), "survivals": survivals,
+                        "operatorChangedWords": changed, "minutes": minutes.get(doc_id),
+                        "residualSpansReported": manifest[doc_id].get("residualSpans", 0)})
+
+    count = sum(len(r["survivals"]) for r in results)
+    report = {"stage": "c3-assessment", "operatorId": times.get("operatorId", ""), "documents": results,
+              "goldSpans": sum(r["goldSpans"] for r in results), "survivals": count,
+              "documentsWithSurvivals": sum(1 for r in results if r["survivals"]),
+              "minutesRecorded": sum(r["minutes"] for r in results if isinstance(r["minutes"], (int, float))),
+              "verdict": ("No gold identifier was found in any final artifact. The assessor confirms before C3 passes."
+                          if count == 0 else
+                          "Gold identifiers were found in final artifacts. C3 fails unless the assessor shows each listed one is not identifying."),
+              "caveat": "Survival is found by aligning input and final artifact word by word, and by searching the whole quote (case, accents and number separators folded). The sheet is for a person to confirm."}
+    if count == 0:
+        sheet.append("No survivals found.")
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    write(output / "c3-report.json", report)
+    (output / "c3-sheet.md").write_text("\n".join(sheet) + "\n", encoding="utf-8")
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -304,6 +408,10 @@ def main():
     export_parser.add_argument("--issues", required=True, type=Path)
     export_parser.add_argument("--decisions", required=True, type=Path)
     export_parser.add_argument("--output", required=True, type=Path)
+    assess_parser = commands.add_parser("assess")
+    assess_parser.add_argument("--gold", required=True, type=Path)
+    assess_parser.add_argument("--packet", required=True, type=Path)
+    assess_parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     if args.command == "freeze":
         result = freeze(args.input, args.output, args.cli_package, args.engine_commit)
@@ -318,6 +426,10 @@ def main():
         result = export(args.study, args.a, args.b, args.issues, args.decisions, args.output)
         print(f"Exported {result['documents']} adjudicated gold documents, {result['spans']} spans, to "
               f"{args.output / result['gold']}. The engine was not run.")
+    elif args.command == "assess":
+        result = assess(args.gold, args.packet, args.output)
+        print(f"{result['survivals']} gold identifier(s) found in final artifacts across {len(result['documents'])} "
+              f"documents. {result['verdict']}")
     else:
         result = compare(args.study, args.a, args.b)
         with args.output.open("xb") as stream:

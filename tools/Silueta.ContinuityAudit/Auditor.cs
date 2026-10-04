@@ -52,9 +52,11 @@ public sealed record DocumentRun(GoldDocument Document, RedactionResult Redactio
 /// and a person confirms the list.
 /// </para>
 /// <para>
-/// The run is the one <c>silueta evaluate</c> scores for C1: one vault across the corpus, the default lineage,
-/// the loader's document order. ContinuityAuditTests holds the two to the same scores, so the gates cannot end
-/// up describing two different engines.
+/// The run is configured as the one <c>silueta evaluate</c> scores for C1: one vault across the corpus, the
+/// default lineage, the loader's document order. Invented names are drawn at random, so two runs differ in
+/// which names they drew and in nothing a score sees; ContinuityAuditTests holds them to the same scores, so the
+/// gates cannot end up describing two different engines. The operator packet comes from the same invocation
+/// as the audit, so the operator corrects exactly the outputs whose attributions were listed.
 /// </para>
 /// </summary>
 public static class Auditor
@@ -211,6 +213,99 @@ public static class Auditor
         return sheet.ToString();
     }
 
+    /// <summary>
+    /// What the pilot's operator works from: each input with its roster and what the engine made of it, from the
+    /// same run C1 and C2 measure, and a copy of each output to correct. No gold: the operator is there to show
+    /// what a person reviewing this tool's output catches, and labels would make that a different experiment.
+    /// </summary>
+    public static void WriteOperatorPacket(string directory, AuditReport report, IReadOnlyList<DocumentRun> runs)
+    {
+        ArgumentNullException.ThrowIfNull(report);
+        ArgumentNullException.ThrowIfNull(runs);
+        if (Directory.Exists(directory) || File.Exists(directory))
+        {
+            throw new IOException("An operator packet is never written over an existing one.");
+        }
+
+        Directory.CreateDirectory(Path.Combine(directory, "final"));
+        Directory.CreateDirectory(Path.Combine(directory, "engine-output"));
+
+        var documents = new StringBuilder();
+        documents.AppendLine("# Documents to review / Documentos para revisar");
+        documents.AppendLine();
+        var manifest = new List<object>();
+        foreach (DocumentRun run in runs)
+        {
+            GoldDocument document = run.Document;
+            string output = run.Redaction.Text;
+            File.WriteAllText(Path.Combine(directory, "final", document.DocumentId + ".txt"), output);
+            File.WriteAllText(Path.Combine(directory, "engine-output", document.DocumentId + ".txt"), output);
+            manifest.Add(new
+            {
+                documentId = document.DocumentId,
+                engineOutputSha256 = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(output))),
+                residualSpans = run.Redaction.Residue.Count,
+            });
+
+            documents.AppendLine($"## {document.DocumentId}");
+            documents.AppendLine();
+            documents.AppendLine($"Language {document.Language ?? "?"}, record date {document.RecordedOn?.ToString("yyyy-MM-dd") ?? "?"}.");
+            documents.AppendLine();
+            documents.AppendLine("Roster:");
+            documents.AppendLine();
+            foreach (GoldRosterEntry entry in document.Roster)
+            {
+                documents.AppendLine($"- {entry.Value} — {entry.Kind}");
+            }
+            if (document.Roster.Count == 0)
+            {
+                documents.AppendLine("- (empty / vacío)");
+            }
+            documents.AppendLine();
+            documents.AppendLine("Input / Entrada:");
+            documents.AppendLine();
+            documents.AppendLine("> " + document.Text.ReplaceLineEndings("\n> "));
+            documents.AppendLine();
+            documents.AppendLine("Engine output / Salida del motor:");
+            documents.AppendLine();
+            documents.AppendLine("> " + output.ReplaceLineEndings("\n> "));
+            documents.AppendLine();
+            if (run.Redaction.Residue.Count > 0)
+            {
+                // What the CLI would have said instead of writing the file: the engine still finds identifiers.
+                documents.AppendLine($"**The engine still finds {run.Redaction.Residue.Count} identifier(s) in its own output. " +
+                    $"El motor todavía encuentra {run.Redaction.Residue.Count} identificador(es) en su propia salida.**");
+                documents.AppendLine();
+            }
+        }
+
+        File.WriteAllText(Path.Combine(directory, "documents.md"), documents.ToString());
+        File.WriteAllText(Path.Combine(directory, "packet.json"), JsonSerializer.Serialize(
+            new { coreSha256 = report.CoreSha256, documents = manifest }, Json));
+        File.WriteAllText(Path.Combine(directory, "times.json"), JsonSerializer.Serialize(new
+        {
+            operatorId = "",
+            documents = runs.Select(r => new { documentId = r.Document.DocumentId, minutes = (double?)null }),
+        }, Json));
+        File.WriteAllText(Path.Combine(directory, "README.md"), """
+            # Operator packet
+
+            For each document in `documents.md`: read the input and its roster, then edit `final/<id>.txt` until
+            nothing in it identifies anybody, as you would before sharing it. Leave everything else as it is. The
+            roster does not list every identifier. Do not look at anybody's labels or ask anyone about a case.
+            Write the minutes each document took in `times.json`, and your own id in `operatorId`.
+            `engine-output/` is the untouched copy; do not edit it.
+
+            # Paquete del operador
+
+            Para cada documento de `documents.md`: lea la entrada y su roster, y edite `final/<id>.txt` hasta que
+            nada en él identifique a nadie, como lo haría antes de compartirlo. No toque lo demás. El roster no
+            lista todos los identificadores. No mire etiquetas de nadie ni consulte a nadie sobre un caso.
+            Anote los minutos de cada documento en `times.json` y su id en `operatorId`.
+            `engine-output/` es la copia intacta: no la edite.
+            """);
+    }
+
     public static int Execute(IReadOnlyList<string> args, TextWriter output, TextWriter error)
     {
         var options = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -228,7 +323,14 @@ public static class Auditor
         {
             error.WriteLine(
                 "silueta-continuity-audit --gold <adjudicated gold dir> --core-sha256 <frozen Core SHA-256> " +
-                "--out <report.json> [--assessor-sheet <private sheet.md>]");
+                "--out <report.json> [--assessor-sheet <private sheet.md>] [--operator-packet <new dir>]");
+            return 2;
+        }
+
+        options.TryGetValue("operator-packet", out string? packet);
+        if (packet is not null && (Directory.Exists(packet) || File.Exists(packet)))
+        {
+            error.WriteLine("The operator packet directory already exists; an operator's work is never written over. Nothing was written.");
             return 2;
         }
 
@@ -250,6 +352,11 @@ public static class Auditor
         {
             File.WriteAllText(sheetPath, AssessorSheet(report, runs));
             output.WriteLine($"Wrote {sheetPath} — it quotes the records; keep it with them.");
+        }
+        if (packet is not null)
+        {
+            WriteOperatorPacket(packet, report, runs);
+            output.WriteLine($"Wrote the operator packet to {packet} — inputs, rosters and outputs, no gold.");
         }
 
         output.WriteLine(

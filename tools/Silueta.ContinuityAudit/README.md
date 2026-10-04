@@ -2,8 +2,8 @@
 
 Gate C2 of the [1.0 acceptance criteria](../blind-evaluation/ACCEPTANCE.md): nobody is given somebody
 else's name. It runs the frozen engine the way `silueta evaluate` does for C1: one vault across the
-corpus, the default lineage, the evaluator's document order. A test holds the two runs to the same
-scores.
+corpus, the default lineage, the evaluator's document order. Invented names are drawn at random, so two
+runs differ in which names they drew and in nothing a score sees. A test holds the two to the same scores.
 
 - **Continuity, automatic.** After each record, every roster subject must still have one invented name,
   and none may have been retired. Exit code `1` when it breaks.
@@ -34,12 +34,23 @@ was built against. Two constraints follow:
 - the audit must be run before the assembly version is bumped, or with the tool built from a commit before
   that bump.
 
+## The operator packet
+
+`--operator-packet <new dir>` writes, from the same invocation, what the pilot's operator works from. It
+holds each input with its roster and the engine's output, plus a residue warning where the CLI would have
+refused to write. It also holds `final/<id>.txt`, a copy of each output for the operator to correct, and
+`engine-output/` as the untouched reference. Because both come from one invocation, the operator corrects
+exactly the outputs whose attributions C2 listed. There are no gold labels in it. `times.json` collects the
+minutes per document, and `packet.json` the hash of each engine output. The packet is never written over an
+existing directory. Gate C3 is then assessed with `workflow.py assess`.
+
 ## What each output may do
 
 | Output | Holds | May travel |
 | --- | --- | --- |
 | `--out` report | offsets, opaque subject ids, kinds, flags, counts, the Core hash | yes, like `evaluate`'s report |
 | `--assessor-sheet` | the replaced text in its sentence, the subject's canonical name, the gold quotes | **no**: keep it with the records |
+| `--operator-packet` | inputs, rosters and outputs, invented names included | **no**: only to the operator |
 
-Neither output carries an invented name. A list pairing invented names with subject ids would file the way
+The report carries no invented name. A list pairing invented names with subject ids would file the way
 back beside the data.

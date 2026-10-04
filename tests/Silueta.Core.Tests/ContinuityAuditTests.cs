@@ -113,10 +113,53 @@ public sealed class ContinuityAuditTests : IDisposable
     }
 
     [Fact]
+    public void The_operator_gets_input_roster_and_the_runs_output_but_no_gold()
+    {
+        Document("shared-first-name", "Linda Ruiz rested. Nurse Linda changed the dressing.",
+            [("Linda Ruiz", "PatientName", "person-01")],
+            ("Linda Ruiz", 0, "PatientName"), ("Linda", 1, "StaffName"));
+        string packet = Path.Combine(_directory, "operator");
+
+        // Invented names are drawn at random, so only the run that wrote the packet can be compared with it.
+        (AuditReport report, IReadOnlyList<DocumentRun> runs) = Auditor.Run(GoldCorpus.Load(Gold));
+        Auditor.WriteOperatorPacket(packet, report, runs);
+        string output = runs.Single().Redaction.Text;
+        // The operator corrects the very text C2 audited, starting from an untouched copy of it.
+        Assert.Equal(output, File.ReadAllText(Path.Combine(packet, "final", "shared-first-name.txt")));
+        Assert.Equal(output, File.ReadAllText(Path.Combine(packet, "engine-output", "shared-first-name.txt")));
+        string documents = File.ReadAllText(Path.Combine(packet, "documents.md"));
+        Assert.Contains("Nurse Linda changed the dressing.", documents, StringComparison.Ordinal);
+        Assert.Contains("Linda Ruiz", documents, StringComparison.Ordinal);
+        string everything = string.Concat(Directory.EnumerateFiles(packet, "*", SearchOption.AllDirectories).Select(File.ReadAllText));
+        // The gold called the nurse StaffName; the roster never did. Nothing in the packet may carry that.
+        Assert.DoesNotContain("StaffName", everything, StringComparison.Ordinal);
+        Assert.DoesNotContain("annotator", everything, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(Path.Combine(packet, "times.json")));
+    }
+
+    [Fact]
+    public void An_operator_packet_is_never_written_over_an_existing_one()
+    {
+        Document("only", "Nothing identifying here.", []);
+        string packet = Path.Combine(_directory, "operator");
+        Directory.CreateDirectory(packet);
+        File.WriteAllText(Path.Combine(packet, "keep.txt"), "an operator's work");
+        string report = Path.Combine(_directory, "c2.json");
+
+        int exit = Auditor.Execute(["--gold", Gold, "--core-sha256", Auditor.CoreAssemblySha256(), "--out", report,
+            "--operator-packet", packet], new StringWriter(), new StringWriter());
+
+        Assert.Equal(2, exit);
+        Assert.False(File.Exists(report));
+        Assert.Equal("an operator's work", File.ReadAllText(Path.Combine(packet, "keep.txt")));
+    }
+
+    [Fact]
     public void The_audit_runs_exactly_what_silueta_evaluate_scores()
     {
-        // C1 and C2 have to describe one run. If the evaluator's silueta configuration ever gains a detector or
-        // a different vault, this fails here instead of letting the two gates quietly describe two engines.
+        // C1 and C2 have to describe one configuration. Invented names are drawn at random, so two runs differ in
+        // which names they drew and in nothing the scores see. If the evaluator's silueta configuration ever gains
+        // a detector or a different vault, this fails here instead of letting the two gates describe two engines.
         GoldCorpus corpus = GoldCorpus.Load(Path.Combine(Repo.Root, "corpus-synthetic", "tts-asr"));
 
         (_, IReadOnlyList<DocumentRun> runs) = Auditor.Run(corpus);

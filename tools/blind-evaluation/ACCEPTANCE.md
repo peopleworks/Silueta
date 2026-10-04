@@ -69,6 +69,7 @@ released as `1.0.0`. A change restarts the period.
 ## Tooling still to write before the engine runs
 
 - export of the adjudicated labels to the `GoldCorpus` format `silueta evaluate` reads;
-- the C2 audit;
+- ~~the C2 audit~~: [`tools/Silueta.ContinuityAudit`](../Silueta.ContinuityAudit/README.md), added after
+  this file was committed;
 - the operator packet: redacted outputs made with the shared vault, without gold;
 - the C3 assessment of the operator's final artifacts against the gold.

@@ -33,6 +33,8 @@
     <ProjectReference Include="..\..\src\Silueta.Cli\Silueta.Cli.csproj" />
     <!-- The calibration tool decides what the README's published block says, which is the same kind of rule. -->
     <ProjectReference Include="..\..\tools\Silueta.Calibration\Silueta.Calibration.csproj" />
+    <!-- The continuity audit is gate C2 of the 1.0 criteria: it decides what a person is asked to confirm. -->
+    <ProjectReference Include="..\..\tools\Silueta.ContinuityAudit\Silueta.ContinuityAudit.csproj" />
   </ItemGroup>
 
   <!-- The only files left out on .NET 9, and each is here for one reason: it uses a type from a project that
@@ -43,6 +45,7 @@
     <Compile Remove="ExplainNameMatchTests.cs" /> <!-- Silueta.Mcp -->
     <Compile Remove="McpBoundaryTests.cs" />      <!-- Silueta.Mcp -->
     <Compile Remove="CalibratorTests.cs" />       <!-- Silueta.Calibration -->
+    <Compile Remove="ContinuityAuditTests.cs" />  <!-- Silueta.ContinuityAudit -->
   </ItemGroup>
 
 </Project>

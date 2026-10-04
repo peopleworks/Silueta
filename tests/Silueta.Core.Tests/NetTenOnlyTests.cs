@@ -6,8 +6,8 @@ namespace Silueta.Core.Tests;
 /// Holds the test project's list of .NET 10-only files to the one reason a file may be on it.
 /// <para>
 /// Silueta.Core ships for .NET 9 and .NET 10, and the promise that goes with that is that every test of
-/// Core runs on both. The project leaves a few files out on .NET 9 because they use the CLI, the MCP server
-/// or the calibration tool, which exist only on .NET 10. That list is exactly the kind of place a Core test
+/// Core runs on both. The project leaves a few files out on .NET 9 because they use the CLI, the MCP server,
+/// the calibration tool or the continuity audit, which exist only on .NET 10. That list is exactly the kind of place a Core test
 /// ends up when it fails on the older runtime and somebody is in a hurry — and then the library is being
 /// shipped for a runtime it is no longer tested on, while the build stays green.
 /// </para>
@@ -43,14 +43,14 @@ public partial class NetTenOnlyTests
 
             Assert.True(
                 NetTenOnlyProject().IsMatch(File.ReadAllText(path)),
-                $"{file} is left out on .NET 9 but uses nothing from the CLI, the MCP server or the calibration " +
-                "tool. A test of Core runs on both runtimes Core ships for — take it off the list.");
+                $"{file} is left out on .NET 9 but uses nothing from the CLI, the MCP server, the calibration " +
+                "tool or the continuity audit. A test of Core runs on both runtimes Core ships for — take it off the list.");
         }
     }
 
     [GeneratedRegex(@"<Compile\s+Remove=""(?<file>[^""]+)""")]
     private static partial Regex RemovedFile();
 
-    [GeneratedRegex(@"\busing\s+Silueta\.(Cli|Mcp|Calibration)\b")]
+    [GeneratedRegex(@"\busing\s+Silueta\.(Cli|Mcp|Calibration|ContinuityAudit)\b")]
     private static partial Regex NetTenOnlyProject();
 }

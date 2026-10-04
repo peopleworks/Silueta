@@ -73,9 +73,9 @@ groups and must not be split across development/holdout or treated as independen
 an inferential analysis. Raw document intervals must not be presented as population accuracy or
 as a grouped uncertainty estimate; grouped analysis and an independently sampled pilot are later work.
 
-Acceptance criteria remain to be agreed **before** pilot results: which document types/languages are
-supported, tolerated review burden and final-artifact failure handling. Human review must be complete
-before sharing; internal zero residue is not a guarantee of zero leaks. Synthetic stress results alone
-do not authorize changing the package to stable. The use scope was selected; a quantitative threshold
-was not. [NIST's evaluation guidance](https://airc.nist.gov/airmf-resources/playbook/measure/) provides
+Acceptance criteria were fixed on 3 October 2026, before any engine output on the candidates existed:
+see [`ACCEPTANCE.md`](ACCEPTANCE.md). They gate on three things and set no leak-rate threshold. Human
+review must be complete before sharing; internal zero residue is not a guarantee of zero leaks. Synthetic
+stress results alone do not authorize the stable package: a release candidate must also pass a period of
+real use. [NIST's evaluation guidance](https://airc.nist.gov/airmf-resources/playbook/measure/) provides
 background on documenting test sets/methods and involving assessors outside front-line development.

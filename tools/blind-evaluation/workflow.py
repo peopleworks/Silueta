@@ -1,4 +1,4 @@
-"""Freeze synthetic candidates and validate separate blind annotations; never invoke the engine."""
+"""Freeze synthetic candidates, validate blind annotations and export the human adjudication; never invoke the engine."""
 import argparse
 from collections import Counter
 import hashlib
@@ -147,23 +147,117 @@ def annotation(study_path, input_path):
         seen.add(doc_id)
         require(doc["complete"] is True, "An incomplete annotation cannot be scored as no identifiers.")
         require(isinstance(doc["spans"], list) and isinstance(doc["notes"], str), "Invalid annotation fields.")
-        original = originals[doc_id]["text"].encode("utf-16-le")
-        spans = set()
-        for span in doc["spans"]:
-            require(set(span) == {"start", "length", "kind", "quote"}, "Unexpected span fields.")
-            start, length = span["start"], span["length"]
-            require(type(start) is int and type(length) is int and start >= 0 and length > 0
-                    and 2 * (start + length) <= len(original), "Span lies outside UTF-16 text.")
-            try:
-                quote = original[2 * start:2 * (start + length)].decode("utf-16-le")
-            except UnicodeError:
-                raise ValueError("Span splits a Unicode character.") from None
-            require(quote == span["quote"] and span["kind"] in protocol["kinds"], "Span quote or kind is invalid.")
-            key = (start, length, span["kind"])
-            require(key not in spans, "Duplicate annotated span.")
-            spans.add(key)
+        spans_in(originals[doc_id]["text"], doc["spans"], protocol)
     require(seen == set(originals), "Every document needs an explicit completed review, including negatives.")
     return value
+
+
+def spans_in(text, spans, protocol):
+    """Every span must quote its own UTF-16 slice of the original exactly, once, with a protocol kind."""
+    original = text.encode("utf-16-le")
+    require(isinstance(spans, list), "Spans must be an array.")
+    keys = set()
+    for span in spans:
+        require(isinstance(span, dict) and set(span) == {"start", "length", "kind", "quote"}, "Unexpected span fields.")
+        start, length = span["start"], span["length"]
+        require(type(start) is int and type(length) is int and start >= 0 and length > 0
+                and 2 * (start + length) <= len(original), "Span lies outside UTF-16 text.")
+        try:
+            quote = original[2 * start:2 * (start + length)].decode("utf-16-le")
+        except UnicodeError:
+            raise ValueError("Span splits a Unicode character.") from None
+        require(quote == span["quote"] and span["kind"] in protocol["kinds"], "Span quote or kind is invalid.")
+        key = (start, length, span["kind"])
+        require(key not in keys, "Duplicate annotated span.")
+        keys.add(key)
+    return keys
+
+
+def export(study_path, a_path, b_path, issues_path, decisions_path, output):
+    """Turn a completed human adjudication into the gold `silueta evaluate` reads. Never runs the engine."""
+    lock, data, protocol = study(study_path)
+    a, b = annotation(study_path, a_path), annotation(study_path, b_path)
+    require((a["reviewerId"], b["reviewerId"]) == ("review-a", "review-b"), "Export takes review-a, then review-b.")
+    packet_file = load(issues_path)
+    reviewed = {r["id"]: r["sha256"] for r in packet_file["reviews"]}
+    # The adjudicator decided between two particular files; any other pair would make the gold a guess.
+    require(packet_file["studySha256"] == lock["studySha256"]
+            and reviewed == {"review-a": sha(Path(a_path).read_bytes()), "review-b": sha(Path(b_path).read_bytes())},
+            "These are not the reviews the adjudication packet was built from.")
+    decisions = load(decisions_path)
+    require(decisions.get("studySha256") == lock["studySha256"], "Decisions are for a different study.")
+    reviewer = decisions.get("reviewerId")
+    require(identifier(reviewer) and reviewer not in {"review-a", "review-b", data["provenance"]["authorId"]},
+            "The adjudicator needs an id of their own, not a reviewer's or the author's.")
+    require(decisions.get("reviewerType") == "human" and decisions.get("humanReviewCompleted") is True,
+            "Gold needs a completed human adjudication; a model pass or an unfinished one is not one.")
+
+    originals = {d["documentId"]: d for d in data["documents"]}
+    passes = {"A": {d["documentId"]: d["spans"] for d in a["documents"]},
+              "B": {d["documentId"]: d["spans"] for d in b["documents"]}}
+    final, choices = {}, {}
+    for doc in decisions["documents"]:
+        doc_id = doc.get("documentId")
+        require(doc_id in originals and doc_id not in final, "Unknown or duplicate adjudicated document.")
+        require(doc.get("complete") is True, "Every document must be read and closed by the adjudicator, negatives included.")
+        selected, custom = doc.get("selectedReview"), doc.get("finalSpans")
+        require((selected in {"A", "B"}) != (custom is not None) and selected in {"A", "B", None},
+                "Each document takes exactly one of selectedReview (A or B) or finalSpans.")
+        spans = passes[selected][doc_id] if selected else custom
+        spans_in(originals[doc_id]["text"], spans, protocol)
+        # ANNOTATION.md: a state name alone is retained in this study, so it can never be a removal span.
+        require(all(s["kind"] != "State" for s in spans), "A State span cannot be gold in this study.")
+        final[doc_id], choices[doc_id] = spans, selected or "custom"
+    require(set(final) == set(originals), "Every document needs an adjudicated final list.")
+
+    known = {i["issueId"]: i for i in packet_file["issues"]}
+    decided = {}
+    for issue in decisions["issues"]:
+        issue_id = issue.get("issueId")
+        require(issue_id in known and issue_id not in decided, "Unknown or duplicate case.")
+        meta = known[issue_id]
+        require(issue.get("documentId") == meta["documentId"], f"{issue_id} names the wrong document.")
+        decision = issue.get("decision")
+        require(decision in {"A", "B", "unmarked", "alternative"}, f"{issue_id} needs a decision: A, B, unmarked or alternative.")
+        require(isinstance(issue.get("reason"), str) and issue["reason"].strip(), f"{issue_id} needs a written reason.")
+        key = lambda s: (s["start"], s["length"], s["kind"])
+        if decision == "alternative":
+            require(issue.get("finalSpans") is not None, f"{issue_id} is an alternative and must list its spans.")
+            expected = spans_in(originals[meta["documentId"]]["text"], issue["finalSpans"], protocol)
+        else:
+            chosen = {"A": meta["reviewA"], "B": meta["reviewB"], "unmarked": None}[decision]
+            expected = {key(chosen)} if chosen else set()
+            if issue.get("finalSpans") is not None:
+                require({key(s) for s in issue["finalSpans"]} == expected, f"{issue_id}'s spans contradict its decision.")
+        start, end = meta["focus"]["start"], meta["focus"]["start"] + meta["focus"]["length"]
+        actual = {key(s) for s in final[meta["documentId"]] if s["start"] < end and start < s["start"] + s["length"]}
+        require(actual == expected, f"{issue_id}'s decision does not match the document's final list.")
+        decided[issue_id] = decision
+    require(set(decided) == set(known), "Every case needs a decision.")
+
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=False)  # Never silently replace exported gold.
+    gold = output / "gold"
+    gold.mkdir()
+    for doc_id, doc in originals.items():
+        spans = sorted(final[doc_id], key=lambda s: (s["start"], s["length"], s["kind"]))
+        write(gold / f"{doc_id}.json", {
+            "documentId": doc_id, "source": doc["source"], "language": doc["language"], "speaker": None,
+            "recordedOn": doc["recordedOn"], "text": doc["text"], "roster": doc["roster"],
+            "spans": [{"start": s["start"], "length": s["length"], "kind": s["kind"], "annotator": reviewer} for s in spans],
+            "annotation": {"method": "Two blind model passes (review-a, review-b), adjudicated by a human document by document.",
+                           "annotators": [reviewer], "humanReviewed": True, "adjudication": choices[doc_id],
+                           "studySha256": lock["studySha256"]}})
+    receipt = {"stage": "adjudicated-gold-exported", "studySha256": lock["studySha256"],
+               "engineCommit": lock["engineCommit"], "coreAssemblySha256": lock["coreAssemblySha256"],
+               "reviews": [{"id": "review-a", "sha256": reviewed["review-a"]}, {"id": "review-b", "sha256": reviewed["review-b"]}],
+               "adjudication": {"reviewerId": reviewer, "reviewerType": "human", "sha256": sha(Path(decisions_path).read_bytes())},
+               "documents": len(final), "spans": sum(len(s) for s in final.values()),
+               "decisions": [{"issueId": k, "decision": v} for k, v in sorted(decided.items())],
+               "gold": "gold", "exportRunsEngine": False,
+               "caveat": "The adjudicator saw both model passes; this is adjudicated gold, not a third blind annotation."}
+    write(output / "adjudication-receipt.json", receipt)
+    return receipt
 
 
 def compare(study_path, a_path, b_path):
@@ -203,6 +297,13 @@ def main():
     compare_parser.add_argument("--a", required=True, type=Path)
     compare_parser.add_argument("--b", required=True, type=Path)
     compare_parser.add_argument("--output", required=True, type=Path)
+    export_parser = commands.add_parser("export")
+    export_parser.add_argument("--study", required=True, type=Path)
+    export_parser.add_argument("--a", required=True, type=Path)
+    export_parser.add_argument("--b", required=True, type=Path)
+    export_parser.add_argument("--issues", required=True, type=Path)
+    export_parser.add_argument("--decisions", required=True, type=Path)
+    export_parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     if args.command == "freeze":
         result = freeze(args.input, args.output, args.cli_package, args.engine_commit)
@@ -213,6 +314,10 @@ def main():
     elif args.command == "check":
         annotation(args.study, args.annotation)
         print("Complete annotation is structurally valid; this is not an engine evaluation.")
+    elif args.command == "export":
+        result = export(args.study, args.a, args.b, args.issues, args.decisions, args.output)
+        print(f"Exported {result['documents']} adjudicated gold documents, {result['spans']} spans, to "
+              f"{args.output / result['gold']}. The engine was not run.")
     else:
         result = compare(args.study, args.a, args.b)
         with args.output.open("xb") as stream:

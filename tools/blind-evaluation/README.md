@@ -26,10 +26,21 @@ so even an external author does not make the entire study independent of that de
    compare independent reviews. Preserve both raw reviews. Do not score their union or treat agreement
    as correct labels. A human adjudicator resolves disagreements against the original before results
    are viewed, recording decisions/reasons and actual human involvement.
-5. Only then export one adjudicated gold set for `silueta evaluate`. Keep adjudication and reviewer
-   metadata beside it. The existing loader infers annotators from spans and does not interpret the
-   `annotation` metadata; its annotator count therefore does not measure completed negative reviews
-   or human adjudication. Do not relabel a model pass as human review to populate that count.
+5. Only then export one adjudicated gold set for `silueta evaluate`, with `workflow.py export`. It
+   takes the frozen study, both raw reviews, the adjudication packet's issue file and the completed
+   decision file, and refuses unless all of these hold:
+   - the reviews are byte for byte the ones the packet was built from;
+   - a human adjudicator with an id of their own declared the review complete;
+   - every document is closed, with either `selectedReview` (`A` or `B`) or its own `finalSpans`;
+   - every case has a decision (`A`, `B`, `unmarked` or `alternative`) and a written reason;
+   - each decision agrees with the document's final list where the case sits;
+   - no final span is a `State`.
+
+   It writes `gold/` (one file per document) and an `adjudication-receipt.json` beside it, outside
+   `gold/` so the loader never reads it as a document. Every span's annotator is the adjudicator, and
+   the evaluator therefore reports one annotator. That is the honest count: the gold is one person's
+   decision over two model passes, not a third blind annotation, and a model pass is never relabelled
+   as human review to raise it.
 6. Run the frozen engine on the adjudicated gold, then conduct the assisted-workflow pilot with a
    human operator who sees input, roster and redacted output but not gold labels. Preserve initial
    output, corrections and final output. An assessor compares both outputs against frozen gold.
@@ -48,6 +59,7 @@ python tools/blind-evaluation/workflow.py packet --study <study-dir> --output <n
 python tools/blind-evaluation/workflow.py packet --study <study-dir> --output <new-review-b-dir> --reviewer review-b
 python tools/blind-evaluation/workflow.py check --study <study-dir> --annotation <annotations-a.json>
 python tools/blind-evaluation/workflow.py compare --study <study-dir> --a <annotations-a.json> --b <annotations-b.json> --output <new-comparison.json>
+python tools/blind-evaluation/workflow.py export --study <study-dir> --a <annotations-a.json> --b <annotations-b.json> --issues <expediente.json> --decisions <decisions.json> --output <new-gold-dir>
 python -B -m unittest discover -s tools/blind-evaluation -p "test_*.py"
 ```
 

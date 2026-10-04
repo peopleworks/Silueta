@@ -128,6 +128,94 @@ class BlindWorkflowTests(unittest.TestCase):
             w.load(path)
         self.assertNotIn("private-marker", str(failure.exception))
 
+    # Export: the human adjudication becomes the gold `silueta evaluate` reads, and nothing else does.
+
+    def adjudication(self):
+        """Two reviews, the issue file the adjudication packet carries, and a completed human decision file."""
+        text = self.data["documents"][0]["text"]
+        first, second = (len(text[:p].encode("utf-16-le")) // 2 for p in (text.index("Sofia"), text.rindex("Sofia")))
+        self.first = {"start": first, "length": 5, "kind": "PatientName", "quote": "Sofia"}
+        self.second = {"start": second, "length": 5, "kind": "PatientName", "quote": "Sofia"}
+        self.a, self.b = self.root / "a.json", self.root / "b.json"
+        w.write(self.a, self.review("review-a", [self.first, self.second]))
+        w.write(self.b, self.review("review-b", [self.first]))
+        doc = self.data["documents"][0]["documentId"]
+        self.issues = self.root / "expediente.json"
+        w.write(self.issues, {"studySha256": self.lock["studySha256"],
+            "reviews": [{"id": "review-a", "type": "model", "sha256": w.sha(self.a.read_bytes())},
+                        {"id": "review-b", "type": "model", "sha256": w.sha(self.b.read_bytes())}],
+            "issues": [{"issueId": "D01", "documentId": doc, "focus": {"start": second, "length": 5, "quote": "Sofia"},
+                        "reviewA": self.second, "reviewB": None}]})
+        self.decisions = {"stage": "pending-human-adjudication-not-gold", "studySha256": self.lock["studySha256"],
+            "reviewerId": "adjudicator-1", "reviewerType": "human", "humanReviewCompleted": True, "blinding": "fixture",
+            "issues": [{"issueId": "D01", "documentId": doc, "decision": "A", "finalSpans": None, "reason": "Same person."}],
+            "documents": [{"documentId": d["documentId"], "complete": True, "selectedReview": "A", "finalSpans": None,
+                           "notes": ""} for d in self.data["documents"]]}
+
+    def export(self, output="exported"):
+        path = self.root / "decisions.json"
+        w.write(path, self.decisions)
+        return w.export(self.study, self.a, self.b, self.issues, path, self.root / output)
+
+    def test_export_writes_gold_the_evaluator_reads_and_a_receipt_without_text(self):
+        self.adjudication()
+        receipt = self.export()
+        gold = sorted((self.root / "exported" / "gold").glob("*.json"))
+        self.assertEqual(24, len(gold))
+        doc = w.load(gold[0])
+        self.assertEqual({"documentId", "source", "language", "speaker", "recordedOn", "text", "roster", "spans",
+                          "annotation"}, set(doc))
+        self.assertEqual([(self.first["start"], 5, "PatientName", "adjudicator-1"),
+                          (self.second["start"], 5, "PatientName", "adjudicator-1")],
+                         [(s["start"], s["length"], s["kind"], s["annotator"]) for s in doc["spans"]])
+        self.assertTrue(doc["annotation"]["humanReviewed"])
+        self.assertEqual(self.protocol["recordedOn"], doc["recordedOn"])
+        self.assertEqual(receipt, w.load(self.root / "exported" / "adjudication-receipt.json"))
+        self.assertEqual(w.sha(self.a.read_bytes()), receipt["reviews"][0]["sha256"])
+        self.assertNotIn("Sofia", json.dumps(receipt))
+
+    def test_export_requires_a_completed_human_adjudication_with_reasons(self):
+        for change in (lambda d: d.update(reviewerType="model"),
+                       lambda d: d.update(humanReviewCompleted=False),
+                       lambda d: d["documents"][3].update(complete=False),
+                       lambda d: d["issues"][0].update(reason="  "),
+                       lambda d: d["documents"].pop()):
+            self.adjudication()
+            change(self.decisions)
+            with self.assertRaises(ValueError):
+                self.export()
+            self.assertFalse((self.root / "exported").exists())
+
+    def test_a_case_decision_must_agree_with_the_documents_final_list(self):
+        self.adjudication()
+        self.decisions["issues"][0]["decision"] = "B"
+        with self.assertRaisesRegex(ValueError, "D01"):
+            self.export()
+
+    def test_custom_final_spans_are_checked_and_a_state_is_never_gold(self):
+        self.adjudication()
+        self.decisions["documents"][0].update(selectedReview=None, finalSpans=[{**self.first, "quote": "Sofie"}])
+        with self.assertRaisesRegex(ValueError, "quote"):
+            self.export()
+        self.decisions["documents"][0]["finalSpans"] = [self.first, {**self.second, "kind": "State"}]
+        with self.assertRaisesRegex(ValueError, "State"):
+            self.export()
+        self.decisions["documents"][0].update(selectedReview="A", finalSpans=[self.first])
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            self.export()
+
+    def test_export_refuses_reviews_other_than_the_adjudicated_ones(self):
+        self.adjudication()
+        w.write(self.b, self.review("review-b"))
+        with self.assertRaisesRegex(ValueError, "not the reviews"):
+            self.export()
+
+    def test_export_never_replaces_existing_gold(self):
+        self.adjudication()
+        self.export()
+        with self.assertRaises(FileExistsError):
+            self.export()
+
     def test_subjects_cannot_cross_case_groups_or_change_identity(self):
         for value in ("Fixture Name", "Different Name"):
             data = copy.deepcopy(self.data)
